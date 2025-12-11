@@ -7,11 +7,18 @@ use num_traits::{One, Zero};
 
 // Memoization maps for Fibonacci numbers
 static FIBONACCI_MAP: LazyLock<Mutex<HashMap<u64, u64>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
-static FIBONACCI_BIGINT_MAP: LazyLock<Mutex<HashMap<BigUint, BigUint>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
+static FIBONACCI_BIGINT_MAP: LazyLock<Mutex<HashMap<u64, BigUint>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
 
-// Memoization maps for Zeckendorf representations
+/// Memoization maps for Zeckendorf representations
 static ZECKENDORF_MAP: LazyLock<Mutex<HashMap<u64, Vec<u64>>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
-static ZECKENDORF_BIGINT_MAP: LazyLock<Mutex<HashMap<BigUint, Vec<BigUint>>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
+/// We will store the Zeckendorf list descending as u64s because the Fibonacci indices are small enough to fit in a u64.
+/// It takes up to 694,241 bits, or 694kbits, to represent the 1,000,000th Fibonacci number.
+/// The max u64 is 18,446,744,073,709,551,615 which is ~18 quintillion.
+/// So a u64 can represent Fibonacci indices 18 trillion times larger than the 1,000,000th,
+/// so a u64 can represent Fibonacci values up to
+/// roughly 18 trillion times 694,241 bits which is 1.249*10^19 bits which or 1.56 exabytes.
+/// We will consider larger numbers in the future :-)
+static ZECKENDORF_BIGINT_MAP: LazyLock<Mutex<HashMap<BigUint, Vec<u64>>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
 
 /// Returns the number of bits required to represent the given number. Returns 0 if the number is less than or equal to 0.
 /// Examples: 
@@ -57,7 +64,7 @@ fn memoized_fibonacci_recursive(n: u64) -> u64 {
 /// fibonacci(x) is equal to 0 if x is 0; 1 if x is 1; else return fibonacci(x - 1) + fibonacci(x - 2)
 /// fi stands for Fibonacci Index
 /// This function fails for large numbers (e.g. 100_000) with stack overflow.
-fn memoized_fibonacci_bigint_recursive(n: &BigUint) -> BigUint {
+fn memoized_fibonacci_bigint_recursive(n: u64) -> BigUint {
     let fibonacci_bigint_map = FIBONACCI_BIGINT_MAP.lock().expect("Failed to lock Fibonacci BigInt map");
     
     let maybe_cached = fibonacci_bigint_map.get(&n);
@@ -67,13 +74,13 @@ fn memoized_fibonacci_bigint_recursive(n: &BigUint) -> BigUint {
     // Drop the lock to allow other threads to access the map during the recursive calls
     drop(fibonacci_bigint_map);
 
-    let result = if n == &BigUint::zero() {
+    let result = if n == 0 {
         BigUint::zero()
-    } else if n == &BigUint::one() {
+    } else if n == 1 {
         BigUint::one()
     } else {
-        memoized_fibonacci_bigint_recursive(&(n - &BigUint::one()))
-        + memoized_fibonacci_bigint_recursive(&(n - &BigUint::from(2u64)))
+        memoized_fibonacci_bigint_recursive(n - 1)
+        + memoized_fibonacci_bigint_recursive(n - 2)
     };
     
     // Re-lock the map to insert the result
@@ -165,15 +172,15 @@ pub fn memoized_zeckendorf_list_descending_for_integer(n: u64) -> Vec<u64> {
     zeckendorf_list
 }
 
-pub fn memoized_zeckendorf_list_descending_for_bigint(n: &BigUint) -> Vec<BigUint> {
+pub fn memoized_zeckendorf_list_descending_for_bigint(n: &BigUint) -> Vec<u64> {
     if n == &BigUint::zero() {
         return vec![];
     }
     if n == &BigUint::one() {
-        return vec![BigUint::from(2u64)];
+        return vec![2];
     }
     if n == &BigUint::from(2u64) {
-        return vec![BigUint::from(3u64)];
+        return vec![3];
     }
 
     let zeckendorf_bigint_map = ZECKENDORF_BIGINT_MAP.lock().expect("Failed to lock Zeckendorf BigInt map");
@@ -185,25 +192,25 @@ pub fn memoized_zeckendorf_list_descending_for_bigint(n: &BigUint) -> Vec<BigUin
 
     let original_n = n.clone();
     let mut current_n = n.clone();
-    let mut max_fibonacci_index_smaller_than_n = BigUint::one();
-    let mut fibonacci_at_index = memoized_fibonacci_bigint_recursive(&max_fibonacci_index_smaller_than_n);
+    let mut max_fibonacci_index_smaller_than_n = 1u64;
+    let mut fibonacci_at_index = memoized_fibonacci_bigint_recursive(max_fibonacci_index_smaller_than_n);
     
     while fibonacci_at_index < current_n {
-        max_fibonacci_index_smaller_than_n += BigUint::one();
-        fibonacci_at_index = memoized_fibonacci_bigint_recursive(&max_fibonacci_index_smaller_than_n);
+        max_fibonacci_index_smaller_than_n += 1;
+        fibonacci_at_index = memoized_fibonacci_bigint_recursive(max_fibonacci_index_smaller_than_n);
     }
     
-    let mut zeckendorf_list: Vec<BigUint> = Vec::new();
+    let mut zeckendorf_list: Vec<u64> = Vec::new();
     while current_n > BigUint::zero() {
-        let current_fibonacci_value = memoized_fibonacci_bigint_recursive(&max_fibonacci_index_smaller_than_n);
+        let current_fibonacci_value = memoized_fibonacci_bigint_recursive(max_fibonacci_index_smaller_than_n);
         if current_fibonacci_value > current_n {
-            max_fibonacci_index_smaller_than_n -= BigUint::one();
+            max_fibonacci_index_smaller_than_n -= 1;
             continue;
         }
         current_n -= current_fibonacci_value;
-        zeckendorf_list.push(max_fibonacci_index_smaller_than_n.clone());
+        zeckendorf_list.push(max_fibonacci_index_smaller_than_n);
         // We can subtract 2 because the next Fibonacci number that fits is at least 2 indices away due to the Zeckendorf principle.
-        max_fibonacci_index_smaller_than_n -= BigUint::from(2u64);
+        max_fibonacci_index_smaller_than_n -= 2;
     }
 
     let mut zeckendorf_bigint_map = ZECKENDORF_BIGINT_MAP.lock().expect("Failed to lock Zeckendorf BigInt map");
@@ -286,6 +293,48 @@ fn ezba_from_ezld(effective_zeckendorf_list_descending: Vec<u64>) -> Vec<u8> {
     return effective_zeckendorf_bits_ascending
 }
 
+/// Packs a vector of bits (0s and 1s) from an ezba (Effective Zeckendorf Bits Ascending) into bytes.
+///
+/// Bits are in ascending significance: bits[0] = LSB, bits[7] = MSB.
+/// Every 8 bits become a u8 in the output.
+/// The last byte is padded with 0s if the number of bits is not a multiple of 8.
+fn pack_ezba_bits_to_bytes(ezba: Vec<u8>) -> Vec<u8> {
+    let mut out = Vec::with_capacity((ezba.len() + 7) / 8);
+
+    for chunk in ezba.chunks(8) {
+        let mut b = 0u8;
+
+        for (i, &bit) in chunk.iter().enumerate() {
+            if bit == 1 {
+                b |= 1 << i;
+            }
+        }
+
+        out.push(b);
+    }
+
+    out
+}
+
+fn zeckendorf_compress(data: Vec<u8>) -> Vec<u8> {
+    let compressed_data: Vec<u8>;
+    // Turn data into a bigint
+    let data_as_bigint = BigUint::from_bytes_be(&data);
+    println!("Data as bigint: {:?}", data_as_bigint);
+    // Get the effective zeckendorf list descending
+    let data_as_zld = memoized_zeckendorf_list_descending_for_bigint(&data_as_bigint);
+    println!("Data as zld: {:?}", data_as_zld);
+    let data_as_ezld = zld_to_ezld(data_as_zld);
+    println!("Data as ezld: {:?}", data_as_ezld);
+    // Get the effective zeckendorf bits ascending
+    let data_as_ezba = ezba_from_ezld(data_as_ezld);
+    println!("Data as ezba: {:?}", data_as_ezba);
+    // Compress the data
+    compressed_data = pack_ezba_bits_to_bytes(data_as_ezba);
+    println!("Compressed data: {:?}", compressed_data);
+    return compressed_data
+}
+
 fn main() {
     let start_time = Instant::now();
 
@@ -296,7 +345,7 @@ fn main() {
         println!("The {i}th Fibonacci number is: {}", memoized_fibonacci_recursive(i));
     }
     for i in 0..20 {
-        println!("The bigint {i}th Fibonacci number is: {}", memoized_fibonacci_bigint_recursive(&BigUint::from(i as u64)));
+        println!("The bigint {i}th Fibonacci number is: {}", memoized_fibonacci_bigint_recursive(i));
     }
     for i in 0..20 {
         println!("Zeckendorf descending list for {}: {:?}", i, memoized_zeckendorf_list_descending_for_integer(i));
@@ -319,10 +368,10 @@ fn main() {
     //     println!("it takes {} bits to represent the {i}th Fibonacci number", fibonacci.bits());
     // }
 
-    // let limit = 10u64;
+    let limit = 10u64;
     // Get stack overflow at recursive fibonacci at 100_000u64;
     // Time taken: ~674.49ms for iterative
-    let limit = 100_000u64;
+    // let limit = 100_000u64;
     // Time taken: ~65.6s for iterative
     // let limit = 1_000_000u64;
 
@@ -333,6 +382,12 @@ fn main() {
     // it takes 694241 bits to represent the 1_000_000th Fibonacci number
     println!("it takes {} bits to represent the {limit}th Fibonacci number", big_fibonacci.bits());
 
+
+    let data = BigUint::from(12_u64).to_bytes_be();
+    println!("Data: {:?}", data);
+    let compressed_data = zeckendorf_compress(data);
+    // Expect 7 or 0b111 as the compressed data for the number 12.
+    println!("Compressed data: {:?}", compressed_data);
 
     let end_time = Instant::now();
     println!("Time taken: {:?}", end_time.duration_since(start_time));
