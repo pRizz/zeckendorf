@@ -439,7 +439,10 @@ fn main() {
     println!("it takes {} bits to represent the {limit}th Fibonacci number", big_fibonacci.bits());
 
     test_zeckendorf_compress_and_decompress(12_u64);
+    // 255 is 0b11111111 which is 8 bits
     test_zeckendorf_compress_and_decompress(255_u64);
+    // Test two byte boundary
+    // 256 is 0b100000000 which is 9 bits
     test_zeckendorf_compress_and_decompress(256_u64);
     
     // TODO: test larger data
