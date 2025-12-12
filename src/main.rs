@@ -438,18 +438,25 @@ fn main() {
     // it takes 694241 bits to represent the 1_000_000th Fibonacci number
     println!("it takes {} bits to represent the {limit}th Fibonacci number", big_fibonacci.bits());
 
-
-    let data = BigUint::from(12_u64).to_bytes_be();
-    println!("Data: {:?}", data);
-    let compressed_data = zeckendorf_compress(data);
-    // Expect 7 or 0b111 as the compressed data for the number 12.
-    println!("Compressed data: {:?}", compressed_data);
-    let decompressed_data = zeckendorf_decompress(compressed_data);
-    println!("Decompressed data: {:?}", decompressed_data);
+    test_zeckendorf_compress_and_decompress(12_u64);
+    test_zeckendorf_compress_and_decompress(255_u64);
+    test_zeckendorf_compress_and_decompress(256_u64);
     
     // TODO: test larger data
 
     let end_time = Instant::now();
     println!("Time taken: {:?}", end_time.duration_since(start_time));
 
+}
+
+fn test_zeckendorf_compress_and_decompress(number: u64) {
+    println!("Number to compress: {:?}", number);
+    let data = BigUint::from(number).to_bytes_be();
+    println!("Number as big endian bytes: {:?}", data);
+    let compressed_data = zeckendorf_compress(data);
+    println!("Compressed data: {:?}", compressed_data);
+    let decompressed_data = zeckendorf_decompress(compressed_data);
+    println!("Decompressed data: {:?}", decompressed_data);
+    let decompressed_number = BigUint::from_bytes_be(&decompressed_data);
+    println!("Decompressed number: {:?}", decompressed_number);
 }
