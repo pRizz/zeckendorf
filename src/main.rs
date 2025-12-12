@@ -246,17 +246,20 @@ fn memoized_effective_fibonacci(efi: u64) -> u64 {
     return memoized_fibonacci_recursive(efi_to_fi(efi))
 }
 
-/// An Effective Zeckendorf List Descending has a lowest EFI of 0, which is an FI of 2.
+/// An Effective Zeckendorf List (EZL) has a lowest EFI of 0, which is an FI of 2.
 /// This is because it doesn't make sense for the lists to contain FIs 0 or 1 because
 /// 0 can never be added to a number and will therefore never be in a Zeckendorf List
 /// and an FI of 1 is equivalent to an FI of 2 which has a Fibonacci value of 1
 /// so let's just use FI starting at 2, which is an EFI of 0.
-fn zld_to_ezld(zld: Vec<u64>) -> Vec<u64> {
-    return zld.into_iter().map(fi_to_efi).collect()
+/// It does not matter if the list is ascending or descending; it retains the directionality of the original list.
+fn zl_to_ezl(zl: Vec<u64>) -> Vec<u64> {
+    return zl.into_iter().map(fi_to_efi).collect()
 }
 
-fn zld_to_ezld_bigint(zld: Vec<BigUint>) -> Vec<BigUint> {
-    return zld.into_iter().map(fi_to_efi_bigint).collect()
+/// Converts an Effective Zeckendorf List to a Zeckendorf List.
+/// It does not matter if the list is ascending or descending; it retains the directionality of the original list.
+fn ezl_to_zl(ezl: Vec<u64>) -> Vec<u64> {
+    return ezl.into_iter().map(efi_to_fi).collect()
 }
 
 /// ezba is Effective Zeckendorf Bits Ascending ; ezld is Effective Zeckendorf List Descending
@@ -316,6 +319,8 @@ fn pack_ezba_bits_to_bytes(ezba: Vec<u8>) -> Vec<u8> {
     out
 }
 
+/// Compresses a vector of bytes using the Zeckendorf algorithm.
+/// Assume big endian bytes for now.
 fn zeckendorf_compress(data: Vec<u8>) -> Vec<u8> {
     let compressed_data: Vec<u8>;
     // Turn data into a bigint
@@ -324,7 +329,7 @@ fn zeckendorf_compress(data: Vec<u8>) -> Vec<u8> {
     // Get the effective zeckendorf list descending
     let data_as_zld = memoized_zeckendorf_list_descending_for_bigint(&data_as_bigint);
     println!("Data as zld: {:?}", data_as_zld);
-    let data_as_ezld = zld_to_ezld(data_as_zld);
+    let data_as_ezld = zl_to_ezl(data_as_zld);
     println!("Data as ezld: {:?}", data_as_ezld);
     // Get the effective zeckendorf bits ascending
     let data_as_ezba = ezba_from_ezld(data_as_ezld);
@@ -333,6 +338,57 @@ fn zeckendorf_compress(data: Vec<u8>) -> Vec<u8> {
     compressed_data = pack_ezba_bits_to_bytes(data_as_ezba);
     println!("Compressed data: {:?}", compressed_data);
     return compressed_data
+}
+
+fn unpack_bytes_to_ezba_bits(bytes: Vec<u8>) -> Vec<u8> {
+    let mut ezba_bits = Vec::new();
+    for byte in bytes {
+        for i in 0..8 {
+            ezba_bits.push((byte >> i) & 1);
+        }
+    }
+    return ezba_bits
+}
+
+/// Converts a vector of bits (0s and 1s) from an ezba (Effective Zeckendorf Bits Ascending) into a vector of effective fibonacci indices,
+/// the Effective Zeckendorf List Ascending.
+fn ezba_to_ezla(ezba_bits: Vec<u8>) -> Vec<u64> {
+    let mut ezla = Vec::new();
+    let mut current_efi = 0;
+    for bit in ezba_bits {
+        if bit == USE_BIT {
+            ezla.push(current_efi);
+            current_efi += 2;
+        } else {
+            current_efi += 1;
+        }
+    }
+    return ezla
+}
+
+/// Converts a Zeckendorf List to a BigInt.
+/// The Zeckendorf List is a list of Fibonacci indices that sum to the given number.
+/// It does not matter if the ZL is ascending or descending. The sum operation is commutative.
+fn zl_to_bigint(zl: Vec<u64>) -> BigUint {
+    return zl.into_iter().map(memoized_fibonacci_bigint_recursive).sum()
+}
+
+/// Decompresses a vector of bytes compressed using the Zeckendorf algorithm.
+/// Assume big endian bytes for now.
+fn zeckendorf_decompress(compressed_data: Vec<u8>) -> Vec<u8> {
+    // Unpack the compressed data into bits
+    let compressed_data_as_bits = unpack_bytes_to_ezba_bits(compressed_data);
+    println!("Compressed data as bits: {:?}", compressed_data_as_bits);
+    // Unpack the bits into an ezla (Effective Zeckendorf List Ascending)
+    let compressed_data_as_ezla = ezba_to_ezla(compressed_data_as_bits);
+    println!("Compressed data as ezla: {:?}", compressed_data_as_ezla);
+    // Convert the ezla to a zla (Zeckendorf List Ascending)
+    let compressed_data_as_zla = ezl_to_zl(compressed_data_as_ezla);
+    println!("Compressed data as zla: {:?}", compressed_data_as_zla);
+    // Convert the zla to a bigint
+    let compressed_data_as_bigint = zl_to_bigint(compressed_data_as_zla);
+    println!("Compressed data as bigint: {:?}", compressed_data_as_bigint);
+    return compressed_data_as_bigint.to_bytes_be()
 }
 
 fn main() {
@@ -356,7 +412,7 @@ fn main() {
     for i in 0..20 {
         let zl = memoized_zeckendorf_list_descending_for_integer(i);
         println!("Zeckendorf descending list for {}: {:?}", i, zl);
-        let ezl = zld_to_ezld(zl);
+        let ezl = zl_to_ezl(zl);
         println!("Effective Zeckendorf list descending for {}: {:?}", i, ezl);
         let ezba = ezba_from_ezld(ezl);
         println!("Effective Zeckendorf bits ascending for {}: {:?}", i, ezba);
@@ -388,6 +444,10 @@ fn main() {
     let compressed_data = zeckendorf_compress(data);
     // Expect 7 or 0b111 as the compressed data for the number 12.
     println!("Compressed data: {:?}", compressed_data);
+    let decompressed_data = zeckendorf_decompress(compressed_data);
+    println!("Decompressed data: {:?}", decompressed_data);
+    
+    // TODO: test larger data
 
     let end_time = Instant::now();
     println!("Time taken: {:?}", end_time.duration_since(start_time));
