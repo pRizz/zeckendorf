@@ -15,7 +15,7 @@ static FIBONACCI_BIGINT_MAP: LazyLock<Mutex<HashMap<u64, BigUint>>> = LazyLock::
 /// Memoization maps for Zeckendorf representations
 static ZECKENDORF_MAP: LazyLock<Mutex<HashMap<u64, Vec<u64>>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
 /// We will store the Zeckendorf list descending as u64s because the Fibonacci indices are small enough to fit in a u64.
-/// It takes up to 694,241 bits, or 694kbits, to represent the 1,000,000th Fibonacci number.
+/// It takes up to 694,241 bits, or ~694kbits, to represent the 1,000,000th Fibonacci number.
 /// The max u64 is 18,446,744,073,709,551,615 which is ~18 quintillion.
 /// So a u64 can represent Fibonacci indices 18 trillion times larger than the 1,000,000th,
 /// so a u64 can represent Fibonacci values up to
@@ -26,55 +26,55 @@ static ZECKENDORF_BIGINT_MAP: LazyLock<Mutex<HashMap<BigUint, Vec<u64>>>> = Lazy
 /// fibonacci(x) is equal to 0 if x is 0; 1 if x is 1; else return fibonacci(x - 1) + fibonacci(x - 2)
 /// fi stands for Fibonacci Index
 /// This function fails for large numbers (e.g. 100_000) with stack overflow.
-fn memoized_fibonacci_recursive(n: u64) -> u64 {
+fn memoized_fibonacci_recursive(fi: u64) -> u64 {
     let fibonacci_map = FIBONACCI_MAP.lock().expect("Failed to lock Fibonacci map");
     
-    let maybe_cached = fibonacci_map.get(&n);
+    let maybe_cached = fibonacci_map.get(&fi);
     if let Some(&cached) = maybe_cached {
         return cached;
     }
     // Drop the lock to allow other threads to access the map during the recursive calls
     drop(fibonacci_map);
     
-    let result = if n == 0 {
+    let result = if fi == 0 {
         0
-    } else if n == 1 {
+    } else if fi == 1 {
         1
     } else {
-        memoized_fibonacci_recursive(n - 1) + memoized_fibonacci_recursive(n - 2)
+        memoized_fibonacci_recursive(fi - 1) + memoized_fibonacci_recursive(fi - 2)
     };
 
     // Re-lock the map to insert the result
     let mut fibonacci_map = FIBONACCI_MAP.lock().expect("Failed to lock Fibonacci map");
-    fibonacci_map.insert(n, result);
+    fibonacci_map.insert(fi, result);
     result
 }
 
 /// fibonacci(x) is equal to 0 if x is 0; 1 if x is 1; else return fibonacci(x - 1) + fibonacci(x - 2)
 /// fi stands for Fibonacci Index
 /// This function fails for large numbers (e.g. 100_000) with stack overflow.
-fn memoized_fibonacci_bigint_recursive(n: u64) -> BigUint {
+fn memoized_fibonacci_bigint_recursive(fi: u64) -> BigUint {
     let fibonacci_bigint_map = FIBONACCI_BIGINT_MAP.lock().expect("Failed to lock Fibonacci BigInt map");
     
-    let maybe_cached = fibonacci_bigint_map.get(&n);
+    let maybe_cached = fibonacci_bigint_map.get(&fi);
     if let Some(cached) = maybe_cached {
         return cached.clone();
     }
     // Drop the lock to allow other threads to access the map during the recursive calls
     drop(fibonacci_bigint_map);
 
-    let result = if n == 0 {
+    let result = if fi == 0 {
         BigUint::zero()
-    } else if n == 1 {
+    } else if fi == 1 {
         BigUint::one()
     } else {
-        memoized_fibonacci_bigint_recursive(n - 1)
-        + memoized_fibonacci_bigint_recursive(n - 2)
+        memoized_fibonacci_bigint_recursive(fi - 1)
+        + memoized_fibonacci_bigint_recursive(fi - 2)
     };
     
     // Re-lock the map to insert the result
     let mut fibonacci_bigint_map = FIBONACCI_BIGINT_MAP.lock().expect("Failed to lock Fibonacci BigInt map");
-    fibonacci_bigint_map.insert(n.clone(), result.clone());
+    fibonacci_bigint_map.insert(fi.clone(), result.clone());
     result
 }
 
@@ -293,7 +293,7 @@ fn ezba_from_ezld(effective_zeckendorf_list_descending: &[u64]) -> Vec<u8> {
     return effective_zeckendorf_bits_ascending
 }
 
-/// Packs a vector of bits (0s and 1s) from an ezba (Effective Zeckendorf Bits Ascending) into bytes.
+/// Packs a slice of bits (0s and 1s) from an ezba (Effective Zeckendorf Bits Ascending) into bytes.
 ///
 /// Bits are in ascending significance: bits\[0\] = LSB, bits\[7\] = MSB.
 /// Every 8 bits become a u8 in the output.
@@ -317,7 +317,8 @@ fn pack_ezba_bits_to_bytes(ezba: &[u8]) -> Vec<u8> {
 }
 
 /// Compresses a vector of bytes using the Zeckendorf algorithm.
-/// Assume big endian bytes for now.
+/// Assume big endian bytes for now. Perhaps in the future, we can also interpret the input data as little endian to
+/// check if it results in a more compact representation.
 fn zeckendorf_compress(data: &[u8]) -> Vec<u8> {
     let compressed_data: Vec<u8>;
     // Turn data into a bigint
