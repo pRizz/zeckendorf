@@ -23,20 +23,6 @@ static ZECKENDORF_MAP: LazyLock<Mutex<HashMap<u64, Vec<u64>>>> = LazyLock::new(|
 /// We will consider larger numbers in the future :-)
 static ZECKENDORF_BIGINT_MAP: LazyLock<Mutex<HashMap<BigUint, Vec<u64>>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
 
-/// Returns the number of bits required to represent the given number. Returns 0 if the number is less than or equal to 0.
-/// Examples: 
-///   0 -> 0 bits
-///   1 -> 0b1 -> 1 bit
-///   2 -> 0b10 -> 2 bits
-///   3 -> 0b11 -> 2 bits
-///   4 -> 0b100 -> 3 bits
-fn bit_count_for_number(n: i32) -> u32 {
-    if n <= 0 {
-        return 0
-    }
-    32 - n.leading_zeros()
-}
-
 /// fibonacci(x) is equal to 0 if x is 0; 1 if x is 1; else return fibonacci(x - 1) + fibonacci(x - 2)
 /// fi stands for Fibonacci Index
 /// This function fails for large numbers (e.g. 100_000) with stack overflow.
@@ -119,17 +105,17 @@ fn fibonacci_bigint_iterative(fi: &BigUint) -> BigUint {
 ///   fibonacci(7) = 13
 ///   fibonacci(8) = 21
 /// Example Zeckendorf list for the number 10: this is 8 + 2 so the fibonacci indices are 6 and 3.
-///   zeckendorf_list(0) = Ok([0])
-///   zeckendorf_list(1) = Ok([2])
-///   zeckendorf_list(2) = Ok([3])
-///   zeckendorf_list(3) = Ok([4])
-///   zeckendorf_list(4) = Ok([4, 2])
-///   zeckendorf_list(5) = Ok([5])
-///   zeckendorf_list(6) = Ok([5, 2])
-///   zeckendorf_list(7) = Ok([5, 3])
-///   zeckendorf_list(8) = Ok([6])
-///   zeckendorf_list(9) = Ok([6, 2])
-///   zeckendorf_list(10) = Ok([6, 3])
+///   zeckendorf_list(0) = \[0\]
+///   zeckendorf_list(1) = \[2\]
+///   zeckendorf_list(2) = \[3\]
+///   zeckendorf_list(3) = \[4\]
+///   zeckendorf_list(4) = \[4, 2\]
+///   zeckendorf_list(5) = \[5\]
+///   zeckendorf_list(6) = \[5, 2\]
+///   zeckendorf_list(7) = \[5, 3\]
+///   zeckendorf_list(8) = \[6\]
+///   zeckendorf_list(9) = \[6, 2\]
+///   zeckendorf_list(10) = \[6, 3\]
 pub fn memoized_zeckendorf_list_descending_for_integer(n: u64) -> Vec<u64> {
     if n == 0 {
         return vec![];
@@ -309,7 +295,7 @@ fn ezba_from_ezld(effective_zeckendorf_list_descending: &[u64]) -> Vec<u8> {
 
 /// Packs a vector of bits (0s and 1s) from an ezba (Effective Zeckendorf Bits Ascending) into bytes.
 ///
-/// Bits are in ascending significance: bits[0] = LSB, bits[7] = MSB.
+/// Bits are in ascending significance: bits\[0\] = LSB, bits\[7\] = MSB.
 /// Every 8 bits become a u8 in the output.
 /// The last byte is padded with 0s if the number of bits is not a multiple of 8.
 fn pack_ezba_bits_to_bytes(ezba: &[u8]) -> Vec<u8> {
@@ -406,7 +392,7 @@ fn main() {
     let start_time = Instant::now();
 
     for i in 0..20 {
-        println!("Bit count for {}: {}", i, bit_count_for_number(i));
+        println!("Bit count for {}: {}", i, zeckendorf_rs::bit_count_for_number(i));
     }
     for i in 0..20 {
         println!("The {i}th Fibonacci number is: {}", memoized_fibonacci_recursive(i));

@@ -3,6 +3,10 @@ name = "zeckendorf-rs"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+name = "zeckendorf_rs"
+path = "src/lib.rs"
+
 [dependencies]
 num-bigint = "0.4.6"
 num-traits = "0.2.19"
