@@ -1,6 +1,5 @@
-
-use std::time::Instant;
 use num_bigint::BigUint;
+use std::time::Instant;
 use zeckendorf_rs::*;
 
 // Example usages:
@@ -13,16 +12,30 @@ fn main() {
         println!("Bit count for {}: {}", i, bit_count_for_number(i));
     }
     for i in 0..20 {
-        println!("The {i}th Fibonacci number is: {}", memoized_fibonacci_recursive(i));
+        println!(
+            "The {i}th Fibonacci number is: {}",
+            memoized_fibonacci_recursive(i)
+        );
     }
     for i in 0..20 {
-        println!("The bigint {i}th Fibonacci number is: {}", memoized_fibonacci_bigint_recursive(i));
+        println!(
+            "The bigint {i}th Fibonacci number is: {}",
+            memoized_fibonacci_bigint_recursive(i)
+        );
     }
     for i in 0..20 {
-        println!("Zeckendorf descending list for {}: {:?}", i, memoized_zeckendorf_list_descending_for_integer(i));
+        println!(
+            "Zeckendorf descending list for {}: {:?}",
+            i,
+            memoized_zeckendorf_list_descending_for_integer(i)
+        );
     }
     for i in 0..20 {
-        println!("Zeckendorf descending list for {}: {:?}", i, memoized_zeckendorf_list_descending_for_bigint(&BigUint::from(i as u64)));
+        println!(
+            "Zeckendorf descending list for {}: {:?}",
+            i,
+            memoized_zeckendorf_list_descending_for_bigint(&BigUint::from(i as u64))
+        );
     }
     for i in 0..20 {
         let zld = memoized_zeckendorf_list_descending_for_integer(i);
@@ -51,7 +64,10 @@ fn main() {
     // it takes 6 bits to represent the 10th Fibonacci number
     // it takes 69424 bits to represent the 100_000th Fibonacci number
     // it takes 694241 bits to represent the 1_000_000th Fibonacci number
-    println!("it takes {} bits to represent the {limit}th Fibonacci number", big_fibonacci.bits());
+    println!(
+        "it takes {} bits to represent the {limit}th Fibonacci number",
+        big_fibonacci.bits()
+    );
 
     test_zeckendorf_compress_and_decompress_number(12_u64);
     // 255 is 0b11111111 which is 8 bits
@@ -59,12 +75,11 @@ fn main() {
     // Test two byte boundary
     // 256 is 0b100000000 which is 9 bits
     test_zeckendorf_compress_and_decompress_number(256_u64);
-    
+
     test_zeckendorf_compress_and_decompress_file("generated_data/random_data_1025_bytes.bin");
 
     let end_time = Instant::now();
     println!("Time taken: {:?}", end_time.duration_since(start_time));
-
 }
 
 fn test_zeckendorf_compress_and_decompress_number(number: u64) {
@@ -80,7 +95,10 @@ fn test_zeckendorf_compress_and_decompress_number(number: u64) {
 }
 
 fn test_zeckendorf_compress_and_decompress_file(filename: &str) {
-    println!("Testing compression and decompression of file: {:?}", filename);
+    println!(
+        "Testing compression and decompression of file: {:?}",
+        filename
+    );
     let data = std::fs::read(filename).expect("Failed to read file");
     // println!("Data: {:?}", data);
     // Data size
@@ -99,10 +117,19 @@ fn test_zeckendorf_compress_and_decompress_file(filename: &str) {
     assert_eq!(data, decompressed_data);
     // Compression ratio
     let compression_ratio = compressed_data_size as f64 / data_size as f64;
-    println!("Compression ratio was {x:0.3}%", x = compression_ratio * 100.0);
+    println!(
+        "Compression ratio was {x:0.3}%",
+        x = compression_ratio * 100.0
+    );
     if compression_ratio > 1.0 {
-        println!("Compressing this file was {x:0.3}% worse", x = (compression_ratio - 1.0) * 100.0);
+        println!(
+            "Compressing this file was {x:0.3}% worse",
+            x = (compression_ratio - 1.0) * 100.0
+        );
     } else {
-        println!("Compressing this file was {x:0.3}% better", x = (1.0 - compression_ratio) * 100.0);
+        println!(
+            "Compressing this file was {x:0.3}% better",
+            x = (1.0 - compression_ratio) * 100.0
+        );
     }
 }

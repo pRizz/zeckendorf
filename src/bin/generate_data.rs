@@ -1,8 +1,8 @@
+use rand::RngCore;
 use std::env;
 use std::fs;
 use std::io::Write;
 use std::path::Path;
-use rand::RngCore;
 
 // Example usages:
 // Generate a file with default name:
@@ -12,7 +12,7 @@ use rand::RngCore;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    
+
     if args.len() < 2 {
         eprintln!("Usage: {} <size_in_bytes> [filename]", args[0]);
         eprintln!("  size_in_bytes: The size of the file to generate in bytes");
@@ -24,7 +24,9 @@ fn main() {
     let size = match size_str.parse::<usize>() {
         Ok(s) => s,
         Err(_) => {
-            eprintln!("Error: '{size_str}' is not a valid size. Please provide a positive integer.");
+            eprintln!(
+                "Error: '{size_str}' is not a valid size. Please provide a positive integer."
+            );
             std::process::exit(1);
         }
     };
@@ -58,16 +60,24 @@ fn main() {
     let mut file = match fs::File::create(&file_path) {
         Ok(f) => f,
         Err(e) => {
-            eprintln!("Error: Failed to create file '{}': {e}", file_path.display());
+            eprintln!(
+                "Error: Failed to create file '{}': {e}",
+                file_path.display()
+            );
             std::process::exit(1);
         }
     };
 
     if let Err(e) = file.write_all(&data) {
-        eprintln!("Error: Failed to write data to file '{}': {e}", file_path.display());
+        eprintln!(
+            "Error: Failed to write data to file '{}': {e}",
+            file_path.display()
+        );
         std::process::exit(1);
     }
 
-    println!("Successfully generated file: {} ({size} bytes)", file_path.display());
+    println!(
+        "Successfully generated file: {} ({size} bytes)",
+        file_path.display()
+    );
 }
-
