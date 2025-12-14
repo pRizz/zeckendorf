@@ -48,6 +48,26 @@ static ZECKENDORF_BIGINT_MAP: LazyLock<Mutex<HashMap<BigUint, Vec<u64>>>> = Lazy
 /// fibonacci(x) is equal to 0 if x is 0; 1 if x is 1; else return fibonacci(x - 1) + fibonacci(x - 2)
 /// fi stands for Fibonacci Index
 /// This function fails for large numbers (e.g. 100_000) with stack overflow.
+///
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::memoized_fibonacci_recursive;
+/// // Base cases
+/// assert_eq!(memoized_fibonacci_recursive(0), 0);
+/// assert_eq!(memoized_fibonacci_recursive(1), 1);
+/// 
+/// // Small Fibonacci numbers
+/// assert_eq!(memoized_fibonacci_recursive(2), 1);
+/// assert_eq!(memoized_fibonacci_recursive(3), 2);
+/// assert_eq!(memoized_fibonacci_recursive(4), 3);
+/// assert_eq!(memoized_fibonacci_recursive(5), 5);
+/// assert_eq!(memoized_fibonacci_recursive(6), 8);
+/// assert_eq!(memoized_fibonacci_recursive(7), 13);
+/// assert_eq!(memoized_fibonacci_recursive(8), 21);
+/// assert_eq!(memoized_fibonacci_recursive(9), 34);
+/// assert_eq!(memoized_fibonacci_recursive(10), 55);
+/// ```
 pub fn memoized_fibonacci_recursive(fi: u64) -> u64 {
     let fibonacci_map = FIBONACCI_MAP.lock().expect("Failed to lock Fibonacci map");
     
@@ -75,6 +95,28 @@ pub fn memoized_fibonacci_recursive(fi: u64) -> u64 {
 /// fibonacci(x) is equal to 0 if x is 0; 1 if x is 1; else return fibonacci(x - 1) + fibonacci(x - 2)
 /// fi stands for Fibonacci Index
 /// This function fails for large numbers (e.g. 100_000) with stack overflow.
+///
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::memoized_fibonacci_bigint_recursive;
+/// # use num_bigint::BigUint;
+/// # use num_traits::{One, Zero};
+/// // Base cases
+/// assert_eq!(memoized_fibonacci_bigint_recursive(0), BigUint::zero());
+/// assert_eq!(memoized_fibonacci_bigint_recursive(1), BigUint::one());
+/// 
+/// // Small Fibonacci numbers
+/// assert_eq!(memoized_fibonacci_bigint_recursive(2), BigUint::from(1u64));
+/// assert_eq!(memoized_fibonacci_bigint_recursive(3), BigUint::from(2u64));
+/// assert_eq!(memoized_fibonacci_bigint_recursive(4), BigUint::from(3u64));
+/// assert_eq!(memoized_fibonacci_bigint_recursive(5), BigUint::from(5u64));
+/// assert_eq!(memoized_fibonacci_bigint_recursive(6), BigUint::from(8u64));
+/// assert_eq!(memoized_fibonacci_bigint_recursive(7), BigUint::from(13u64));
+/// assert_eq!(memoized_fibonacci_bigint_recursive(8), BigUint::from(21u64));
+/// assert_eq!(memoized_fibonacci_bigint_recursive(9), BigUint::from(34u64));
+/// assert_eq!(memoized_fibonacci_bigint_recursive(10), BigUint::from(55u64));
+/// ```
 pub fn memoized_fibonacci_bigint_recursive(fi: u64) -> BigUint {
     let fibonacci_bigint_map = FIBONACCI_BIGINT_MAP.lock().expect("Failed to lock Fibonacci BigInt map");
     
@@ -100,6 +142,31 @@ pub fn memoized_fibonacci_bigint_recursive(fi: u64) -> BigUint {
     result
 }
 
+/// fibonacci(x) is equal to 0 if x is 0; 1 if x is 1; else return fibonacci(x - 1) + fibonacci(x - 2)
+/// fi stands for Fibonacci Index
+/// This function fails for large numbers (e.g. 100_000) with stack overflow.
+///
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::fibonacci_bigint_iterative;
+/// # use num_bigint::BigUint;
+/// # use num_traits::{One, Zero};
+/// // Base cases
+/// assert_eq!(fibonacci_bigint_iterative(&BigUint::zero()), BigUint::zero());
+/// assert_eq!(fibonacci_bigint_iterative(&BigUint::one()), BigUint::one());
+/// 
+/// // Small Fibonacci numbers
+/// assert_eq!(fibonacci_bigint_iterative(&BigUint::from(2u64)), BigUint::from(1u64));
+/// assert_eq!(fibonacci_bigint_iterative(&BigUint::from(3u64)), BigUint::from(2u64));
+/// assert_eq!(fibonacci_bigint_iterative(&BigUint::from(4u64)), BigUint::from(3u64));
+/// assert_eq!(fibonacci_bigint_iterative(&BigUint::from(5u64)), BigUint::from(5u64));
+/// assert_eq!(fibonacci_bigint_iterative(&BigUint::from(6u64)), BigUint::from(8u64));
+/// assert_eq!(fibonacci_bigint_iterative(&BigUint::from(7u64)), BigUint::from(13u64));
+/// assert_eq!(fibonacci_bigint_iterative(&BigUint::from(8u64)), BigUint::from(21u64));
+/// assert_eq!(fibonacci_bigint_iterative(&BigUint::from(9u64)), BigUint::from(34u64));
+/// assert_eq!(fibonacci_bigint_iterative(&BigUint::from(10u64)), BigUint::from(55u64));
+/// ```
 pub fn fibonacci_bigint_iterative(fi: &BigUint) -> BigUint {
     let mut f0 = BigUint::zero();
     let mut f1 = BigUint::one();
@@ -116,28 +183,26 @@ pub fn fibonacci_bigint_iterative(fi: &BigUint) -> BigUint {
 /// A descending Zeckendorf list is a sorted list of unique Fibonacci indices, in descending order, that sum to the given number.
 /// A Fibonacci index is the index of the Fibonacci number in the Fibonacci sequence.
 /// fibonacci(fibonacci_index) = fibonacci_number
-/// Examples:
-///   fibonacci(0) = 0
-///   fibonacci(1) = 1
-///   fibonacci(2) = 1
-///   fibonacci(3) = 2
-///   fibonacci(4) = 3
-///   fibonacci(5) = 5
-///   fibonacci(6) = 8
-///   fibonacci(7) = 13
-///   fibonacci(8) = 21
-/// Example Zeckendorf list for the number 10: this is 8 + 2 so the fibonacci indices are 6 and 3.
-///   zeckendorf_list(0) = \[0\]
-///   zeckendorf_list(1) = \[2\]
-///   zeckendorf_list(2) = \[3\]
-///   zeckendorf_list(3) = \[4\]
-///   zeckendorf_list(4) = \[4, 2\]
-///   zeckendorf_list(5) = \[5\]
-///   zeckendorf_list(6) = \[5, 2\]
-///   zeckendorf_list(7) = \[5, 3\]
-///   zeckendorf_list(8) = \[6\]
-///   zeckendorf_list(9) = \[6, 2\]
-///   zeckendorf_list(10) = \[6, 3\]
+///
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::memoized_zeckendorf_list_descending_for_integer;
+/// // Base cases
+/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(0), vec![]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(1), vec![2]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(2), vec![3]);
+/// 
+/// // Small Zeckendorf numbers
+/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(3), vec![4]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(4), vec![4, 2]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(5), vec![5]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(6), vec![5, 2]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(7), vec![5, 3]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(8), vec![6]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(9), vec![6, 2]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(10), vec![6, 3]);
+/// ```
 pub fn memoized_zeckendorf_list_descending_for_integer(n: u64) -> Vec<u64> {
     if n == 0 {
         return vec![];
@@ -183,6 +248,31 @@ pub fn memoized_zeckendorf_list_descending_for_integer(n: u64) -> Vec<u64> {
     zeckendorf_list
 }
 
+/// A descending Zeckendorf list is a sorted list of unique Fibonacci indices, in descending order, that sum to the given number.
+/// A Fibonacci index is the index of the Fibonacci number in the Fibonacci sequence.
+/// fibonacci(fibonacci_index) = fibonacci_number
+///
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::memoized_zeckendorf_list_descending_for_bigint;
+/// # use num_bigint::BigUint;
+/// # use num_traits::{One, Zero};
+/// // Base cases
+/// assert_eq!(memoized_zeckendorf_list_descending_for_bigint(&BigUint::zero()), vec![]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_bigint(&BigUint::one()), vec![2]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_bigint(&BigUint::from(2u64)), vec![3]);
+/// 
+/// // Small Zeckendorf numbers
+/// assert_eq!(memoized_zeckendorf_list_descending_for_bigint(&BigUint::from(3u64)), vec![4]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_bigint(&BigUint::from(4u64)), vec![4, 2]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_bigint(&BigUint::from(5u64)), vec![5]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_bigint(&BigUint::from(6u64)), vec![5, 2]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_bigint(&BigUint::from(7u64)), vec![5, 3]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_bigint(&BigUint::from(8u64)), vec![6]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_bigint(&BigUint::from(9u64)), vec![6, 2]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_bigint(&BigUint::from(10u64)), vec![6, 3]);
+/// ```
 pub fn memoized_zeckendorf_list_descending_for_bigint(n: &BigUint) -> Vec<u64> {
     if n == &BigUint::zero() {
         return vec![];
@@ -233,34 +323,115 @@ pub const USE_BIT: u8 = 1;
 pub const SKIP_BIT: u8 = 0;
 
 /// Effective Fibonacci Index to Fibonacci Index: FI(efi) === efi + 2, where efi is the Effective Fibonacci Index
+///
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::efi_to_fi;
+/// assert_eq!(efi_to_fi(0), 2);
+/// assert_eq!(efi_to_fi(1), 3);
+/// assert_eq!(efi_to_fi(2), 4);
+/// ```
 pub fn efi_to_fi(efi: u64) -> u64 {
     return efi + 2
 }
 
+/// Effective Fibonacci Index to Fibonacci Index: FI(efi) === efi + 2, where efi is the Effective Fibonacci Index
+///
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::efi_to_fi_ref;
+/// assert_eq!(efi_to_fi_ref(&0), 2);
+/// assert_eq!(efi_to_fi_ref(&1), 3);
+/// assert_eq!(efi_to_fi_ref(&2), 4);
+/// ```
 pub fn efi_to_fi_ref(efi: &u64) -> u64 {
     return *efi + 2
 }
 
 /// Effective Fibonacci Index to Fibonacci Index: FI(efi) === efi + 2, where efi is the Effective Fibonacci Index
+///
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::efi_to_fi_bigint;
+/// # use num_bigint::BigUint;
+/// # use num_traits::{One, Zero};
+/// assert_eq!(efi_to_fi_bigint(BigUint::zero()), BigUint::from(2u64));
+/// assert_eq!(efi_to_fi_bigint(BigUint::one()), BigUint::from(3u64));
+/// assert_eq!(efi_to_fi_bigint(BigUint::from(2u64)), BigUint::from(4u64));
+/// ```
 pub fn efi_to_fi_bigint(efi: BigUint) -> BigUint {
     return efi + BigUint::from(2u64)
 }
 
 /// Fibonacci Index to Effective Fibonacci Index: EFI(fi) === fi - 2, where fi is the Fibonacci Index
+///
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::fi_to_efi;
+/// # use num_bigint::BigUint;
+/// # use num_traits::{One, Zero};
+/// assert_eq!(fi_to_efi(2), 0);
+/// assert_eq!(fi_to_efi(3), 1);
+/// assert_eq!(fi_to_efi(4), 2);
+/// ```
 pub fn fi_to_efi(fi: u64) -> u64 {
     return fi - 2
 }
 
+/// Fibonacci Index to Effective Fibonacci Index: EFI(fi) === fi - 2, where fi is the Fibonacci Index
+///
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::fi_to_efi_ref;
+/// assert_eq!(fi_to_efi_ref(&2), 0);
+/// assert_eq!(fi_to_efi_ref(&3), 1);
+/// assert_eq!(fi_to_efi_ref(&4), 2);
+/// ```
 pub fn fi_to_efi_ref(fi: &u64) -> u64 {
     return *fi - 2
 }
 
 /// Fibonacci Index to Effective Fibonacci Index: EFI(fi) === fi - 2, where fi is the Fibonacci Index
+///
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::fi_to_efi_bigint;
+/// # use num_bigint::BigUint;
+/// # use num_traits::{One, Zero};
+/// assert_eq!(fi_to_efi_bigint(BigUint::from(2u64)), BigUint::zero());
+/// assert_eq!(fi_to_efi_bigint(BigUint::from(3u64)), BigUint::one());
+/// assert_eq!(fi_to_efi_bigint(BigUint::from(4u64)), BigUint::from(2u64));
+/// ```
 pub fn fi_to_efi_bigint(fi: BigUint) -> BigUint {
     return fi - BigUint::from(2u64)
 }
 
-/// Effective Fibonacci function: EF(efi) === fibonacci(efi + 2) === fibonacci(fi), where efi is the Effective Fibonacci Index
+/// The memoized Fibonacci function taking an Effective Fibonacci Index as input.
+///
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::memoized_effective_fibonacci;
+/// # use num_bigint::BigUint;
+/// # use num_traits::{One, Zero};
+/// assert_eq!(memoized_effective_fibonacci(0), 1);
+/// assert_eq!(memoized_effective_fibonacci(1), 2);
+/// assert_eq!(memoized_effective_fibonacci(2), 3);
+/// assert_eq!(memoized_effective_fibonacci(3), 5);
+/// assert_eq!(memoized_effective_fibonacci(4), 8);
+/// assert_eq!(memoized_effective_fibonacci(5), 13);
+/// assert_eq!(memoized_effective_fibonacci(6), 21);
+/// assert_eq!(memoized_effective_fibonacci(7), 34);
+/// assert_eq!(memoized_effective_fibonacci(8), 55);
+/// assert_eq!(memoized_effective_fibonacci(9), 89);
+/// assert_eq!(memoized_effective_fibonacci(10), 144);
+/// ```
 pub fn memoized_effective_fibonacci(efi: u64) -> u64 {
     return memoized_fibonacci_recursive(efi_to_fi(efi))
 }
@@ -271,19 +442,53 @@ pub fn memoized_effective_fibonacci(efi: u64) -> u64 {
 /// and an FI of 1 is equivalent to an FI of 2 which has a Fibonacci value of 1
 /// so let's just use FI starting at 2, which is an EFI of 0.
 /// It does not matter if the list is ascending or descending; it retains the directionality of the original list.
+///
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::zl_to_ezl;
+/// assert_eq!(zl_to_ezl(&[2]), vec![0]);
+/// assert_eq!(zl_to_ezl(&[3]), vec![1]);
+/// assert_eq!(zl_to_ezl(&[4]), vec![2]);
+/// ```
 pub fn zl_to_ezl(zl: &[u64]) -> Vec<u64> {
     return zl.into_iter().map(fi_to_efi_ref).collect()
 }
 
 /// Converts an Effective Zeckendorf List to a Zeckendorf List.
 /// It does not matter if the list is ascending or descending; it retains the directionality of the original list.
+///
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::ezl_to_zl;
+/// assert_eq!(ezl_to_zl(&[0]), vec![2]);
+/// assert_eq!(ezl_to_zl(&[1]), vec![3]);
+/// assert_eq!(ezl_to_zl(&[2]), vec![4]);
+/// ```
 pub fn ezl_to_zl(ezl: &[u64]) -> Vec<u64> {
     return ezl.into_iter().map(efi_to_fi_ref).collect()
 }
 
 /// ezba is Effective Zeckendorf Bits Ascending ; ezld is Effective Zeckendorf List Descending
-/// The first bit represents whether the first effective fibonacci index is used. The first
-/// effective fibonacci index is always 0 and represents the fibonacci index 2 which has a value of 1.
+/// 
+/// The bits represent whether the corresponding effective Fibonacci index is used. I call these "use bits" and "skip bits" where a use bit is 1 and a skip bit is 0. This is by convention that I, Peter Ryszkiewicz decided, but it is theoretically possible to use skip bits and use bits flipped.
+/// 
+/// If we use a bit, we then skip the next bit, because it is impossible to use two consecutive bits, or Fibonacci numbers, due to the Zeckendorf principle.
+/// The first bit in the ezba represents whether the first effective Fibonacci index is used.
+/// The first effective fibonacci index is always 0 and represents the fibonacci index 2 which has a value of 1. We use effective Fibonacci indices because the first Fibonacci number, 0, is not useful for sums, and the second Fibonacci number, 1, is redundant because it is the same as the third Fibonacci number.
+/// 
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::ezba_from_ezld;
+/// assert_eq!(ezba_from_ezld(&[]), vec![0]);
+/// assert_eq!(ezba_from_ezld(&[0]), vec![1]); // 0th EFI is 2nd FI, which is 1
+/// assert_eq!(ezba_from_ezld(&[1]), vec![0, 1]); // 1st EFI is 3rd FI, which is 2
+/// assert_eq!(ezba_from_ezld(&[2]), vec![0, 0, 1]); // 2nd EFI is 4th FI, which is 3
+/// assert_eq!(ezba_from_ezld(&[2, 0]), vec![1, 1]); // 2nd EFI is 4th FI, which is 3 and 0th EFI is 2nd FI, which is 1, which sums to 4
+/// assert_eq!(ezba_from_ezld(&[3]), vec![0, 0, 0, 1]); // 3rd EFI is 5th FI, which is 5
+/// ```
 pub fn ezba_from_ezld(effective_zeckendorf_list_descending: &[u64]) -> Vec<u8> {
     if effective_zeckendorf_list_descending.is_empty() {
         return vec![SKIP_BIT];
@@ -296,8 +501,7 @@ pub fn ezba_from_ezld(effective_zeckendorf_list_descending: &[u64]) -> Vec<u8> {
     let mut current_ezla_index = 0;
 
     let mut current_efi = 0;
-    // EZLs are guaranteed to be non-empty
-    // FIXME: enforce this at the type level
+    // This EZLD is guaranteed to be non-empty because of the guard at the beginning of the function.
     let max_efi = effective_zeckendorf_list_descending[0];
 
     while current_efi <= max_efi {
@@ -320,7 +524,18 @@ pub fn ezba_from_ezld(effective_zeckendorf_list_descending: &[u64]) -> Vec<u8> {
 /// Bits are in ascending significance: bits\[0\] = LSB, bits\[7\] = MSB.
 /// Every 8 bits become a u8 in the output.
 /// The last byte is padded with 0s if the number of bits is not a multiple of 8.
-fn pack_ezba_bits_to_bytes(ezba: &[u8]) -> Vec<u8> {
+/// 
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::pack_ezba_bits_to_bytes;
+/// assert_eq!(pack_ezba_bits_to_bytes(&[0]), vec![0]);
+/// assert_eq!(pack_ezba_bits_to_bytes(&[1]), vec![1]);
+/// assert_eq!(pack_ezba_bits_to_bytes(&[0, 1]), vec![0b10]);
+/// assert_eq!(pack_ezba_bits_to_bytes(&[0, 0, 1]), vec![0b100]);
+/// assert_eq!(pack_ezba_bits_to_bytes(&[1, 1]), vec![0b11]);
+/// ```
+pub fn pack_ezba_bits_to_bytes(ezba: &[u8]) -> Vec<u8> {
     let mut out = Vec::with_capacity((ezba.len() + 7) / 8);
 
     for chunk in ezba.chunks(8) {
@@ -338,9 +553,22 @@ fn pack_ezba_bits_to_bytes(ezba: &[u8]) -> Vec<u8> {
     out
 }
 
-/// Compresses a vector of bytes using the Zeckendorf algorithm.
-/// Assume big endian bytes for now. Perhaps in the future, we can also interpret the input data as little endian to
+/// Compresses a slice of bytes using the Zeckendorf algorithm.
+/// Assume big endian bytes for now. 
+/// 
+/// TODO: Perhaps in the future, we can also interpret the input data as little endian to
 /// check if it results in a more compact representation.
+/// 
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::zeckendorf_compress;
+/// assert_eq!(zeckendorf_compress(&[0]), vec![0]);
+/// assert_eq!(zeckendorf_compress(&[1]), vec![1]);
+/// assert_eq!(zeckendorf_compress(&[12]), vec![0b111]);
+/// assert_eq!(zeckendorf_compress(&[255]), vec![33, 2]);
+/// assert_eq!(zeckendorf_compress(&[1, 0]), vec![34, 2]);
+/// ```
 pub fn zeckendorf_compress(data: &[u8]) -> Vec<u8> {
     let compressed_data: Vec<u8>;
     // Turn data into a bigint
@@ -360,7 +588,18 @@ pub fn zeckendorf_compress(data: &[u8]) -> Vec<u8> {
     return compressed_data
 }
 
-fn unpack_bytes_to_ezba_bits(bytes: &[u8]) -> Vec<u8> {
+/// Unpacks a vector of bytes into a vector of bits (0s and 1s) from an ezba (Effective Zeckendorf Bits Ascending).
+///
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::unpack_bytes_to_ezba_bits;
+/// assert_eq!(unpack_bytes_to_ezba_bits(&[0]), vec![0, 0, 0, 0, 0, 0, 0, 0]);
+/// assert_eq!(unpack_bytes_to_ezba_bits(&[1]), vec![1, 0, 0, 0, 0, 0, 0, 0]);
+/// assert_eq!(unpack_bytes_to_ezba_bits(&[0b111]), vec![1, 1, 1, 0, 0, 0, 0, 0]);
+/// assert_eq!(unpack_bytes_to_ezba_bits(&[1, 1]), vec![1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]);
+/// ```
+pub fn unpack_bytes_to_ezba_bits(bytes: &[u8]) -> Vec<u8> {
     let mut ezba_bits = Vec::new();
     for byte in bytes {
         for i in 0..8 {
@@ -372,7 +611,16 @@ fn unpack_bytes_to_ezba_bits(bytes: &[u8]) -> Vec<u8> {
 
 /// Converts a vector of bits (0s and 1s) from an ezba (Effective Zeckendorf Bits Ascending) into a vector of effective fibonacci indices,
 /// the Effective Zeckendorf List Ascending.
-fn ezba_to_ezla(ezba_bits: &[u8]) -> Vec<u64> {
+///
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::ezba_to_ezla;
+/// assert_eq!(ezba_to_ezla(&[0, 0, 0, 0, 0, 0, 0, 0]), vec![]);
+/// assert_eq!(ezba_to_ezla(&[1, 0, 0, 0, 0, 0, 0, 0]), vec![0]);
+/// assert_eq!(ezba_to_ezla(&[1, 1, 1, 0, 0, 0, 0, 0]), vec![0, 2, 4]);
+/// ```
+pub fn ezba_to_ezla(ezba_bits: &[u8]) -> Vec<u64> {
     let mut ezla = Vec::new();
     let mut current_efi = 0;
     for bit in ezba_bits {
@@ -389,12 +637,43 @@ fn ezba_to_ezla(ezba_bits: &[u8]) -> Vec<u64> {
 /// Converts a Zeckendorf List to a BigInt.
 /// The Zeckendorf List is a list of Fibonacci indices that sum to the given number.
 /// It does not matter if the ZL is ascending or descending. The sum operation is commutative.
-fn zl_to_bigint(zl: &[u64]) -> BigUint {
+///
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::zl_to_bigint;
+/// # use num_bigint::BigUint;
+/// # use num_traits::{One, Zero};
+/// assert_eq!(zl_to_bigint(&[]), BigUint::zero());
+/// assert_eq!(zl_to_bigint(&[0]), BigUint::zero());
+/// assert_eq!(zl_to_bigint(&[1]), BigUint::one());
+/// assert_eq!(zl_to_bigint(&[2]), BigUint::one());
+/// assert_eq!(zl_to_bigint(&[3]), BigUint::from(2u64));
+/// assert_eq!(zl_to_bigint(&[4]), BigUint::from(3u64));
+/// assert_eq!(zl_to_bigint(&[5]), BigUint::from(5u64));
+/// assert_eq!(zl_to_bigint(&[6]), BigUint::from(8u64));
+/// assert_eq!(zl_to_bigint(&[6, 2]), BigUint::from(9u64));
+/// assert_eq!(zl_to_bigint(&[6, 3]), BigUint::from(10u64));
+/// assert_eq!(zl_to_bigint(&[6, 4]), BigUint::from(11u64));
+/// assert_eq!(zl_to_bigint(&[6, 4, 2]), BigUint::from(12u64));
+/// ```
+pub fn zl_to_bigint(zl: &[u64]) -> BigUint {
     return zl.into_iter().map(|fi| memoized_fibonacci_bigint_recursive(*fi)).sum()
 }
 
 /// Decompresses a vector of bytes compressed using the Zeckendorf algorithm.
 /// Assume big endian bytes for now.
+///
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::zeckendorf_decompress;
+/// assert_eq!(zeckendorf_decompress(&[0]), vec![0]);
+/// assert_eq!(zeckendorf_decompress(&[1]), vec![1]);
+/// assert_eq!(zeckendorf_decompress(&[0b111]), vec![12]);
+/// assert_eq!(zeckendorf_decompress(&[33, 2]), vec![255]);
+/// assert_eq!(zeckendorf_decompress(&[34, 2]), vec![1, 0]);
+/// ```
 pub fn zeckendorf_decompress(compressed_data: &[u8]) -> Vec<u8> {
     // Unpack the compressed data into bits
     let compressed_data_as_bits = unpack_bytes_to_ezba_bits(compressed_data);
