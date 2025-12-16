@@ -3,7 +3,7 @@ use std::time::Instant;
 use zeckendorf_rs::*;
 
 // Example usages:
-// cargo run --bin zeckendorf-rs
+// cargo run --bin zeckendorf
 
 fn main() {
     let start_time = Instant::now();
@@ -59,7 +59,7 @@ fn main() {
     // Time taken: ~65.6s for iterative
     // let limit = 1_000_000u64;
 
-    let big_fibonacci = fibonacci_bigint_iterative(&BigUint::from(limit));
+    let big_fibonacci = memoized_fibonacci_bigint_iterative(limit);
     println!("The {limit}th Fibonacci number is: {}", big_fibonacci);
     // it takes 6 bits to represent the 10th Fibonacci number
     // it takes 69424 bits to represent the 100_000th Fibonacci number
@@ -86,9 +86,9 @@ fn test_zeckendorf_compress_and_decompress_number(number: u64) {
     println!("Number to compress: {:?}", number);
     let data = BigUint::from(number).to_bytes_be();
     println!("Number as big endian bytes: {:?}", data);
-    let compressed_data = zeckendorf_compress(&data);
+    let compressed_data = zeckendorf_compress_be(&data);
     println!("Compressed data: {:?}", compressed_data);
-    let decompressed_data = zeckendorf_decompress(&compressed_data);
+    let decompressed_data = zeckendorf_decompress_be(&compressed_data);
     println!("Decompressed data: {:?}", decompressed_data);
     let decompressed_number = BigUint::from_bytes_be(&decompressed_data);
     println!("Decompressed number: {:?}", decompressed_number);
@@ -104,12 +104,12 @@ fn test_zeckendorf_compress_and_decompress_file(filename: &str) {
     // Data size
     let data_size = data.len();
     println!("Data bytes size: {:?}", data_size);
-    let compressed_data = zeckendorf_compress(&data);
+    let compressed_data = zeckendorf_compress_be(&data);
     // println!("Compressed data: {:?}", compressed_data);
     // Compressed data size
     let compressed_data_size = compressed_data.len();
     println!("Compressed data size: {:?}", compressed_data_size);
-    let decompressed_data = zeckendorf_decompress(&compressed_data);
+    let decompressed_data = zeckendorf_decompress_be(&compressed_data);
     // println!("Decompressed data: {:?}", decompressed_data);
     // Decompressed data size
     let decompressed_data_size = decompressed_data.len();

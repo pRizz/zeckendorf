@@ -1,5 +1,5 @@
 [package]
-name = "zeckendorf-rs"
+name = "zeckendorf"
 version = "0.1.0"
 edition = "2024"
 
@@ -7,11 +7,21 @@ edition = "2024"
 name = "zeckendorf_rs"
 path = "src/lib.rs"
 
+[features]
+default = []
+plotting = ["dep:plotters"]
+
 [dependencies]
 num-bigint = "0.4.6"
 num-traits = "0.2.19"
+plotters = { version = "0.3.7", optional = true }
 rand = "0.9.2"
 
 [[bin]]
 name = "generate_data"
 path = "src/bin/generate_data.rs"
+
+[[bin]]
+name = "plot"
+path = "src/bin/plot.rs"
+required-features = ["plotting"]

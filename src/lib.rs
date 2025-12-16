@@ -156,28 +156,38 @@ pub fn memoized_fibonacci_bigint_recursive(fi: u64) -> BigUint {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::fibonacci_bigint_iterative;
+/// # use zeckendorf_rs::memoized_fibonacci_bigint_iterative;
 /// # use num_bigint::BigUint;
 /// # use num_traits::{One, Zero};
 /// // Base cases
-/// assert_eq!(fibonacci_bigint_iterative(&BigUint::zero()), BigUint::zero());
-/// assert_eq!(fibonacci_bigint_iterative(&BigUint::one()), BigUint::one());
+/// assert_eq!(memoized_fibonacci_bigint_iterative(0u64), BigUint::zero());
+/// assert_eq!(memoized_fibonacci_bigint_iterative(1u64), BigUint::one());
 ///
 /// // Small Fibonacci numbers
-/// assert_eq!(fibonacci_bigint_iterative(&BigUint::from(2u64)), BigUint::from(1u64));
-/// assert_eq!(fibonacci_bigint_iterative(&BigUint::from(3u64)), BigUint::from(2u64));
-/// assert_eq!(fibonacci_bigint_iterative(&BigUint::from(4u64)), BigUint::from(3u64));
-/// assert_eq!(fibonacci_bigint_iterative(&BigUint::from(5u64)), BigUint::from(5u64));
-/// assert_eq!(fibonacci_bigint_iterative(&BigUint::from(6u64)), BigUint::from(8u64));
-/// assert_eq!(fibonacci_bigint_iterative(&BigUint::from(7u64)), BigUint::from(13u64));
-/// assert_eq!(fibonacci_bigint_iterative(&BigUint::from(8u64)), BigUint::from(21u64));
-/// assert_eq!(fibonacci_bigint_iterative(&BigUint::from(9u64)), BigUint::from(34u64));
-/// assert_eq!(fibonacci_bigint_iterative(&BigUint::from(10u64)), BigUint::from(55u64));
+/// assert_eq!(memoized_fibonacci_bigint_iterative(2u64), BigUint::from(1u64));
+/// assert_eq!(memoized_fibonacci_bigint_iterative(3u64), BigUint::from(2u64));
+/// assert_eq!(memoized_fibonacci_bigint_iterative(4u64), BigUint::from(3u64));
+/// assert_eq!(memoized_fibonacci_bigint_iterative(5u64), BigUint::from(5u64));
+/// assert_eq!(memoized_fibonacci_bigint_iterative(6u64), BigUint::from(8u64));
+/// assert_eq!(memoized_fibonacci_bigint_iterative(7u64), BigUint::from(13u64));
+/// assert_eq!(memoized_fibonacci_bigint_iterative(8u64), BigUint::from(21u64));
+/// assert_eq!(memoized_fibonacci_bigint_iterative(9u64), BigUint::from(34u64));
+/// assert_eq!(memoized_fibonacci_bigint_iterative(10u64), BigUint::from(55u64));
 /// ```
-pub fn fibonacci_bigint_iterative(fi: &BigUint) -> BigUint {
+pub fn memoized_fibonacci_bigint_iterative(fi: u64) -> BigUint {
+    let fibonacci_bigint_map = FIBONACCI_BIGINT_MAP
+        .lock()
+        .expect("Failed to lock Fibonacci BigInt map");
+
+    let maybe_cached = fibonacci_bigint_map.get(&fi);
+    if let Some(cached) = maybe_cached {
+        return cached.clone();
+    }
+    drop(fibonacci_bigint_map);
+
     let mut f0 = BigUint::zero();
     let mut f1 = BigUint::one();
-    let mut n = fi.clone();
+    let mut n = BigUint::from(fi);
     while n > BigUint::zero() {
         let f2 = f0 + &f1;
         f0 = f1;
@@ -543,8 +553,10 @@ pub fn ezba_from_ezld(effective_zeckendorf_list_descending: &[u64]) -> Vec<u8> {
 }
 
 /// Packs a slice of bits (0s and 1s) from an ezba (Effective Zeckendorf Bits Ascending) into bytes.
+/// 
+/// The output bytes are in little endian order, so the first byte is the least significant byte and the last byte is the most significant byte.
 ///
-/// Bits are in ascending significance: bits\[0\] = LSB, bits\[7\] = MSB.
+/// Input bits and output bits are in ascending significance: bits\[0\] = LSB, bits\[7\] = MSB.
 /// Every 8 bits become a u8 in the output.
 /// The last byte is padded with 0s if the number of bits is not a multiple of 8.
 ///
@@ -577,7 +589,7 @@ pub fn pack_ezba_bits_to_bytes(ezba: &[u8]) -> Vec<u8> {
 }
 
 /// Compresses a slice of bytes using the Zeckendorf algorithm.
-/// Assume big endian bytes for now.
+/// Assumes the input data is interpreted as a big endian integer.
 ///
 /// TODO: Perhaps in the future, we can also interpret the input data as little endian to
 /// check if it results in a more compact representation.
@@ -585,14 +597,16 @@ pub fn pack_ezba_bits_to_bytes(ezba: &[u8]) -> Vec<u8> {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::zeckendorf_compress;
-/// assert_eq!(zeckendorf_compress(&[0]), vec![0]);
-/// assert_eq!(zeckendorf_compress(&[1]), vec![1]);
-/// assert_eq!(zeckendorf_compress(&[12]), vec![0b111]);
-/// assert_eq!(zeckendorf_compress(&[255]), vec![33, 2]);
-/// assert_eq!(zeckendorf_compress(&[1, 0]), vec![34, 2]);
+/// # use zeckendorf_rs::zeckendorf_compress_be;
+/// assert_eq!(zeckendorf_compress_be(&[0]), vec![0]);
+/// assert_eq!(zeckendorf_compress_be(&[1]), vec![1]);
+/// assert_eq!(zeckendorf_compress_be(&[12]), vec![0b111]);
+/// assert_eq!(zeckendorf_compress_be(&[54]), vec![30]);
+/// assert_eq!(zeckendorf_compress_be(&[55]), vec![0, 1]); // 55 is the 10 indexed Fibonacci number, which is the 8 indexed effective Fibonacci number, and therefore is the first number needing two bytes to contain these 8 bits, because there is 1 "use bit" and 7 "skip bits" in the effective zeckendorf bits ascending.
+/// assert_eq!(zeckendorf_compress_be(&[255]), vec![33, 2]);
+/// assert_eq!(zeckendorf_compress_be(&[1, 0]), vec![34, 2]);
 /// ```
-pub fn zeckendorf_compress(data: &[u8]) -> Vec<u8> {
+pub fn zeckendorf_compress_be(data: &[u8]) -> Vec<u8> {
     let compressed_data: Vec<u8>;
     // Turn data into a bigint
     let data_as_bigint = BigUint::from_bytes_be(data);
@@ -687,20 +701,20 @@ pub fn zl_to_bigint(zl: &[u64]) -> BigUint {
         .sum();
 }
 
-/// Decompresses a vector of bytes compressed using the Zeckendorf algorithm.
+/// Decompresses a vector of bytes compressed using the Zeckendorf algorithm, assuming the original data was compressed using the big endian bytes interpretation.
 /// Assume big endian bytes for now.
 ///
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::zeckendorf_decompress;
-/// assert_eq!(zeckendorf_decompress(&[0]), vec![0]);
-/// assert_eq!(zeckendorf_decompress(&[1]), vec![1]);
-/// assert_eq!(zeckendorf_decompress(&[0b111]), vec![12]);
-/// assert_eq!(zeckendorf_decompress(&[33, 2]), vec![255]);
-/// assert_eq!(zeckendorf_decompress(&[34, 2]), vec![1, 0]);
+/// # use zeckendorf_rs::zeckendorf_decompress_be;
+/// assert_eq!(zeckendorf_decompress_be(&[0]), vec![0]);
+/// assert_eq!(zeckendorf_decompress_be(&[1]), vec![1]);
+/// assert_eq!(zeckendorf_decompress_be(&[0b111]), vec![12]);
+/// assert_eq!(zeckendorf_decompress_be(&[33, 2]), vec![255]);
+/// assert_eq!(zeckendorf_decompress_be(&[34, 2]), vec![1, 0]);
 /// ```
-pub fn zeckendorf_decompress(compressed_data: &[u8]) -> Vec<u8> {
+pub fn zeckendorf_decompress_be(compressed_data: &[u8]) -> Vec<u8> {
     // Unpack the compressed data into bits
     let compressed_data_as_bits = unpack_bytes_to_ezba_bits(compressed_data);
     // println!("Compressed data as bits: {:?}", compressed_data_as_bits);
