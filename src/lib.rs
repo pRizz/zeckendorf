@@ -589,10 +589,10 @@ pub fn pack_ezba_bits_to_bytes(ezba: &[u8]) -> Vec<u8> {
 }
 
 /// Compresses a slice of bytes using the Zeckendorf algorithm.
-/// Assumes the input data is interpreted as a big endian integer.
-///
-/// TODO: Perhaps in the future, we can also interpret the input data as little endian to
-/// check if it results in a more compact representation.
+/// 
+/// Assumes the input data is interpreted as a big endian integer. The output data is in little endian order, so the first bit and byte is the least significant bit and byte and the last bit and byte is the most significant bit and byte.
+/// 
+/// TODO: Technically, the way the input data is interpreted is arbitrary; we could interpret it as little endian which could result in a more compact representation. We could go even further and interpret the data at different byte or word boundaries to see if it results in a more compact representation, and signify to the caller which interpretation was used. We probably need a better understanding of random distributions of data to determine what is the optimal interpretation. More investigation is needed here.
 ///
 /// # Examples
 ///
@@ -701,8 +701,9 @@ pub fn zl_to_bigint(zl: &[u64]) -> BigUint {
         .sum();
 }
 
-/// Decompresses a vector of bytes compressed using the Zeckendorf algorithm, assuming the original data was compressed using the big endian bytes interpretation.
-/// Assume big endian bytes for now.
+/// Decompresses a slice of bytes compressed using the Zeckendorf algorithm, assuming the original data was compressed using the big endian bytes interpretation.
+/// 
+/// Assume the original input data was interpreted as a big endian integer, for now. See the TODO in the zeckendorf_compress_be function for more information.
 ///
 /// # Examples
 ///
