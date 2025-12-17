@@ -8,7 +8,10 @@
 //! 
 //! The meaning of "compression up to input" in the csv header is such that the statistics are gathered for all inputs up to and including the given limit. For example, "compression up to 100" means that the corresponding statistics in that row in the csv are gathered for all inputs from 1 to 100.
 //!
-//! Run with: cargo run --bin generate_statistics
+//! Run with: cargo run --bin generate_statistics --features plotting
+
+#[cfg(feature = "plotting")]
+use plotters::prelude::*;
 
 use num_bigint::BigUint;
 use std::{cmp::Ordering, fs, path::Path, time::Instant};
@@ -23,7 +26,7 @@ const INPUT_LIMITS: [u64; 5] = [10, 100, 1_000, 10_000, 100_000];
 // Time taken to generate statistics for limits [10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000]: 2582.702786792s or ~43 minutes
 // const INPUT_LIMITS: [u64; 8] = [10, 100, 1_000, 10_000, 100_000, 1_000_000, 10_000_000, 100_000_000];
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct CompressionStats {
     limit: u64,
     favorable_pct: f64,
@@ -42,8 +45,10 @@ fn main() {
     output.push_str(csv_header);
     println!("{}", csv_header);
 
+    let mut all_stats = Vec::new();
     for &limit in INPUT_LIMITS.iter() {
         let stats = gather_stats(limit);
+        all_stats.push(stats.clone());
         // println!("Statistics for limit {:?}: {:?}", limit, stats);
         let line = format!(
             "{},{:.6},{:.6},{:.6},{:.6},{},{:.6},{:.6}",
@@ -68,6 +73,15 @@ fn main() {
     let statistics_file_name = format!("statistics_up_to_{}_inputs.csv", INPUT_LIMITS.last().unwrap());
     println!("Writing statistics to '{}'", statistics_directory.join(&statistics_file_name).display());
     fs::write(statistics_directory.join(&statistics_file_name), output).expect("Failed to write statistics to file");
+    
+    #[cfg(feature = "plotting")]
+    {
+        let plot_filename = format!("plots/compression_statistics_up_to_{}_inputs.png", INPUT_LIMITS.last().unwrap());
+        if let Err(e) = plot_statistics(&plot_filename, &all_stats) {
+            eprintln!("Error: Failed to plot statistics: {e}");
+        }
+    }
+    
     let end_time = Instant::now();
     println!("Time taken to generate statistics for limits {:?}: {:?}", INPUT_LIMITS, end_time.duration_since(start_time));
 }
@@ -213,4 +227,150 @@ fn median(values: &mut [f64]) -> Option<f64> {
         };
         Some(*value)
     }
+}
+
+#[cfg(feature = "plotting")]
+fn plot_statistics(
+    filename: &str,
+    stats: &[CompressionStats],
+) -> Result<(), Box<dyn std::error::Error>> {
+    let start_time = Instant::now();
+    println!("Plotting compression statistics");
+    
+    // Ensure plots directory exists
+    std::fs::create_dir_all("plots").expect("Failed to create plots directory");
+    
+    let root = BitMapBackend::new(filename, (1920, 1080)).into_drawing_area();
+    root.fill(&WHITE)?;
+
+    // Find the min and max values for y-axis
+    let mut min_y = f64::INFINITY;
+    let mut max_y = f64::NEG_INFINITY;
+    
+    for stat in stats {
+        min_y = min_y.min(stat.favorable_pct)
+            .min(stat.average_pct)
+            .min(stat.median_pct)
+            .min(stat.average_favorable_pct)
+            .min(stat.median_favorable_pct);
+        max_y = max_y.max(stat.favorable_pct)
+            .max(stat.average_pct)
+            .max(stat.median_pct)
+            .max(stat.average_favorable_pct)
+            .max(stat.median_favorable_pct);
+    }
+    
+    // Add some padding
+    let y_range = max_y - min_y;
+    let y_min = min_y - y_range * 0.1;
+    let y_max = max_y + y_range * 0.1;
+    
+    // Get x-axis range (logarithmic)
+    let x_min = INPUT_LIMITS.first().copied().unwrap_or(1) as f64;
+    let x_max = INPUT_LIMITS.last().copied().unwrap_or(1) as f64;
+
+    let mut chart = ChartBuilder::on(&root)
+        .caption(
+            "Zeckendorf Compression Statistics",
+            ("sans-serif", 50).into_font(),
+        )
+        .margin(5)
+        .x_label_area_size(60)
+        .y_label_area_size(120)
+        .build_cartesian_2d(
+            (x_min..x_max).log_scale(),
+            y_min..y_max,
+        )?;
+
+    chart.configure_mesh().draw()?;
+
+    // Prepare data for each series
+    let favorable_pct_data: Vec<(f64, f64)> = stats
+        .iter()
+        .map(|s| (s.limit as f64, s.favorable_pct))
+        .collect();
+    
+    let average_pct_data: Vec<(f64, f64)> = stats
+        .iter()
+        .map(|s| (s.limit as f64, s.average_pct))
+        .collect();
+    
+    let median_pct_data: Vec<(f64, f64)> = stats
+        .iter()
+        .map(|s| (s.limit as f64, s.median_pct))
+        .collect();
+    
+    let average_favorable_pct_data: Vec<(f64, f64)> = stats
+        .iter()
+        .map(|s| (s.limit as f64, s.average_favorable_pct))
+        .collect();
+    
+    let median_favorable_pct_data: Vec<(f64, f64)> = stats
+        .iter()
+        .map(|s| (s.limit as f64, s.median_favorable_pct))
+        .collect();
+
+    // Draw each series with different colors
+    chart
+        .draw_series(LineSeries::new(favorable_pct_data.iter().copied(), &RED))?
+        .label("Chance of compression being favorable (%)")
+        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+    
+    chart
+        .draw_series(LineSeries::new(average_pct_data.iter().copied(), &BLUE))?
+        .label("Average compression amount (%)")
+        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+    
+    chart
+        .draw_series(LineSeries::new(median_pct_data.iter().copied(), &GREEN))?
+        .label("Median compression amount (%)")
+        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &GREEN));
+    
+    chart
+        .draw_series(LineSeries::new(average_favorable_pct_data.iter().copied(), &MAGENTA))?
+        .label("Average favorable compression amount (%)")
+        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &MAGENTA));
+    
+    chart
+        .draw_series(LineSeries::new(median_favorable_pct_data.iter().copied(), &CYAN))?
+        .label("Median favorable compression amount (%)")
+        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &CYAN));
+
+    // Draw dots at each point
+    chart.draw_series(
+        favorable_pct_data.iter()
+            .map(|point| Circle::new(*point, 3, RED.filled())),
+    )?;
+    
+    chart.draw_series(
+        average_pct_data.iter()
+            .map(|point| Circle::new(*point, 3, BLUE.filled())),
+    )?;
+    
+    chart.draw_series(
+        median_pct_data.iter()
+            .map(|point| Circle::new(*point, 3, GREEN.filled())),
+    )?;
+    
+    chart.draw_series(
+        average_favorable_pct_data.iter()
+            .map(|point| Circle::new(*point, 3, MAGENTA.filled())),
+    )?;
+    
+    chart.draw_series(
+        median_favorable_pct_data.iter()
+            .map(|point| Circle::new(*point, 3, CYAN.filled())),
+    )?;
+
+    chart
+        .configure_series_labels()
+        .background_style(&WHITE.mix(0.8))
+        .border_style(&BLACK)
+        .draw()?;
+
+    root.present()?;
+    println!("Compression statistics plot saved to {}", filename);
+    let end_time = Instant::now();
+    println!("Time taken to plot compression statistics: {:?}", end_time.duration_since(start_time));
+    Ok(())
 }

@@ -29,3 +29,4 @@ required-features = ["plotting"]
 [[bin]]
 name = "generate_statistics"
 path = "src/bin/generate_statistics.rs"
+required-features = ["plotting"]
