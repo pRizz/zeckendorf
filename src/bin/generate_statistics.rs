@@ -1,0 +1,216 @@
+//! Binary for generating statistics about the compression ratio of the Zeckendorf representation
+//! 
+//! The statistics are saved in the statistics_history directory in a file named statistics_up_to_<limit>_inputs.csv
+//! 
+//! The purpose of this binary is to determine the average compression ratio, median compression ratio, best compression ratio, and chance of compression being favorable for a given limit. As we compress to higher limits, the statistics should become more stable.
+//! 
+//! The Zeckendorf compression oscillates between being favorable and unfavorable, as the data changes, and the statistics are used to determine the average and median compression ratios, and the chance of compression being favorable. See this crate's `plot` binary for more details about the oscillation and to visualize the compression ratios.
+//! 
+//! The meaning of "compression up to input" in the csv header is such that the statistics are gathered for all inputs up to and including the given limit. For example, "compression up to 100" means that the corresponding statistics in that row in the csv are gathered for all inputs from 1 to 100.
+//!
+//! Run with: cargo run --bin generate_statistics
+
+use num_bigint::BigUint;
+use std::{cmp::Ordering, fs, path::Path, time::Instant};
+use zeckendorf_rs::zeckendorf_compress_be;
+
+// Time taken to generate statistics for limits [10, 100, 1000, 10000, 100000]: 1.577503667s
+const INPUT_LIMITS: [u64; 5] = [10, 100, 1_000, 10_000, 100_000];
+
+// Time taken to generate statistics for limits [10, 100, 1000, 10000, 100000, 1000000]: 18.625144958s
+// const INPUT_LIMITS: [u64; 6] = [10, 100, 1_000, 10_000, 100_000, 1_000_000];
+
+// Time taken to generate statistics for limits [10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000]: 2582.702786792s or ~43 minutes
+// const INPUT_LIMITS: [u64; 8] = [10, 100, 1_000, 10_000, 100_000, 1_000_000, 10_000_000, 100_000_000];
+
+#[derive(Debug)]
+struct CompressionStats {
+    limit: u64,
+    favorable_pct: f64,
+    average_pct: f64,
+    median_pct: f64,
+    best_compressed_input: Option<u64>,
+    best_compression_amount: f64,
+    average_favorable_pct: f64,
+    median_favorable_pct: f64,
+}
+
+fn main() {
+    let start_time = Instant::now();
+    let mut output = String::new();
+    let csv_header = "compression up to input,chance of compression being favorable,average compression amount in percent,median compression amount in percent,best compression amount in percent,best compression input,average favorable compression amount in percent,median favorable compression amount in percent\n";
+    output.push_str(csv_header);
+    println!("{}", csv_header);
+
+    for &limit in INPUT_LIMITS.iter() {
+        let stats = gather_stats(limit);
+        // println!("Statistics for limit {:?}: {:?}", limit, stats);
+        let line = format!(
+            "{},{:.6},{:.6},{:.6},{:.6},{},{:.6},{:.6}",
+            stats.limit,
+            stats.favorable_pct,
+            stats.average_pct,
+            stats.median_pct,
+            stats.best_compression_amount,
+            stats.best_compressed_input.map(|input| input.to_string()).unwrap_or_else(|| "".to_string()),
+            stats.average_favorable_pct,
+            stats.median_favorable_pct
+        );
+        println!("{}", line);
+        output.push_str(&line);
+        output.push_str("\n");
+    }
+    let statistics_directory = Path::new("statistics_history");
+    if let Err(e) = fs::create_dir_all(statistics_directory) {
+        eprintln!("Error: Failed to create directory 'statistics_history': {e}");
+        std::process::exit(1);
+    }
+    let statistics_file_name = format!("statistics_up_to_{}_inputs.csv", INPUT_LIMITS.last().unwrap());
+    println!("Writing statistics to '{}'", statistics_directory.join(&statistics_file_name).display());
+    fs::write(statistics_directory.join(&statistics_file_name), output).expect("Failed to write statistics to file");
+    let end_time = Instant::now();
+    println!("Time taken to generate statistics for limits {:?}: {:?}", INPUT_LIMITS, end_time.duration_since(start_time));
+}
+
+fn gather_stats(limit: u64) -> CompressionStats {
+    let start_time = Instant::now();
+    let mut compression_amounts = Vec::new();
+    let mut maybe_best_value_amount_pair: Option<(u64, f64)> = None;
+
+    for value_to_compress in 1..=limit {
+        if let Some(compression_amount) = compression_amount_percent(value_to_compress) {
+            compression_amounts.push(compression_amount);
+            maybe_best_value_amount_pair = match maybe_best_value_amount_pair {
+                Some((current_best_compressed_value, current_best_compression_amount)) => {
+                    // If the new amount is better than the current best, update the best
+                    if compression_amount > current_best_compression_amount {
+                        Some((value_to_compress, compression_amount))
+                    } 
+                    // Otherwise, keep the current best
+                    else {
+                        Some((current_best_compressed_value, current_best_compression_amount))
+                    }
+                }
+                None => Some((value_to_compress, compression_amount)),
+            };
+        }
+    }
+
+    if compression_amounts.is_empty() {
+        return CompressionStats {
+            limit,
+            favorable_pct: 0.0,
+            average_pct: 0.0,
+            median_pct: 0.0,
+            best_compression_amount: 0.0,
+            best_compressed_input: None,
+            average_favorable_pct: 0.0,
+            median_favorable_pct: 0.0,
+        };
+    }
+
+    let total = compression_amounts.len() as f64;
+    let favorable_count = compression_amounts
+        .iter()
+        .filter(|amount| **amount > 0.0)
+        .count() as f64;
+
+    let favorable_pct = (favorable_count / total) * 100.0;
+    let average_pct = compression_amounts.iter().sum::<f64>() / total;
+
+    let maybe_median = median(&mut compression_amounts);
+    let median_pct = if let Some(value) = maybe_median { value } else { 0.0 };
+
+    let mut favorable_amounts: Vec<f64> = compression_amounts
+        .iter()
+        .copied()
+        .filter(|amount| *amount > 0.0)
+        .collect();
+
+    let average_favorable_pct = if favorable_amounts.is_empty() {
+        0.0
+    } else {
+        favorable_amounts.iter().sum::<f64>() / favorable_amounts.len() as f64
+    };
+
+    let maybe_favorable_median = median(&mut favorable_amounts);
+    let median_favorable_pct = if let Some(value) = maybe_favorable_median {
+        value
+    } else {
+        0.0
+    };
+
+    let (best_compressed_input, best_compression_amount) = if let Some((best_value_input, best_compression_amount)) = maybe_best_value_amount_pair {
+        (Some(best_value_input), best_compression_amount)
+    } else {
+        (None, 0.0)
+    };
+
+    let end_time = Instant::now();
+    println!("Time taken to gather statistics for limit {:?}: {:?}", limit, end_time.duration_since(start_time));
+
+    CompressionStats {
+        limit,
+        favorable_pct,
+        average_pct,
+        median_pct,
+        best_compressed_input,
+        best_compression_amount,
+        average_favorable_pct,
+        median_favorable_pct,
+    }
+}
+
+/// Calculates the compression amount in percent for a given input value, converting the input to a bigint as big endian bytes and then compressing it.
+/// 
+/// Returns:
+/// - Some(f64) if the compression is possible. The compression amount in percent as a positive number, or a negative number if the compression is unfavorable (increases the size of the data).
+/// - None if the compression is not possible (e.g. if the input is 0)
+fn compression_amount_percent(value: u64) -> Option<f64> {
+    let original_number = BigUint::from(value);
+    let original_bit_size = original_number.bits();
+
+    if original_bit_size == 0 {
+        return None;
+    }
+
+    let data_bytes = original_number.to_bytes_be();
+    let compressed_as_zeckendorf_data = zeckendorf_compress_be(&data_bytes);
+    let compressed_as_bigint = BigUint::from_bytes_le(&compressed_as_zeckendorf_data);
+    let compressed_bit_size = compressed_as_bigint.bits();
+
+    let ratio = compressed_bit_size as f64 / original_bit_size as f64;
+    Some((1.0 - ratio) * 100.0)
+}
+
+fn median(values: &mut [f64]) -> Option<f64> {
+    if values.is_empty() {
+        return None;
+    }
+
+    values.sort_by(|a, b| match a.partial_cmp(b) {
+        Some(order) => order,
+        None => Ordering::Equal,
+    });
+
+    let len = values.len();
+    let mid = len / 2;
+
+    if len % 2 == 0 {
+        let maybe_lower = values.get(mid.saturating_sub(1));
+        let maybe_upper = values.get(mid);
+        let Some(lower) = maybe_lower else {
+            return None;
+        };
+        let Some(upper) = maybe_upper else {
+            return None;
+        };
+        Some((lower + upper) / 2.0)
+    } else {
+        let maybe_value = values.get(mid);
+        let Some(value) = maybe_value else {
+            return None;
+        };
+        Some(*value)
+    }
+}

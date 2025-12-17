@@ -25,3 +25,7 @@ path = "src/bin/generate_data.rs"
 name = "plot"
 path = "src/bin/plot.rs"
 required-features = ["plotting"]
+
+[[bin]]
+name = "generate_statistics"
+path = "src/bin/generate_statistics.rs"
