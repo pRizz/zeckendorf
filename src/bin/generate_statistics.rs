@@ -1,11 +1,11 @@
 //! Binary for generating statistics about the compression ratio of the Zeckendorf representation
-//! 
+//!
 //! The statistics are saved in the statistics_history directory in a file named statistics_up_to_<limit>_inputs.csv
-//! 
+//!
 //! The purpose of this binary is to determine the average compression ratio, median compression ratio, best compression ratio, and chance of compression being favorable for a given limit. As we compress to higher limits, the statistics should become more stable.
-//! 
+//!
 //! The Zeckendorf compression oscillates between being favorable and unfavorable, as the data changes, and the statistics are used to determine the average and median compression ratios, and the chance of compression being favorable. See this crate's `plot` binary for more details about the oscillation and to visualize the compression ratios.
-//! 
+//!
 //! The meaning of "compression up to input" in the csv header is such that the statistics are gathered for all inputs up to and including the given limit. For example, "compression up to 100" means that the corresponding statistics in that row in the csv are gathered for all inputs from 1 to 100.
 //!
 //! Run with: cargo run --bin generate_statistics --features plotting
@@ -57,7 +57,10 @@ fn main() {
             stats.average_pct,
             stats.median_pct,
             stats.best_compression_amount,
-            stats.best_compressed_input.map(|input| input.to_string()).unwrap_or_else(|| "".to_string()),
+            stats
+                .best_compressed_input
+                .map(|input| input.to_string())
+                .unwrap_or_else(|| "".to_string()),
             stats.average_favorable_pct,
             stats.median_favorable_pct
         );
@@ -70,20 +73,34 @@ fn main() {
         eprintln!("Error: Failed to create directory 'statistics_history': {e}");
         std::process::exit(1);
     }
-    let statistics_file_name = format!("statistics_up_to_{}_inputs.csv", INPUT_LIMITS.last().unwrap());
-    println!("Writing statistics to '{}'", statistics_directory.join(&statistics_file_name).display());
-    fs::write(statistics_directory.join(&statistics_file_name), output).expect("Failed to write statistics to file");
-    
+    let statistics_file_name = format!(
+        "statistics_up_to_{}_inputs.csv",
+        INPUT_LIMITS.last().unwrap()
+    );
+    println!(
+        "Writing statistics to '{}'",
+        statistics_directory.join(&statistics_file_name).display()
+    );
+    fs::write(statistics_directory.join(&statistics_file_name), output)
+        .expect("Failed to write statistics to file");
+
     #[cfg(feature = "plotting")]
     {
-        let plot_filename = format!("plots/compression_statistics_up_to_{}_inputs.png", INPUT_LIMITS.last().unwrap());
+        let plot_filename = format!(
+            "plots/compression_statistics_up_to_{}_inputs.png",
+            INPUT_LIMITS.last().unwrap()
+        );
         if let Err(e) = plot_statistics(&plot_filename, &all_stats) {
             eprintln!("Error: Failed to plot statistics: {e}");
         }
     }
-    
+
     let end_time = Instant::now();
-    println!("Time taken to generate statistics for limits {:?}: {:?}", INPUT_LIMITS, end_time.duration_since(start_time));
+    println!(
+        "Time taken to generate statistics for limits {:?}: {:?}",
+        INPUT_LIMITS,
+        end_time.duration_since(start_time)
+    );
 }
 
 fn gather_stats(limit: u64) -> CompressionStats {
@@ -99,10 +116,13 @@ fn gather_stats(limit: u64) -> CompressionStats {
                     // If the new amount is better than the current best, update the best
                     if compression_amount > current_best_compression_amount {
                         Some((value_to_compress, compression_amount))
-                    } 
+                    }
                     // Otherwise, keep the current best
                     else {
-                        Some((current_best_compressed_value, current_best_compression_amount))
+                        Some((
+                            current_best_compressed_value,
+                            current_best_compression_amount,
+                        ))
                     }
                 }
                 None => Some((value_to_compress, compression_amount)),
@@ -133,7 +153,11 @@ fn gather_stats(limit: u64) -> CompressionStats {
     let average_pct = compression_amounts.iter().sum::<f64>() / total;
 
     let maybe_median = median(&mut compression_amounts);
-    let median_pct = if let Some(value) = maybe_median { value } else { 0.0 };
+    let median_pct = if let Some(value) = maybe_median {
+        value
+    } else {
+        0.0
+    };
 
     let mut favorable_amounts: Vec<f64> = compression_amounts
         .iter()
@@ -154,14 +178,19 @@ fn gather_stats(limit: u64) -> CompressionStats {
         0.0
     };
 
-    let (best_compressed_input, best_compression_amount) = if let Some((best_value_input, best_compression_amount)) = maybe_best_value_amount_pair {
-        (Some(best_value_input), best_compression_amount)
-    } else {
-        (None, 0.0)
-    };
+    let (best_compressed_input, best_compression_amount) =
+        if let Some((best_value_input, best_compression_amount)) = maybe_best_value_amount_pair {
+            (Some(best_value_input), best_compression_amount)
+        } else {
+            (None, 0.0)
+        };
 
     let end_time = Instant::now();
-    println!("Time taken to gather statistics for limit {:?}: {:?}", limit, end_time.duration_since(start_time));
+    println!(
+        "Time taken to gather statistics for limit {:?}: {:?}",
+        limit,
+        end_time.duration_since(start_time)
+    );
 
     CompressionStats {
         limit,
@@ -176,7 +205,7 @@ fn gather_stats(limit: u64) -> CompressionStats {
 }
 
 /// Calculates the compression amount in percent for a given input value, converting the input to a bigint as big endian bytes and then compressing it.
-/// 
+///
 /// Returns:
 /// - Some(f64) if the compression is possible. The compression amount in percent as a positive number, or a negative number if the compression is unfavorable (increases the size of the data).
 /// - None if the compression is not possible (e.g. if the input is 0)
@@ -236,35 +265,37 @@ fn plot_statistics(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let start_time = Instant::now();
     println!("Plotting compression statistics");
-    
+
     // Ensure plots directory exists
     std::fs::create_dir_all("plots").expect("Failed to create plots directory");
-    
+
     let root = BitMapBackend::new(filename, (1920, 1080)).into_drawing_area();
     root.fill(&WHITE)?;
 
     // Find the min and max values for y-axis
     let mut min_y = f64::INFINITY;
     let mut max_y = f64::NEG_INFINITY;
-    
+
     for stat in stats {
-        min_y = min_y.min(stat.favorable_pct)
+        min_y = min_y
+            .min(stat.favorable_pct)
             .min(stat.average_pct)
             .min(stat.median_pct)
             .min(stat.average_favorable_pct)
             .min(stat.median_favorable_pct);
-        max_y = max_y.max(stat.favorable_pct)
+        max_y = max_y
+            .max(stat.favorable_pct)
             .max(stat.average_pct)
             .max(stat.median_pct)
             .max(stat.average_favorable_pct)
             .max(stat.median_favorable_pct);
     }
-    
+
     // Add some padding
     let y_range = max_y - min_y;
     let y_min = min_y - y_range * 0.1;
     let y_max = max_y + y_range * 0.1;
-    
+
     // Get x-axis range (logarithmic)
     let x_min = INPUT_LIMITS.first().copied().unwrap_or(1) as f64;
     let x_max = INPUT_LIMITS.last().copied().unwrap_or(1) as f64;
@@ -277,10 +308,7 @@ fn plot_statistics(
         .margin(5)
         .x_label_area_size(60)
         .y_label_area_size(120)
-        .build_cartesian_2d(
-            (x_min..x_max).log_scale(),
-            y_min..y_max,
-        )?;
+        .build_cartesian_2d((x_min..x_max).log_scale(), y_min..y_max)?;
 
     chart.configure_mesh().draw()?;
 
@@ -289,22 +317,22 @@ fn plot_statistics(
         .iter()
         .map(|s| (s.limit as f64, s.favorable_pct))
         .collect();
-    
+
     let average_pct_data: Vec<(f64, f64)> = stats
         .iter()
         .map(|s| (s.limit as f64, s.average_pct))
         .collect();
-    
+
     let median_pct_data: Vec<(f64, f64)> = stats
         .iter()
         .map(|s| (s.limit as f64, s.median_pct))
         .collect();
-    
+
     let average_favorable_pct_data: Vec<(f64, f64)> = stats
         .iter()
         .map(|s| (s.limit as f64, s.average_favorable_pct))
         .collect();
-    
+
     let median_favorable_pct_data: Vec<(f64, f64)> = stats
         .iter()
         .map(|s| (s.limit as f64, s.median_favorable_pct))
@@ -315,50 +343,61 @@ fn plot_statistics(
         .draw_series(LineSeries::new(favorable_pct_data.iter().copied(), &RED))?
         .label("Chance of compression being favorable (%)")
         .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
-    
+
     chart
         .draw_series(LineSeries::new(average_pct_data.iter().copied(), &BLUE))?
         .label("Average compression amount (%)")
         .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
-    
+
     chart
         .draw_series(LineSeries::new(median_pct_data.iter().copied(), &GREEN))?
         .label("Median compression amount (%)")
         .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &GREEN));
-    
+
     chart
-        .draw_series(LineSeries::new(average_favorable_pct_data.iter().copied(), &MAGENTA))?
+        .draw_series(LineSeries::new(
+            average_favorable_pct_data.iter().copied(),
+            &MAGENTA,
+        ))?
         .label("Average favorable compression amount (%)")
         .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &MAGENTA));
-    
+
     chart
-        .draw_series(LineSeries::new(median_favorable_pct_data.iter().copied(), &CYAN))?
+        .draw_series(LineSeries::new(
+            median_favorable_pct_data.iter().copied(),
+            &CYAN,
+        ))?
         .label("Median favorable compression amount (%)")
         .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &CYAN));
 
     // Draw dots at each point
     chart.draw_series(
-        favorable_pct_data.iter()
+        favorable_pct_data
+            .iter()
             .map(|point| Circle::new(*point, 3, RED.filled())),
     )?;
-    
+
     chart.draw_series(
-        average_pct_data.iter()
+        average_pct_data
+            .iter()
             .map(|point| Circle::new(*point, 3, BLUE.filled())),
     )?;
-    
+
     chart.draw_series(
-        median_pct_data.iter()
+        median_pct_data
+            .iter()
             .map(|point| Circle::new(*point, 3, GREEN.filled())),
     )?;
-    
+
     chart.draw_series(
-        average_favorable_pct_data.iter()
+        average_favorable_pct_data
+            .iter()
             .map(|point| Circle::new(*point, 3, MAGENTA.filled())),
     )?;
-    
+
     chart.draw_series(
-        median_favorable_pct_data.iter()
+        median_favorable_pct_data
+            .iter()
             .map(|point| Circle::new(*point, 3, CYAN.filled())),
     )?;
 
@@ -371,6 +410,9 @@ fn plot_statistics(
     root.present()?;
     println!("Compression statistics plot saved to {}", filename);
     let end_time = Instant::now();
-    println!("Time taken to plot compression statistics: {:?}", end_time.duration_since(start_time));
+    println!(
+        "Time taken to plot compression statistics: {:?}",
+        end_time.duration_since(start_time)
+    );
     Ok(())
 }

@@ -4,8 +4,8 @@
 //! Run with: cargo run --bin plot --features plotting
 
 use num_bigint::BigUint;
-use std::time::Instant;
 use plotters::prelude::*;
+use std::time::Instant;
 use zeckendorf_rs::*;
 
 #[cfg(feature = "plotting")]
@@ -21,7 +21,8 @@ fn main() {
 
     // Example: Plot compression ratios
     // plot_compression_ratios("plots/compression_ratios_0_to_100.png", 0..100).expect("Failed to plot compression ratios");
-    plot_compression_ratios("plots/compression_ratios_0_to_257.png", 0..257).expect("Failed to plot compression ratios");
+    plot_compression_ratios("plots/compression_ratios_0_to_257.png", 0..257)
+        .expect("Failed to plot compression ratios");
     // plot_compression_ratios("plots/compression_ratios_0_to_1_000.png", 0..1_000).expect("Failed to plot compression ratios");
     // plot_compression_ratios("plots/compression_ratios_0_to_10_000.png", 0..10_000).expect("Failed to plot compression ratios");
     // plot_compression_ratios("plots/compression_ratios_0_to_100_000.png", 0..100_000).expect("Failed to plot compression ratios");
@@ -67,7 +68,8 @@ fn plot_fibonacci_numbers(
     chart.configure_mesh().draw()?;
 
     // Filter out zero values since log(0) is undefined
-    let data: Vec<(f64, f64)> = range.clone()
+    let data: Vec<(f64, f64)> = range
+        .clone()
         .map(|i| {
             let fib = memoized_fibonacci_recursive(i);
             (i as f64, fib as f64)
@@ -108,7 +110,11 @@ fn plot_fibonacci_numbers(
     root.present()?;
     println!("Fibonacci plot saved to {}", filename);
     let end_time = Instant::now();
-    println!("Time taken to plot Fibonacci numbers for range {:?}: {:?}", range, end_time.duration_since(start_time));
+    println!(
+        "Time taken to plot Fibonacci numbers for range {:?}: {:?}",
+        range,
+        end_time.duration_since(start_time)
+    );
     Ok(())
 }
 
@@ -180,6 +186,10 @@ fn plot_compression_ratios(
     root.present()?;
     println!("Compression ratio plot saved to {}", filename);
     let end_time = Instant::now();
-    println!("Time taken to plot compression ratios for range {:?}: {:?}", range, end_time.duration_since(start_time));
+    println!(
+        "Time taken to plot compression ratios for range {:?}: {:?}",
+        range,
+        end_time.duration_since(start_time)
+    );
     Ok(())
 }
