@@ -30,3 +30,10 @@ required-features = ["plotting"]
 name = "generate_statistics"
 path = "src/bin/generate_statistics.rs"
 required-features = ["plotting"]
+
+[[bench]]
+name = "zeckendorf_bench"
+harness = false
+
+[dev-dependencies]
+criterion = { version = "0.8.1", features = ["csv_output", "html_reports"] }
