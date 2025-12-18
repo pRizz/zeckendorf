@@ -17,13 +17,13 @@ use num_bigint::BigUint;
 use std::{cmp::Ordering, fs, path::Path, time::Instant};
 use zeckendorf_rs::zeckendorf_compress_be;
 
-// Time taken to generate statistics for limits [10, 100, 1000, 10000, 100000]: 1.577503667s
+// Time taken to generate statistics for limits [10, 100, 1000, 10000, 100000]: 1.337864666s
 const INPUT_LIMITS: [u64; 5] = [10, 100, 1_000, 10_000, 100_000];
 
-// Time taken to generate statistics for limits [10, 100, 1000, 10000, 100000, 1000000]: 18.625144958s
+// Time taken to generate statistics for limits [10, 100, 1000, 10000, 100000, 1000000]: 9.208086875s
 // const INPUT_LIMITS: [u64; 6] = [10, 100, 1_000, 10_000, 100_000, 1_000_000];
 
-// Time taken to generate statistics for limits [10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000]: 2582.702786792s or ~43 minutes
+// Time taken to generate statistics for limits [10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000]: 1142.74973475s or ~19 minutes
 // const INPUT_LIMITS: [u64; 8] = [10, 100, 1_000, 10_000, 100_000, 1_000_000, 10_000_000, 100_000_000];
 
 #[derive(Debug, Clone)]
