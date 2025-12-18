@@ -1,17 +1,32 @@
 //! Benchmark for the Zeckendorf compression and decompression functions
 //!
-//! Run with: cargo bench
+//! Run with: `cargo bench`
 //!
-//! The benchmarks are run for the following sizes: 1, 4, 16, 64, 256, 1024, 4096
+//! The benchmarks are run for a variety of byte sizes, from 4 to 16K.
 //!
 //! The benchmarks are run for the following functions:
 //! - compress
 //! - decompress
-//! - round trip
+//! - round trip, which is the compress and decompress functions combined
+//!
+//! Criterion notes:
+//! To save a new named baseline, run:
+//!     `cargo bench --bench zeckendorf_bench -- --save-baseline <name_of_new_baseline>`
+//! To run a new benchmark and compare to a baseline without saving the results, run:
+//!     `cargo bench --bench zeckendorf_bench -- --baseline <name_of_baseline>`
+//! To compare two benchmarks that have already been saved:
+//!     `cargo bench --bench zeckendorf_bench -- --load-baseline <name_of_newer_baseline> --baseline <name_of_older_baseline>`
+//!
+//! Any time `cargo bench` is run without any arguments, it will, by default, save the result to a baseline called "new" and compare it to the previous run, called "base".
 
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use std::hint::black_box;
 use zeckendorf_rs::{zeckendorf_compress_be, zeckendorf_decompress_be};
+
+/// The byte sizes to benchmark.
+///
+/// TODO: test larger sizes. Right now, the 16K benchmark emits a warning about taking too long.
+const BYTE_SIZES_TO_BENCH: [usize; 7] = [4, 16, 64, 256, 1024, 4096, 16384];
 
 /// Generates test data of the given size
 ///
@@ -31,9 +46,7 @@ fn generate_test_data(size: usize) -> Vec<u8> {
 fn bench_compress(c: &mut Criterion) {
     let mut group = c.benchmark_group("compress");
 
-    let sizes = vec![1, 4, 16, 64, 256, 1024, 4096];
-
-    for size in sizes {
+    for size in BYTE_SIZES_TO_BENCH {
         let data = generate_test_data(size);
         group.bench_with_input(BenchmarkId::from_parameter(size), &data, |b, data| {
             b.iter(|| zeckendorf_compress_be(black_box(data)));
@@ -46,9 +59,7 @@ fn bench_compress(c: &mut Criterion) {
 fn bench_decompress(c: &mut Criterion) {
     let mut group = c.benchmark_group("decompress");
 
-    let sizes = vec![1, 4, 16, 64, 256, 1024, 4096];
-
-    for size in sizes {
+    for size in BYTE_SIZES_TO_BENCH {
         let data = generate_test_data(size);
         let compressed = zeckendorf_compress_be(&data);
         group.bench_with_input(
@@ -66,9 +77,7 @@ fn bench_decompress(c: &mut Criterion) {
 fn bench_round_trip(c: &mut Criterion) {
     let mut group = c.benchmark_group("round_trip");
 
-    let sizes = vec![1, 4, 16, 64, 256, 1024, 4096];
-
-    for size in sizes {
+    for size in BYTE_SIZES_TO_BENCH {
         let data = generate_test_data(size);
         group.bench_with_input(BenchmarkId::from_parameter(size), &data, |b, data| {
             b.iter(|| {
