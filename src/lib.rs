@@ -9,7 +9,7 @@
 use num_bigint::BigUint;
 use num_traits::{One, Zero};
 use std::collections::HashMap;
-use std::sync::{LazyLock, Mutex};
+use std::sync::{Arc, LazyLock, RwLock};
 
 /// Returns the number of bits required to represent the given number. Returns 0 if the number is less than or equal to 0.
 ///
@@ -31,17 +31,14 @@ pub fn bit_count_for_number(n: i32) -> u32 {
 }
 
 // Memoization maps for Fibonacci numbers
-static FIBONACCI_MAP: LazyLock<Mutex<HashMap<u64, u64>>> =
-    LazyLock::new(|| Mutex::new(HashMap::from([(0, 0), (1, 1)])));
-static FIBONACCI_BIGINT_MAP: LazyLock<Mutex<HashMap<u64, BigUint>>> =
-    LazyLock::new(|| Mutex::new(HashMap::from([(0, BigUint::zero()), (1, BigUint::one())])));
-/// Assume the FI of 0 and 1 are cached since they are the base cases.
-/// This should track the largest FI that is cached in the FIBONACCI_BIGINT_MAP.
-static LARGEST_CACHED_FI: LazyLock<Mutex<u64>> = LazyLock::new(|| Mutex::new(1));
+static FIBONACCI_CACHE: LazyLock<RwLock<Vec<u64>>> = LazyLock::new(|| RwLock::new(vec![0, 1]));
+
+static FIBONACCI_BIGINT_CACHE: LazyLock<RwLock<Vec<Arc<BigUint>>>> =
+    LazyLock::new(|| RwLock::new(vec![Arc::new(BigUint::zero()), Arc::new(BigUint::one())]));
 
 /// Memoization maps for Zeckendorf representations
-static ZECKENDORF_MAP: LazyLock<Mutex<HashMap<u64, Vec<u64>>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
+static ZECKENDORF_MAP: LazyLock<RwLock<HashMap<u64, Vec<u64>>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
 /// We will store the Zeckendorf list descending as u64s because the Fibonacci indices are small enough to fit in a u64.
 /// It takes up to 694,241 bits, or ~694kbits, to represent the 1,000,000th Fibonacci number.
 /// The max u64 is 18,446,744,073,709,551,615 which is ~18 quintillion.
@@ -49,8 +46,8 @@ static ZECKENDORF_MAP: LazyLock<Mutex<HashMap<u64, Vec<u64>>>> =
 /// so a u64 can represent Fibonacci values up to
 /// roughly 18 trillion times 694,241 bits which is 1.249*10^19 bits which or 1.56 exabytes.
 /// We will consider larger numbers in the future :-)
-static ZECKENDORF_BIGINT_MAP: LazyLock<Mutex<HashMap<BigUint, Vec<u64>>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
+static ZECKENDORF_BIGINT_MAP: LazyLock<RwLock<HashMap<BigUint, Vec<u64>>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
 
 /// fibonacci(x) is equal to 0 if x is 0; 1 if x is 1; else return fibonacci(x - 1) + fibonacci(x - 2)
 /// fi stands for Fibonacci Index
@@ -76,80 +73,36 @@ static ZECKENDORF_BIGINT_MAP: LazyLock<Mutex<HashMap<BigUint, Vec<u64>>>> =
 /// assert_eq!(memoized_fibonacci_recursive(10), 55);
 /// ```
 pub fn memoized_fibonacci_recursive(fi: u64) -> u64 {
-    let fibonacci_map = FIBONACCI_MAP.lock().expect("Failed to lock Fibonacci map");
+    let fi = fi as usize;
 
-    let maybe_cached = fibonacci_map.get(&fi);
-    if let Some(&cached) = maybe_cached {
-        return cached;
+    // Try to get the value with a read lock first
+    {
+        let fibonacci_cache = FIBONACCI_CACHE
+            .read()
+            .expect("Failed to read Fibonacci cache");
+        if let Some(&fibonacci_value) = fibonacci_cache.get(fi) {
+            return fibonacci_value;
+        }
     }
-    // Drop the lock to allow other threads to access the map during the recursive calls
-    drop(fibonacci_map);
 
-    let result = if fi == 0 {
-        0
-    } else if fi == 1 {
-        1
-    } else {
-        memoized_fibonacci_recursive(fi - 1) + memoized_fibonacci_recursive(fi - 2)
-    };
+    // If not found, get a write lock to update the cache
+    let mut fibonacci_cache = FIBONACCI_CACHE
+        .write()
+        .expect("Failed to write Fibonacci cache");
 
-    // Re-lock the map to insert the result
-    let mut fibonacci_map = FIBONACCI_MAP.lock().expect("Failed to lock Fibonacci map");
-    fibonacci_map.insert(fi, result);
-    result
-}
-
-/// fibonacci(x) is equal to 0 if x is 0; 1 if x is 1; else return fibonacci(x - 1) + fibonacci(x - 2)
-/// fi stands for Fibonacci Index
-/// This function fails for large numbers (e.g. 100_000) with stack overflow.
-///
-/// # Examples
-///
-/// ```
-/// # use zeckendorf_rs::memoized_fibonacci_bigint_recursive;
-/// # use num_bigint::BigUint;
-/// # use num_traits::{One, Zero};
-/// // Base cases
-/// assert_eq!(memoized_fibonacci_bigint_recursive(0), BigUint::zero());
-/// assert_eq!(memoized_fibonacci_bigint_recursive(1), BigUint::one());
-///
-/// // Small Fibonacci numbers
-/// assert_eq!(memoized_fibonacci_bigint_recursive(2), BigUint::from(1u64));
-/// assert_eq!(memoized_fibonacci_bigint_recursive(3), BigUint::from(2u64));
-/// assert_eq!(memoized_fibonacci_bigint_recursive(4), BigUint::from(3u64));
-/// assert_eq!(memoized_fibonacci_bigint_recursive(5), BigUint::from(5u64));
-/// assert_eq!(memoized_fibonacci_bigint_recursive(6), BigUint::from(8u64));
-/// assert_eq!(memoized_fibonacci_bigint_recursive(7), BigUint::from(13u64));
-/// assert_eq!(memoized_fibonacci_bigint_recursive(8), BigUint::from(21u64));
-/// assert_eq!(memoized_fibonacci_bigint_recursive(9), BigUint::from(34u64));
-/// assert_eq!(memoized_fibonacci_bigint_recursive(10), BigUint::from(55u64));
-/// ```
-pub fn memoized_fibonacci_bigint_recursive(fi: u64) -> BigUint {
-    let fibonacci_bigint_map = FIBONACCI_BIGINT_MAP
-        .lock()
-        .expect("Failed to lock Fibonacci BigInt map");
-
-    let maybe_cached = fibonacci_bigint_map.get(&fi);
-    if let Some(cached) = maybe_cached {
-        return cached.clone();
+    // Re-check in case another thread updated it while we were waiting for the write lock
+    while fibonacci_cache.len() <= fi {
+        let fibonacci_cache_length = fibonacci_cache.len();
+        // Fibonacci numbers above index 93 will overflow u64
+        if fibonacci_cache_length > 93 {
+            panic!("Fibonacci index {} overflows u64", fibonacci_cache_length);
+        }
+        let next_fibonacci_value = fibonacci_cache[fibonacci_cache_length - 1]
+            + fibonacci_cache[fibonacci_cache_length - 2];
+        fibonacci_cache.push(next_fibonacci_value);
     }
-    // Drop the lock to allow other threads to access the map during the recursive calls
-    drop(fibonacci_bigint_map);
 
-    let result = if fi == 0 {
-        BigUint::zero()
-    } else if fi == 1 {
-        BigUint::one()
-    } else {
-        memoized_fibonacci_bigint_recursive(fi - 1) + memoized_fibonacci_bigint_recursive(fi - 2)
-    };
-
-    // Re-lock the map to insert the result
-    let mut fibonacci_bigint_map = FIBONACCI_BIGINT_MAP
-        .lock()
-        .expect("Failed to lock Fibonacci BigInt map");
-    fibonacci_bigint_map.insert(fi.clone(), result.clone());
-    result
+    fibonacci_cache[fi]
 }
 
 /// fibonacci(x) is equal to 0 if x is 0; 1 if x is 1; else return fibonacci(x - 1) + fibonacci(x - 2)
@@ -163,57 +116,50 @@ pub fn memoized_fibonacci_bigint_recursive(fi: u64) -> BigUint {
 /// # use num_bigint::BigUint;
 /// # use num_traits::{One, Zero};
 /// // Base cases
-/// assert_eq!(memoized_fibonacci_bigint_iterative(0u64), BigUint::zero());
-/// assert_eq!(memoized_fibonacci_bigint_iterative(1u64), BigUint::one());
+/// assert_eq!(*memoized_fibonacci_bigint_iterative(0u64), BigUint::zero());
+/// assert_eq!(*memoized_fibonacci_bigint_iterative(1u64), BigUint::one());
 ///
 /// // Small Fibonacci numbers
-/// assert_eq!(memoized_fibonacci_bigint_iterative(2u64), BigUint::from(1u64));
-/// assert_eq!(memoized_fibonacci_bigint_iterative(3u64), BigUint::from(2u64));
-/// assert_eq!(memoized_fibonacci_bigint_iterative(4u64), BigUint::from(3u64));
-/// assert_eq!(memoized_fibonacci_bigint_iterative(5u64), BigUint::from(5u64));
-/// assert_eq!(memoized_fibonacci_bigint_iterative(6u64), BigUint::from(8u64));
-/// assert_eq!(memoized_fibonacci_bigint_iterative(7u64), BigUint::from(13u64));
-/// assert_eq!(memoized_fibonacci_bigint_iterative(8u64), BigUint::from(21u64));
-/// assert_eq!(memoized_fibonacci_bigint_iterative(9u64), BigUint::from(34u64));
-/// assert_eq!(memoized_fibonacci_bigint_iterative(10u64), BigUint::from(55u64));
+/// assert_eq!(*memoized_fibonacci_bigint_iterative(2u64), BigUint::from(1u64));
+/// assert_eq!(*memoized_fibonacci_bigint_iterative(3u64), BigUint::from(2u64));
+/// assert_eq!(*memoized_fibonacci_bigint_iterative(4u64), BigUint::from(3u64));
+/// assert_eq!(*memoized_fibonacci_bigint_iterative(5u64), BigUint::from(5u64));
+/// assert_eq!(*memoized_fibonacci_bigint_iterative(6u64), BigUint::from(8u64));
+/// assert_eq!(*memoized_fibonacci_bigint_iterative(7u64), BigUint::from(13u64));
+/// assert_eq!(*memoized_fibonacci_bigint_iterative(8u64), BigUint::from(21u64));
+/// assert_eq!(*memoized_fibonacci_bigint_iterative(9u64), BigUint::from(34u64));
+/// assert_eq!(*memoized_fibonacci_bigint_iterative(10u64), BigUint::from(55u64));
 /// ```
 ///
 /// TODO: consider returning a reference to the cached value to avoid the clone.
-pub fn memoized_fibonacci_bigint_iterative(fi: u64) -> BigUint {
-    let mut largest_cached_fi = LARGEST_CACHED_FI
-        .lock()
-        .expect("Failed to lock Largest Cached FI");
-    if fi <= *largest_cached_fi {
-        return FIBONACCI_BIGINT_MAP
-            .lock()
-            .expect("Failed to lock Fibonacci BigInt map")
-            .get(&fi)
-            .expect("Failed to get Fibonacci BigInt from map")
-            .clone();
+pub fn memoized_fibonacci_bigint_iterative(fi: u64) -> Arc<BigUint> {
+    let fi = fi as usize;
+
+    // Try to get the value with a read lock first
+    {
+        let fibonacci_cache = FIBONACCI_BIGINT_CACHE
+            .read()
+            .expect("Failed to read Fibonacci BigInt cache");
+        if let Some(fibonacci_value) = fibonacci_cache.get(fi) {
+            return Arc::clone(fibonacci_value);
+        }
     }
-    // Fill the map with the Fibonacci numbers up to the given FI.
-    let mut fibonacci_bigint_map = FIBONACCI_BIGINT_MAP
-        .lock()
-        .expect("Failed to lock Fibonacci BigInt map");
-    // Start calculating the Fibonacci numbers at fib(largest_cached_fi - 1) and fib(largest_cached_fi) to determine the Fibonacci number at largest_cached_fi + 1.
-    let mut f0_fi = *largest_cached_fi - 1;
-    let mut f0 = fibonacci_bigint_map
-        .get(&f0_fi)
-        .expect("Failed to get Fibonacci BigInt from map")
-        .clone();
-    let mut f1 = fibonacci_bigint_map
-        .get(&largest_cached_fi)
-        .expect("Failed to get Fibonacci BigInt from map")
-        .clone();
-    while f0_fi + 1 < fi {
-        let f2 = f0 + &f1;
-        f0 = f1;
-        f1 = f2;
-        f0_fi += 1;
-        fibonacci_bigint_map.insert(f0_fi + 1, f1.clone());
+
+    // If not found, get a write lock to update the cache
+    let mut fibonacci_cache = FIBONACCI_BIGINT_CACHE
+        .write()
+        .expect("Failed to write Fibonacci BigInt cache");
+
+    // Re-check in case another thread updated it while we were waiting for the write lock
+    while fibonacci_cache.len() <= fi {
+        let fibonacci_cache_length = fibonacci_cache.len();
+        // Since we initialize with [0, 1], fibonacci_cache_length is at least 2 here
+        let next_fibonacci_value = &*fibonacci_cache[fibonacci_cache_length - 1]
+            + &*fibonacci_cache[fibonacci_cache_length - 2];
+        fibonacci_cache.push(Arc::new(next_fibonacci_value));
     }
-    *largest_cached_fi = f0_fi + 1;
-    f1
+
+    Arc::clone(&fibonacci_cache[fi])
 }
 
 /// A descending Zeckendorf list is a sorted list of unique Fibonacci indices, in descending order, that sum to the given number.
@@ -250,14 +196,15 @@ pub fn memoized_zeckendorf_list_descending_for_integer(n: u64) -> Vec<u64> {
         return vec![3];
     }
 
-    let zeckendorf_map = ZECKENDORF_MAP
-        .lock()
-        .expect("Failed to lock Zeckendorf map");
-    let maybe_memoized_zeckendorf_list = zeckendorf_map.get(&n);
-    if let Some(cached) = maybe_memoized_zeckendorf_list {
-        return cached.clone();
+    // Try a read lock first
+    {
+        let zeckendorf_map = ZECKENDORF_MAP
+            .read()
+            .expect("Failed to read Zeckendorf map");
+        if let Some(cached) = zeckendorf_map.get(&n) {
+            return cached.clone();
+        }
     }
-    drop(zeckendorf_map);
 
     let mut current_n = n;
     let mut max_fibonacci_index_smaller_than_n = 1u64;
@@ -283,8 +230,8 @@ pub fn memoized_zeckendorf_list_descending_for_integer(n: u64) -> Vec<u64> {
     }
 
     let mut zeckendorf_map = ZECKENDORF_MAP
-        .lock()
-        .expect("Failed to lock Zeckendorf map");
+        .write()
+        .expect("Failed to write Zeckendorf map");
     zeckendorf_map.insert(n, zeckendorf_list.clone());
     zeckendorf_list
 }
@@ -325,44 +272,45 @@ pub fn memoized_zeckendorf_list_descending_for_bigint(n: &BigUint) -> Vec<u64> {
         return vec![3];
     }
 
-    let zeckendorf_bigint_map = ZECKENDORF_BIGINT_MAP
-        .lock()
-        .expect("Failed to lock Zeckendorf BigInt map");
-    let maybe_memoized_zeckendorf_list = zeckendorf_bigint_map.get(n);
-    if let Some(cached) = maybe_memoized_zeckendorf_list {
-        return cached.clone();
+    // Try a read lock first
+    {
+        let zeckendorf_bigint_map = ZECKENDORF_BIGINT_MAP
+            .read()
+            .expect("Failed to read Zeckendorf BigInt map");
+        if let Some(cached) = zeckendorf_bigint_map.get(n) {
+            return cached.clone();
+        }
     }
-    drop(zeckendorf_bigint_map);
 
     let original_n = n.clone();
     let mut current_n = n.clone();
     let mut max_fibonacci_index_smaller_than_n = 1u64;
     let mut fibonacci_at_index =
-        memoized_fibonacci_bigint_recursive(max_fibonacci_index_smaller_than_n);
+        memoized_fibonacci_bigint_iterative(max_fibonacci_index_smaller_than_n);
 
-    while fibonacci_at_index < current_n {
+    while *fibonacci_at_index < current_n {
         max_fibonacci_index_smaller_than_n += 1;
         fibonacci_at_index =
-            memoized_fibonacci_bigint_recursive(max_fibonacci_index_smaller_than_n);
+            memoized_fibonacci_bigint_iterative(max_fibonacci_index_smaller_than_n);
     }
 
     let mut zeckendorf_list: Vec<u64> = Vec::new();
     while current_n > BigUint::zero() {
         let current_fibonacci_value =
-            memoized_fibonacci_bigint_recursive(max_fibonacci_index_smaller_than_n);
-        if current_fibonacci_value > current_n {
+            memoized_fibonacci_bigint_iterative(max_fibonacci_index_smaller_than_n);
+        if *current_fibonacci_value > current_n {
             max_fibonacci_index_smaller_than_n -= 1;
             continue;
         }
-        current_n -= current_fibonacci_value;
+        current_n -= &*current_fibonacci_value;
         zeckendorf_list.push(max_fibonacci_index_smaller_than_n);
         // We can subtract 2 because the next Fibonacci number that fits is at least 2 indices away due to the Zeckendorf principle.
         max_fibonacci_index_smaller_than_n -= 2;
     }
 
     let mut zeckendorf_bigint_map = ZECKENDORF_BIGINT_MAP
-        .lock()
-        .expect("Failed to lock Zeckendorf BigInt map");
+        .write()
+        .expect("Failed to write Zeckendorf BigInt map");
     zeckendorf_bigint_map.insert(original_n, zeckendorf_list.clone());
     zeckendorf_list
 }
@@ -714,10 +662,9 @@ pub fn ezba_to_ezla(ezba_bits: &[u8]) -> Vec<u64> {
 /// assert_eq!(zl_to_bigint(&[6, 4, 2]), BigUint::from(12u64));
 /// ```
 pub fn zl_to_bigint(zl: &[u64]) -> BigUint {
-    return zl
-        .into_iter()
-        .map(|fi| memoized_fibonacci_bigint_iterative(*fi))
-        .sum();
+    zl.iter().fold(BigUint::zero(), |acc, fi| {
+        acc + &*memoized_fibonacci_bigint_iterative(*fi)
+    })
 }
 
 /// Decompresses a slice of bytes compressed using the Zeckendorf algorithm, assuming the original data was compressed using the big endian bytes interpretation.

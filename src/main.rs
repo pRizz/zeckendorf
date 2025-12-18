@@ -20,7 +20,7 @@ fn main() {
     for i in 0..20 {
         println!(
             "The bigint {i}th Fibonacci number is: {}",
-            memoized_fibonacci_bigint_recursive(i)
+            memoized_fibonacci_bigint_iterative(i)
         );
     }
     for i in 0..20 {
