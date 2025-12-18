@@ -1,0 +1,194 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'zeckendorf_rs'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=zeckendorf"
+                ],
+                "filter": {
+                    "name": "zeckendorf_rs",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'generate_data'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=generate_data",
+                    "--package=zeckendorf"
+                ],
+                "filter": {
+                    "name": "generate_data",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'generate_data'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=generate_data",
+                    "--package=zeckendorf"
+                ],
+                "filter": {
+                    "name": "generate_data",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'generate_statistics'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=generate_statistics",
+                    "--package=zeckendorf"
+                ],
+                "filter": {
+                    "name": "generate_statistics",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'generate_statistics'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=generate_statistics",
+                    "--package=zeckendorf"
+                ],
+                "filter": {
+                    "name": "generate_statistics",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'plot'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=plot",
+                    "--package=zeckendorf"
+                ],
+                "filter": {
+                    "name": "plot",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'plot'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=plot",
+                    "--package=zeckendorf"
+                ],
+                "filter": {
+                    "name": "plot",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'zeckendorf'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=zeckendorf",
+                    "--package=zeckendorf"
+                ],
+                "filter": {
+                    "name": "zeckendorf",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'zeckendorf'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=zeckendorf",
+                    "--package=zeckendorf"
+                ],
+                "filter": {
+                    "name": "zeckendorf",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug benchmark 'zeckendorf_bench'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bench=zeckendorf_bench",
+                    "--package=zeckendorf"
+                ],
+                "filter": {
+                    "name": "zeckendorf_bench",
+                    "kind": "bench"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
