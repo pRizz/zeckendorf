@@ -32,9 +32,12 @@ pub fn bit_count_for_number(n: i32) -> u32 {
 
 // Memoization maps for Fibonacci numbers
 static FIBONACCI_MAP: LazyLock<Mutex<HashMap<u64, u64>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
+    LazyLock::new(|| Mutex::new(HashMap::from([(0, 0), (1, 1)])));
 static FIBONACCI_BIGINT_MAP: LazyLock<Mutex<HashMap<u64, BigUint>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
+    LazyLock::new(|| Mutex::new(HashMap::from([(0, BigUint::zero()), (1, BigUint::one())])));
+/// Assume the FI of 0 and 1 are cached since they are the base cases.
+/// This should track the largest FI that is cached in the FIBONACCI_BIGINT_MAP.
+static LARGEST_CACHED_FI: LazyLock<Mutex<u64>> = LazyLock::new(|| Mutex::new(1));
 
 /// Memoization maps for Zeckendorf representations
 static ZECKENDORF_MAP: LazyLock<Mutex<HashMap<u64, Vec<u64>>>> =
@@ -174,27 +177,43 @@ pub fn memoized_fibonacci_bigint_recursive(fi: u64) -> BigUint {
 /// assert_eq!(memoized_fibonacci_bigint_iterative(9u64), BigUint::from(34u64));
 /// assert_eq!(memoized_fibonacci_bigint_iterative(10u64), BigUint::from(55u64));
 /// ```
+///
+/// TODO: consider returning a reference to the cached value to avoid the clone.
 pub fn memoized_fibonacci_bigint_iterative(fi: u64) -> BigUint {
-    let fibonacci_bigint_map = FIBONACCI_BIGINT_MAP
+    let mut largest_cached_fi = LARGEST_CACHED_FI
+        .lock()
+        .expect("Failed to lock Largest Cached FI");
+    if fi <= *largest_cached_fi {
+        return FIBONACCI_BIGINT_MAP
+            .lock()
+            .expect("Failed to lock Fibonacci BigInt map")
+            .get(&fi)
+            .expect("Failed to get Fibonacci BigInt from map")
+            .clone();
+    }
+    // Fill the map with the Fibonacci numbers up to the given FI.
+    let mut fibonacci_bigint_map = FIBONACCI_BIGINT_MAP
         .lock()
         .expect("Failed to lock Fibonacci BigInt map");
-
-    let maybe_cached = fibonacci_bigint_map.get(&fi);
-    if let Some(cached) = maybe_cached {
-        return cached.clone();
-    }
-    drop(fibonacci_bigint_map);
-
-    let mut f0 = BigUint::zero();
-    let mut f1 = BigUint::one();
-    let mut n = BigUint::from(fi);
-    while n > BigUint::zero() {
+    // Start calculating the Fibonacci numbers at fib(largest_cached_fi - 1) and fib(largest_cached_fi) to determine the Fibonacci number at largest_cached_fi + 1.
+    let mut f0_fi = *largest_cached_fi - 1;
+    let mut f0 = fibonacci_bigint_map
+        .get(&f0_fi)
+        .expect("Failed to get Fibonacci BigInt from map")
+        .clone();
+    let mut f1 = fibonacci_bigint_map
+        .get(&largest_cached_fi)
+        .expect("Failed to get Fibonacci BigInt from map")
+        .clone();
+    while f0_fi + 1 < fi {
         let f2 = f0 + &f1;
         f0 = f1;
         f1 = f2;
-        n -= BigUint::one();
+        f0_fi += 1;
+        fibonacci_bigint_map.insert(f0_fi + 1, f1.clone());
     }
-    f0
+    *largest_cached_fi = f0_fi + 1;
+    f1
 }
 
 /// A descending Zeckendorf list is a sorted list of unique Fibonacci indices, in descending order, that sum to the given number.
@@ -637,7 +656,7 @@ pub fn zeckendorf_compress_be(data: &[u8]) -> Vec<u8> {
 /// assert_eq!(unpack_bytes_to_ezba_bits(&[1, 1]), vec![1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]);
 /// ```
 pub fn unpack_bytes_to_ezba_bits(bytes: &[u8]) -> Vec<u8> {
-    let mut ezba_bits = Vec::new();
+    let mut ezba_bits = Vec::with_capacity(bytes.len() * 8);
     for byte in bytes {
         for i in 0..8 {
             ezba_bits.push((byte >> i) & 1);
@@ -697,7 +716,7 @@ pub fn ezba_to_ezla(ezba_bits: &[u8]) -> Vec<u64> {
 pub fn zl_to_bigint(zl: &[u64]) -> BigUint {
     return zl
         .into_iter()
-        .map(|fi| memoized_fibonacci_bigint_recursive(*fi))
+        .map(|fi| memoized_fibonacci_bigint_iterative(*fi))
         .sum();
 }
 
