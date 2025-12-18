@@ -2,8 +2,8 @@ use num_bigint::BigUint;
 use std::time::Instant;
 use zeckendorf_rs::*;
 
-// Example usages:
-// cargo run --bin zeckendorf
+/// Example usages:
+/// `cargo run --bin zeckendorf`
 
 fn main() {
     let start_time = Instant::now();

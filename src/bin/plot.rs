@@ -1,7 +1,7 @@
 //! Binary for generating plots using plotters
 //!
 //! This binary requires the `plotting` feature to be enabled.
-//! Run with: cargo run --bin plot --features plotting
+//! Run with: `cargo run --bin plot --features plotting`
 
 use num_bigint::BigUint;
 use plotters::prelude::*;
@@ -26,9 +26,9 @@ fn main() {
     // plot_compression_ratios("plots/compression_ratios_0_to_1_000.png", 0..1_000).expect("Failed to plot compression ratios");
     // plot_compression_ratios("plots/compression_ratios_0_to_10_000.png", 0..10_000).expect("Failed to plot compression ratios");
     // plot_compression_ratios("plots/compression_ratios_0_to_100_000.png", 0..100_000).expect("Failed to plot compression ratios");
-    // // Takes about 30 seconds to generate
+    // // Takes about 11 seconds to generate
     // plot_compression_ratios("plots/compression_ratios_0_to_1_000_000.png", 0..1_000_000).expect("Failed to plot compression ratios");
-    // // Takes about 300 seconds to generate
+    // // Takes about 104 seconds to generate
     // plot_compression_ratios("plots/compression_ratios_0_to_10_000_000.png", 0..10_000_000).expect("Failed to plot compression ratios");
 
     let end_time = Instant::now();

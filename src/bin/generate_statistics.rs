@@ -8,7 +8,7 @@
 //!
 //! The meaning of "compression up to input" in the csv header is such that the statistics are gathered for all inputs up to and including the given limit. For example, "compression up to 100" means that the corresponding statistics in that row in the csv are gathered for all inputs from 1 to 100.
 //!
-//! Run with: cargo run --bin generate_statistics --features plotting
+//! Run with: `cargo run --bin generate_statistics --features plotting`
 
 #[cfg(feature = "plotting")]
 use plotters::prelude::*;
