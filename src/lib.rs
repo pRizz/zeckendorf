@@ -207,13 +207,33 @@ pub fn memoized_zeckendorf_list_descending_for_integer(n: u64) -> Vec<u64> {
     }
 
     let mut current_n = n;
-    let mut max_fibonacci_index_smaller_than_n = 1u64;
-    let mut fibonacci_at_index = memoized_fibonacci_recursive(max_fibonacci_index_smaller_than_n);
+    let mut low = 1u64;
+    let mut high = 1u64;
 
-    while fibonacci_at_index < current_n {
-        max_fibonacci_index_smaller_than_n += 1;
-        fibonacci_at_index = memoized_fibonacci_recursive(max_fibonacci_index_smaller_than_n);
+    // Exponential search for upper bound
+    while memoized_fibonacci_recursive(high) < current_n {
+        low = high;
+        high *= 2;
+        // Fibonacci numbers above index 93 will overflow u64
+        if high > 93 {
+            panic!("Fibonacci index {} overflows u64", high);
+        }
     }
+
+    // Binary search for the smallest index i such that F[i] >= current_n
+    while low <= high {
+        let mid = low + (high - low) / 2;
+        if mid == 0 {
+            low = 1;
+            break;
+        }
+        if memoized_fibonacci_recursive(mid) < current_n {
+            low = mid + 1;
+        } else {
+            high = mid - 1;
+        }
+    }
+    let mut max_fibonacci_index_smaller_than_n = low;
 
     let mut zeckendorf_list: Vec<u64> = Vec::new();
     while current_n > 0 {
@@ -284,15 +304,29 @@ pub fn memoized_zeckendorf_list_descending_for_bigint(n: &BigUint) -> Vec<u64> {
 
     let original_n = n.clone();
     let mut current_n = n.clone();
-    let mut max_fibonacci_index_smaller_than_n = 1u64;
-    let mut fibonacci_at_index =
-        memoized_fibonacci_bigint_iterative(max_fibonacci_index_smaller_than_n);
+    let mut low = 1u64;
+    let mut high = 1u64;
 
-    while *fibonacci_at_index < current_n {
-        max_fibonacci_index_smaller_than_n += 1;
-        fibonacci_at_index =
-            memoized_fibonacci_bigint_iterative(max_fibonacci_index_smaller_than_n);
+    // Exponential search for upper bound
+    while *memoized_fibonacci_bigint_iterative(high) < current_n {
+        low = high;
+        high *= 2;
     }
+
+    // Binary search for the smallest index i such that F[i] >= current_n
+    while low <= high {
+        let mid = low + (high - low) / 2;
+        if mid == 0 {
+            low = 1;
+            break;
+        }
+        if *memoized_fibonacci_bigint_iterative(mid) < current_n {
+            low = mid + 1;
+        } else {
+            high = mid - 1;
+        }
+    }
+    let mut max_fibonacci_index_smaller_than_n = low;
 
     let mut zeckendorf_list: Vec<u64> = Vec::new();
     while current_n > BigUint::zero() {
