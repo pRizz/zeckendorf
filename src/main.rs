@@ -78,6 +78,8 @@ fn main() {
 
     test_zeckendorf_compress_and_decompress_file("generated_data/random_data_1025_bytes.bin");
 
+    flamegraph_zeckendorf_decompress_be();
+
     let end_time = Instant::now();
     println!("Time taken: {:?}", end_time.duration_since(start_time));
 }
@@ -132,4 +134,16 @@ fn test_zeckendorf_compress_and_decompress_file(filename: &str) {
             x = (1.0 - compression_ratio) * 100.0
         );
     }
+}
+
+/// Runs the zeckendorf_decompress_be function many times to generate a flamegraph showing the hot spots.
+/// See the scripts/gen_flamegraph.sh script for more information.
+fn flamegraph_zeckendorf_decompress_be() {
+    for i in 0..1000000 {
+        let data = BigUint::from(i as u64).to_bytes_be();
+        let compressed_data = data;
+        let decompressed_data = zeckendorf_decompress_be(&compressed_data);
+        std::hint::black_box(decompressed_data);
+    }
+    return;
 }
