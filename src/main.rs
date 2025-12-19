@@ -80,6 +80,8 @@ fn main() {
 
     flamegraph_zeckendorf_decompress_be();
 
+    test_bit_count_for_all_ones_effective_zeckendorf_bits_ascending();
+
     let end_time = Instant::now();
     println!("Time taken: {:?}", end_time.duration_since(start_time));
 }
@@ -146,4 +148,16 @@ fn flamegraph_zeckendorf_decompress_be() {
         std::hint::black_box(decompressed_data);
     }
     return;
+}
+
+fn test_bit_count_for_all_ones_effective_zeckendorf_bits_ascending() {
+    let one_hundred_thousand_ones = vec![1; 100000];
+    // println!("One hundred thousand ones: {:?}", one_hundred_thousand_ones);
+    let ezla = ezba_to_ezla(&one_hundred_thousand_ones);
+    // println!("Effective Zeckendorf list ascending: {:?}", ezla);
+    let zla = ezl_to_zl(&ezla);
+    // println!("Zeckendorf list ascending: {:?}", zla);
+    let bigint = zl_to_bigint(&zla);
+    // println!("Bigint: {:?}", bigint);
+    println!("Bit count: {:?}", bigint.bits());
 }
