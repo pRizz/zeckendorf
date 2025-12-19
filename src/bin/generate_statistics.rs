@@ -321,10 +321,29 @@ fn plot_statistics(
     let axis_tick_style =
         TextStyle::from(("sans-serif", AXIS_TICK_FONT_SIZE).into_font()).color(&BLACK);
 
+    // Custom formatter for x-axis labels in scientific notation, because the numbers on the x-axis get too large to be displayed comfortably.
+    // Example: 1000000 -> 1e6
+    let x_label_formatter = |x: &f64| {
+        if *x == 0.0 {
+            "0".to_string()
+        } else {
+            let exponent = x.log10().floor() as i32;
+            let mantissa = x / 10_f64.powi(exponent);
+            // Round mantissa to 1 decimal place if needed, otherwise show as integer
+            let rounded_mantissa = mantissa.round();
+            if (mantissa - rounded_mantissa).abs() < 1e-10 {
+                format!("{}e{}", rounded_mantissa as i64, exponent)
+            } else {
+                format!("{:.1}e{}", mantissa, exponent)
+            }
+        }
+    };
+
     chart
         .configure_mesh()
         .x_desc("Input Limit")
-        .y_desc("Compression Statistics (%)")
+        .y_desc("Compression Amount (%)")
+        .x_label_formatter(&x_label_formatter)
         .label_style(axis_tick_style)
         .axis_desc_style(axis_label_style)
         .draw()?;
