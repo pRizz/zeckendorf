@@ -8,6 +8,16 @@ use plotters::prelude::*;
 use std::time::Instant;
 use zeckendorf_rs::*;
 
+const AXIS_FONT_SIZE: u32 = 100;
+const AXIS_TICK_FONT_SIZE: u32 = 64;
+const CAPTION_FONT_SIZE: u32 = 160;
+const LEGEND_FONT_SIZE: u32 = 80;
+const POINT_LABEL_FONT_SIZE: u32 = 40;
+const CHART_MARGIN: u32 = 120;
+const PLOT_WIDTH: u32 = 3840;
+const PLOT_HEIGHT: u32 = 2160;
+const LEGEND_MARGIN: u32 = 50;
+
 #[cfg(feature = "plotting")]
 fn main() {
     let start_time = Instant::now();
@@ -20,10 +30,12 @@ fn main() {
         .expect("Failed to plot Fibonacci numbers");
 
     // Example: Plot compression ratios
-    // plot_compression_ratios("plots/compression_ratios_0_to_100.png", 0..100).expect("Failed to plot compression ratios");
-    plot_compression_ratios("plots/compression_ratios_0_to_257.png", 0..257)
+    plot_compression_ratios("plots/compression_ratios_0_to_100.png", 0..100)
         .expect("Failed to plot compression ratios");
-    // plot_compression_ratios("plots/compression_ratios_0_to_1_000.png", 0..1_000).expect("Failed to plot compression ratios");
+    // plot_compression_ratios("plots/compression_ratios_0_to_257.png", 0..257)
+    //     .expect("Failed to plot compression ratios");
+    // plot_compression_ratios("plots/compression_ratios_0_to_1_000.png", 0..1_000)
+    //     .expect("Failed to plot compression ratios");
     // plot_compression_ratios("plots/compression_ratios_0_to_10_000.png", 0..10_000).expect("Failed to plot compression ratios");
     // plot_compression_ratios("plots/compression_ratios_0_to_100_000.png", 0..100_000).expect("Failed to plot compression ratios");
     // // Takes about 11 seconds to generate
@@ -42,7 +54,7 @@ fn plot_fibonacci_numbers(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let start_time = Instant::now();
     println!("Plotting Fibonacci numbers for range {:?}", range);
-    let root = BitMapBackend::new(filename, (3840, 2160)).into_drawing_area();
+    let root = BitMapBackend::new(filename, (PLOT_WIDTH, PLOT_HEIGHT)).into_drawing_area();
     root.fill(&WHITE)?;
 
     // Find the maximum Fibonacci value in the range to set the log scale upper bound
@@ -55,17 +67,28 @@ fn plot_fibonacci_numbers(
     let mut chart = ChartBuilder::on(&root)
         .caption(
             "Fibonacci Numbers (Log Scale)",
-            ("sans-serif", 50).into_font(),
+            ("sans-serif", CAPTION_FONT_SIZE).into_font(),
         )
-        .margin(5)
-        .x_label_area_size(60)
-        .y_label_area_size(120)
+        .margin(CHART_MARGIN)
+        .x_label_area_size(200)
+        .y_label_area_size(300)
         .build_cartesian_2d(
             range.start as f64..range.end as f64,
             (1f64..max_fib).log_scale(),
         )?;
 
-    chart.configure_mesh().draw()?;
+    let axis_label_style =
+        TextStyle::from(("sans-serif", AXIS_FONT_SIZE).into_font()).color(&BLACK);
+    let axis_tick_style =
+        TextStyle::from(("sans-serif", AXIS_TICK_FONT_SIZE).into_font()).color(&BLACK);
+
+    chart
+        .configure_mesh()
+        .x_desc("Fibonacci Index")
+        .y_desc("Fibonacci Number")
+        .label_style(axis_tick_style)
+        .axis_desc_style(axis_label_style)
+        .draw()?;
 
     // Filter out zero values since log(0) is undefined
     let data: Vec<(f64, f64)> = range
@@ -97,12 +120,14 @@ fn plot_fibonacci_numbers(
         chart.draw_series(std::iter::once(Text::new(
             label,
             (text_x, text_y),
-            ("sans-serif", 32).into_font(),
+            ("sans-serif", POINT_LABEL_FONT_SIZE).into_font(),
         )))?;
     }
 
     chart
         .configure_series_labels()
+        .margin(LEGEND_MARGIN)
+        .label_font(("sans-serif", LEGEND_FONT_SIZE).into_font())
         .background_style(&WHITE.mix(0.8))
         .border_style(&BLACK)
         .draw()?;
@@ -123,22 +148,38 @@ fn plot_compression_ratios(
     filename: &str,
     range: std::ops::Range<u64>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    use num_format::{Locale, ToFormattedString};
+
     let start_time = Instant::now();
     println!("Plotting compression ratios for range {:?}", range);
-    let root = BitMapBackend::new(filename, (3840, 2160)).into_drawing_area();
+    let root = BitMapBackend::new(filename, (PLOT_WIDTH, PLOT_HEIGHT)).into_drawing_area();
     root.fill(&WHITE)?;
 
     let mut chart = ChartBuilder::on(&root)
         .caption(
-            "Zeckendorf Compression Ratios",
-            ("sans-serif", 50).into_font(),
+            format!(
+                "Zeckendorf Compression Ratios from {} to {}",
+                range.start,
+                range.end.to_formatted_string(&Locale::en)
+            ),
+            ("sans-serif", CAPTION_FONT_SIZE).into_font(),
         )
-        .margin(5)
-        .x_label_area_size(60)
-        .y_label_area_size(120)
+        .margin(CHART_MARGIN)
+        .x_label_area_size(260)
+        .y_label_area_size(260)
         .build_cartesian_2d(range.start as f64..range.end as f64, 0.0f64..2.0f64)?;
 
-    chart.configure_mesh().draw()?;
+    let axis_label_style =
+        TextStyle::from(("sans-serif", AXIS_FONT_SIZE).into_font()).color(&BLACK);
+    let axis_tick_style =
+        TextStyle::from(("sans-serif", AXIS_TICK_FONT_SIZE).into_font()).color(&BLACK);
+    chart
+        .configure_mesh()
+        .x_desc("Input Value")
+        .y_desc("Compression Ratio (Compressed / Original)")
+        .label_style(axis_tick_style)
+        .axis_desc_style(axis_label_style)
+        .draw()?;
 
     let data: Vec<(f64, f64)> = range
         .clone()
@@ -179,6 +220,8 @@ fn plot_compression_ratios(
 
     chart
         .configure_series_labels()
+        .margin(LEGEND_MARGIN)
+        .label_font(("sans-serif", LEGEND_FONT_SIZE).into_font())
         .background_style(&WHITE.mix(0.8))
         .border_style(&BLACK)
         .draw()?;
