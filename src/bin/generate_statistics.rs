@@ -10,12 +10,20 @@
 //!
 //! Run with: `cargo run --bin generate_statistics --features plotting`
 
-#[cfg(feature = "plotting")]
 use plotters::prelude::*;
 
 use num_bigint::BigUint;
 use std::{cmp::Ordering, fs, path::Path, time::Instant};
 use zeckendorf_rs::zeckendorf_compress_be;
+
+const AXIS_FONT_SIZE: u32 = 100;
+const AXIS_TICK_FONT_SIZE: u32 = 64;
+const CAPTION_FONT_SIZE: u32 = 160;
+const LEGEND_FONT_SIZE: u32 = 70;
+const CHART_MARGIN: u32 = 120;
+const PLOT_WIDTH: u32 = 3840;
+const PLOT_HEIGHT: u32 = 2160;
+const LEGEND_MARGIN: u32 = 50;
 
 // Time taken to generate statistics for limits [10, 100, 1000, 10000, 100000]: 1.337864666s
 const INPUT_LIMITS: [u64; 5] = [10, 100, 1_000, 10_000, 100_000];
@@ -84,7 +92,6 @@ fn main() {
     fs::write(statistics_directory.join(&statistics_file_name), output)
         .expect("Failed to write statistics to file");
 
-    #[cfg(feature = "plotting")]
     {
         let plot_filename = format!(
             "plots/compression_statistics_up_to_{}_inputs.png",
@@ -258,7 +265,6 @@ fn median(values: &mut [f64]) -> Option<f64> {
     }
 }
 
-#[cfg(feature = "plotting")]
 fn plot_statistics(
     filename: &str,
     stats: &[CompressionStats],
@@ -269,7 +275,7 @@ fn plot_statistics(
     // Ensure plots directory exists
     std::fs::create_dir_all("plots").expect("Failed to create plots directory");
 
-    let root = BitMapBackend::new(filename, (1920, 1080)).into_drawing_area();
+    let root = BitMapBackend::new(filename, (PLOT_WIDTH, PLOT_HEIGHT)).into_drawing_area();
     root.fill(&WHITE)?;
 
     // Find the min and max values for y-axis
@@ -303,14 +309,25 @@ fn plot_statistics(
     let mut chart = ChartBuilder::on(&root)
         .caption(
             "Zeckendorf Compression Statistics",
-            ("sans-serif", 50).into_font(),
+            ("sans-serif", CAPTION_FONT_SIZE).into_font(),
         )
-        .margin(5)
-        .x_label_area_size(60)
-        .y_label_area_size(120)
+        .margin(CHART_MARGIN)
+        .x_label_area_size(260)
+        .y_label_area_size(300)
         .build_cartesian_2d((x_min..x_max).log_scale(), y_min..y_max)?;
 
-    chart.configure_mesh().draw()?;
+    let axis_label_style =
+        TextStyle::from(("sans-serif", AXIS_FONT_SIZE).into_font()).color(&BLACK);
+    let axis_tick_style =
+        TextStyle::from(("sans-serif", AXIS_TICK_FONT_SIZE).into_font()).color(&BLACK);
+
+    chart
+        .configure_mesh()
+        .x_desc("Input Limit")
+        .y_desc("Compression Statistics (%)")
+        .label_style(axis_tick_style)
+        .axis_desc_style(axis_label_style)
+        .draw()?;
 
     // Prepare data for each series
     let favorable_pct_data: Vec<(f64, f64)> = stats
@@ -338,71 +355,129 @@ fn plot_statistics(
         .map(|s| (s.limit as f64, s.median_favorable_pct))
         .collect();
 
+    const STROKE_WIDTH: u32 = 3;
+    const LEGEND_PATH_LEFT_OFFSET: i32 = 30;
+    const LEGEND_PATH_RIGHT_OFFSET: i32 = 10;
+
     // Draw each series with different colors
     chart
-        .draw_series(LineSeries::new(favorable_pct_data.iter().copied(), &RED))?
+        .draw_series(LineSeries::new(
+            favorable_pct_data.iter().copied(),
+            RED.stroke_width(STROKE_WIDTH),
+        ))?
         .label("Chance of compression being favorable (%)")
-        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+        .legend(|(x, y)| {
+            PathElement::new(
+                vec![
+                    (x - LEGEND_PATH_LEFT_OFFSET, y),
+                    (x + LEGEND_PATH_RIGHT_OFFSET, y),
+                ],
+                RED.stroke_width(STROKE_WIDTH),
+            )
+        });
 
     chart
-        .draw_series(LineSeries::new(average_pct_data.iter().copied(), &BLUE))?
+        .draw_series(LineSeries::new(
+            average_pct_data.iter().copied(),
+            BLUE.stroke_width(STROKE_WIDTH),
+        ))?
         .label("Average compression amount (%)")
-        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+        .legend(|(x, y)| {
+            PathElement::new(
+                vec![
+                    (x - LEGEND_PATH_LEFT_OFFSET, y),
+                    (x + LEGEND_PATH_RIGHT_OFFSET, y),
+                ],
+                BLUE.stroke_width(STROKE_WIDTH),
+            )
+        });
 
     chart
-        .draw_series(LineSeries::new(median_pct_data.iter().copied(), &GREEN))?
+        .draw_series(LineSeries::new(
+            median_pct_data.iter().copied(),
+            GREEN.stroke_width(STROKE_WIDTH),
+        ))?
         .label("Median compression amount (%)")
-        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &GREEN));
+        .legend(|(x, y)| {
+            PathElement::new(
+                vec![
+                    (x - LEGEND_PATH_LEFT_OFFSET, y),
+                    (x + LEGEND_PATH_RIGHT_OFFSET, y),
+                ],
+                GREEN.stroke_width(STROKE_WIDTH),
+            )
+        });
 
     chart
         .draw_series(LineSeries::new(
             average_favorable_pct_data.iter().copied(),
-            &MAGENTA,
+            MAGENTA.stroke_width(STROKE_WIDTH),
         ))?
         .label("Average favorable compression amount (%)")
-        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &MAGENTA));
+        .legend(|(x, y)| {
+            PathElement::new(
+                vec![
+                    (x - LEGEND_PATH_LEFT_OFFSET, y),
+                    (x + LEGEND_PATH_RIGHT_OFFSET, y),
+                ],
+                MAGENTA.stroke_width(STROKE_WIDTH),
+            )
+        });
 
     chart
         .draw_series(LineSeries::new(
             median_favorable_pct_data.iter().copied(),
-            &CYAN,
+            CYAN.stroke_width(STROKE_WIDTH),
         ))?
         .label("Median favorable compression amount (%)")
-        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &CYAN));
+        .legend(|(x, y)| {
+            PathElement::new(
+                vec![
+                    (x - LEGEND_PATH_LEFT_OFFSET, y),
+                    (x + LEGEND_PATH_RIGHT_OFFSET, y),
+                ],
+                CYAN.stroke_width(STROKE_WIDTH),
+            )
+        });
+
+    const POINT_SIZE: u32 = 5;
 
     // Draw dots at each point
     chart.draw_series(
         favorable_pct_data
             .iter()
-            .map(|point| Circle::new(*point, 3, RED.filled())),
+            .map(|point| Circle::new(*point, POINT_SIZE, RED.filled())),
     )?;
 
     chart.draw_series(
         average_pct_data
             .iter()
-            .map(|point| Circle::new(*point, 3, BLUE.filled())),
+            .map(|point| Circle::new(*point, POINT_SIZE, BLUE.filled())),
     )?;
 
     chart.draw_series(
         median_pct_data
             .iter()
-            .map(|point| Circle::new(*point, 3, GREEN.filled())),
+            .map(|point| Circle::new(*point, POINT_SIZE, GREEN.filled())),
     )?;
 
     chart.draw_series(
         average_favorable_pct_data
             .iter()
-            .map(|point| Circle::new(*point, 3, MAGENTA.filled())),
+            .map(|point| Circle::new(*point, POINT_SIZE, MAGENTA.filled())),
     )?;
 
     chart.draw_series(
         median_favorable_pct_data
             .iter()
-            .map(|point| Circle::new(*point, 3, CYAN.filled())),
+            .map(|point| Circle::new(*point, POINT_SIZE, CYAN.filled())),
     )?;
 
     chart
         .configure_series_labels()
+        .position(SeriesLabelPosition::UpperRight)
+        .margin(LEGEND_MARGIN)
+        .label_font(("sans-serif", LEGEND_FONT_SIZE).into_font())
         .background_style(&WHITE.mix(0.8))
         .border_style(&BLACK)
         .draw()?;
