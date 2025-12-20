@@ -31,7 +31,7 @@ const INPUT_LIMITS: [u64; 5] = [10, 100, 1_000, 10_000, 100_000];
 // Time taken to generate statistics for limits [10, 100, 1000, 10000, 100000, 1000000]: 9.208086875s
 // const INPUT_LIMITS: [u64; 6] = [10, 100, 1_000, 10_000, 100_000, 1_000_000];
 
-// Time taken to generate statistics for limits [10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000]: 1142.74973475s or ~19 minutes
+// Time taken to generate statistics for limits [10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000]: 1142.74973475s or ~19 minutes; 1142 / 100000000 ~ 0.00001142 seconds per input, or 11.42 microseconds per input on average.
 // const INPUT_LIMITS: [u64; 8] = [10, 100, 1_000, 10_000, 100_000, 1_000_000, 10_000_000, 100_000_000];
 
 #[derive(Debug, Clone)]
