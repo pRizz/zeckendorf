@@ -13,7 +13,7 @@
 use plotters::prelude::*;
 
 use num_bigint::BigUint;
-use rand::Rng;
+use rand::{rngs::StdRng, Rng, SeedableRng};
 use std::{cmp::Ordering, fs, path::Path, time::Instant};
 use zeckendorf_rs::zeckendorf_compress_be;
 
@@ -38,6 +38,9 @@ const INPUT_LIMITS: [u64; 5] = [10, 100, 1_000, 10_000, 100_000];
 // Sampled statistics configuration
 const BIT_SIZE_LIMITS: [u64; 8] = [20, 50, 100, 200, 500, 1_000, 2_000, 5_000];
 const SAMPLES_PER_BIT_SIZE: u64 = 20_000;
+
+// Seed for the random number generator to ensure reproducible results
+const RNG_SEED: u64 = 42;
 
 #[derive(Debug, Clone)]
 struct CompressionStats {
@@ -303,9 +306,7 @@ fn compression_amount_percent_bytes(data: &[u8]) -> Option<f64> {
 }
 
 /// Generates a random bytes array with roughly the specified number of bits (the number of bits is rounded up to the nearest byte).
-fn generate_random_bytes_of_roughly_bit_size(bit_size: u64) -> Vec<u8> {
-    let mut rng = rand::rng();
-
+fn generate_random_bytes_of_roughly_bit_size(bit_size: u64, rng: &mut StdRng) -> Vec<u8> {
     // Generate random bytes to cover the bit size
     let num_bytes = ((bit_size + 7) / 8) as usize;
     let mut bytes = vec![0u8; num_bytes];
@@ -316,11 +317,12 @@ fn generate_random_bytes_of_roughly_bit_size(bit_size: u64) -> Vec<u8> {
 
 fn gather_sampled_stats(bit_size_limit: u64, num_samples: u64) -> CompressionStats {
     let start_time = Instant::now();
+    let mut rng = StdRng::seed_from_u64(RNG_SEED);
     let mut compression_amounts = Vec::new();
     let mut maybe_best_compression_amount: Option<f64> = None;
 
     for _ in 0..num_samples {
-        let random_data = generate_random_bytes_of_roughly_bit_size(bit_size_limit);
+        let random_data = generate_random_bytes_of_roughly_bit_size(bit_size_limit, &mut rng);
         let Some(compression_amount) = compression_amount_percent_bytes(&random_data) else {
             continue; // If the compression is not possible, skip this sample
         };
@@ -745,19 +747,11 @@ fn plot_sampled_statistics(
     let axis_tick_style =
         TextStyle::from(("sans-serif", AXIS_TICK_FONT_SIZE).into_font()).color(&BLACK);
 
-    // Custom formatter for x-axis labels in scientific notation
-    let x_label_formatter = |x: &f64| {
-        if *x == 0.0 {
-            "0".to_string()
+    let x_label_bits_formatter = |x: &f64| {
+        if *x >= 1000.0 {
+            format!("{:.0} kbits", x / 1000.0)
         } else {
-            let exponent = x.log10().floor() as i32;
-            let mantissa = x / 10_f64.powi(exponent);
-            let rounded_mantissa = mantissa.round();
-            if (mantissa - rounded_mantissa).abs() < 1e-10 {
-                format!("{}e{}", rounded_mantissa as i64, exponent)
-            } else {
-                format!("{:.1}e{}", mantissa, exponent)
-            }
+            format!("{:.0} bits", x)
         }
     };
 
@@ -765,7 +759,7 @@ fn plot_sampled_statistics(
         .configure_mesh()
         .x_desc("Bit Size Limit")
         .y_desc("Compression Amount (%)")
-        .x_label_formatter(&x_label_formatter)
+        .x_label_formatter(&x_label_bits_formatter)
         .label_style(axis_tick_style)
         .axis_desc_style(axis_label_style)
         .draw()?;
