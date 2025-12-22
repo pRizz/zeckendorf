@@ -18,7 +18,6 @@ const PLOT_WIDTH: u32 = 3840;
 const PLOT_HEIGHT: u32 = 2160;
 const LEGEND_MARGIN: u32 = 50;
 
-#[cfg(feature = "plotting")]
 fn main() {
     let start_time = Instant::now();
 
@@ -47,7 +46,6 @@ fn main() {
     println!("Time taken: {:?}", end_time.duration_since(start_time));
 }
 
-#[cfg(feature = "plotting")]
 fn plot_fibonacci_numbers(
     filename: &str,
     range: std::ops::Range<u64>,
@@ -143,7 +141,6 @@ fn plot_fibonacci_numbers(
     Ok(())
 }
 
-#[cfg(feature = "plotting")]
 fn plot_compression_ratios(
     filename: &str,
     range: std::ops::Range<u64>,
