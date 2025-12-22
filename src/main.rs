@@ -82,6 +82,8 @@ fn main() {
 
     test_bit_count_for_all_ones_effective_zeckendorf_bits_ascending();
 
+    test_find_fibonacci_by_bit_count();
+
     let end_time = Instant::now();
     println!("Time taken: {:?}", end_time.duration_since(start_time));
 }
@@ -160,4 +162,49 @@ fn test_bit_count_for_all_ones_effective_zeckendorf_bits_ascending() {
     let bigint = zl_to_bigint(&zla);
     // println!("Bigint: {:?}", bigint);
     println!("Bit count: {:?}", bigint.bits());
+}
+
+/// Finds the first Fibonacci number that has at least the specified number of bits.
+/// Returns a tuple containing the Fibonacci index and the Fibonacci number value.
+///
+/// # Arguments
+///
+/// * `target_bits` - The minimum number of bits the Fibonacci number should have
+///
+/// # Returns
+///
+/// A tuple `(u64, BigUint)` where:
+/// - The first element is the Fibonacci index
+/// - The second element is the Fibonacci number value
+fn find_fibonacci_by_bit_count(target_bits: u64) -> (u64, BigUint) {
+    let mut index = 0u64;
+    loop {
+        let fibonacci = memoized_fibonacci_bigint_iterative(index);
+        let bit_count = fibonacci.bits();
+        if bit_count >= target_bits {
+            return (index, (*fibonacci).clone());
+        }
+        index += 1;
+    }
+}
+
+fn test_find_fibonacci_by_bit_count() {
+    let start_time = Instant::now();
+    for i in (500..=1500).step_by(100) {
+        let (index, fibonacci) = find_fibonacci_by_bit_count(i);
+        println!(
+            "The index of the Fibonacci number that has at least {i} bits is: {:?}, at bit count: {:?}",
+            index,
+            fibonacci.bits()
+        );
+        println!(
+            "The Fibonacci number that has at least {i} bits is: {:?}",
+            fibonacci
+        );
+    }
+    let end_time = Instant::now();
+    println!(
+        "Time taken to find Fibonacci numbers by bit count: {:?}",
+        end_time.duration_since(start_time)
+    );
 }
