@@ -115,7 +115,7 @@ fn write_stats_csv(csv_content: &str, file_name_without_extension: &str) {
 fn generate_bit_limit_stats() {
     let start_time = Instant::now();
     println!("\n=== Generating bit limit statistics ===");
-    let csv_header = "compression up to input,chance of compression being favorable,average compression amount in percent,median compression amount in percent,best compression amount in percent,best compression input,average favorable compression amount in percent,median favorable compression amount in percent\n";
+    let csv_header = "compression up to input,chance of compression being favorable,average compression ratio,median compression ratio,best compression ratio,best compression input,average favorable compression ratio,median favorable compression ratio\n";
 
     let all_stats = INPUT_LIMITS
         .iter()
@@ -140,7 +140,7 @@ fn generate_bit_limit_stats() {
 }
 
 fn generate_sampled_bit_limit_stats() {
-    let csv_header = "max bit size,chance of compression being favorable,average compression amount in percent,median compression amount in percent,best compression amount in percent,best compression input,average favorable compression amount in percent,median favorable compression amount in percent\n";
+    let csv_header = "max bit size,chance of compression being favorable,average compression ratio,median compression ratio,best compression ratio,best compression input,average favorable compression ratio,median favorable compression ratio\n";
 
     println!("\n=== Generating sampled statistics ===");
     let sampled_start_time = Instant::now();
@@ -182,7 +182,7 @@ fn gather_stats_for_limit(limit: u64) -> CompressionStats {
         maybe_best_value_amount_pair = maybe_best_value_amount_pair.map_or(
             Some((value_to_compress, compression_amount)),
             |(current_best_compressed_value, current_best_compression_amount)| {
-                if compression_amount > current_best_compression_amount {
+                if compression_amount < current_best_compression_amount {
                     Some((value_to_compress, compression_amount))
                 } else {
                     Some((
@@ -210,7 +210,7 @@ fn gather_stats_for_limit(limit: u64) -> CompressionStats {
     let total = compression_amounts.len() as f64;
     let favorable_count = compression_amounts
         .iter()
-        .filter(|amount| **amount > 0.0)
+        .filter(|ratio| **ratio < 1.0)
         .count() as f64;
 
     let favorable_pct = (favorable_count / total) * 100.0;
@@ -226,7 +226,7 @@ fn gather_stats_for_limit(limit: u64) -> CompressionStats {
     let mut favorable_amounts: Vec<f64> = compression_amounts
         .iter()
         .copied()
-        .filter(|amount| *amount > 0.0)
+        .filter(|ratio| *ratio < 1.0)
         .collect();
 
     let average_favorable_pct = if favorable_amounts.is_empty() {
@@ -268,10 +268,11 @@ fn gather_stats_for_limit(limit: u64) -> CompressionStats {
     }
 }
 
-/// Calculates the compression amount in percent for a given input value, converting the input to a bigint as big endian bytes and then compressing it.
+/// Calculates the compression ratio for a given input value, converting the input to a bigint as big endian bytes and then compressing it.
 ///
 /// Returns:
-/// - Some(f64) if the compression is possible. The compression amount in percent as a positive number, or a negative number if the compression is unfavorable (increases the size of the data).
+/// - Some(f64) if the compression is possible. The compression ratio as a normalized value where 1.0 = 100% of original size.
+///   Values < 1.0 indicate favorable compression (compressed is smaller), values > 1.0 indicate unfavorable compression (compressed is larger).
 /// - None if the compression is not possible (e.g. if the input is 0)
 fn compression_amount_percent(value: u64) -> Option<f64> {
     let original_number = BigUint::from(value);
@@ -287,13 +288,14 @@ fn compression_amount_percent(value: u64) -> Option<f64> {
     let compressed_bit_size = compressed_as_bigint.bits();
 
     let ratio = compressed_bit_size as f64 / original_bit_size as f64;
-    Some((1.0 - ratio) * 100.0)
+    Some(ratio)
 }
 
-/// Calculates the compression amount in percent for a given data in bytes.
+/// Calculates the compression ratio for a given data in bytes.
 ///
 /// Returns:
-/// - Some(f64) if the compression is possible. The compression amount in percent as a positive number, or a negative number if the compression is unfavorable (increases the size of the data).
+/// - Some(f64) if the compression is possible. The compression ratio as a normalized value where 1.0 = 100% of original size.
+///   Values < 1.0 indicate favorable compression (compressed is smaller), values > 1.0 indicate unfavorable compression (compressed is larger).
 /// - None if the compression is not possible (e.g. if the input is an empty bytes array)
 fn compression_amount_percent_bytes(data: &[u8]) -> Option<f64> {
     let original_bit_size = data.len() * 8;
@@ -307,7 +309,7 @@ fn compression_amount_percent_bytes(data: &[u8]) -> Option<f64> {
     let compressed_bit_size = compressed_as_bigint.bits();
 
     let ratio = compressed_bit_size as f64 / original_bit_size as f64;
-    Some((1.0 - ratio) * 100.0)
+    Some(ratio)
 }
 
 /// Generates a random bytes array with roughly the specified number of bits (the number of bits is rounded up to the nearest byte).
@@ -334,7 +336,7 @@ fn gather_sampled_stats(bit_size_limit: u64, num_samples: u64) -> CompressionSta
         compression_amounts.push(compression_amount);
         maybe_best_compression_amount =
             maybe_best_compression_amount.map_or(Some(compression_amount), |current_best| {
-                if compression_amount > current_best {
+                if compression_amount < current_best {
                     Some(compression_amount)
                 } else {
                     Some(current_best)
@@ -358,7 +360,7 @@ fn gather_sampled_stats(bit_size_limit: u64, num_samples: u64) -> CompressionSta
     let total = compression_amounts.len() as f64;
     let favorable_count = compression_amounts
         .iter()
-        .filter(|amount| **amount > 0.0)
+        .filter(|ratio| **ratio < 1.0)
         .count() as f64;
 
     let favorable_pct = (favorable_count / total) * 100.0;
@@ -374,7 +376,7 @@ fn gather_sampled_stats(bit_size_limit: u64, num_samples: u64) -> CompressionSta
     let mut favorable_amounts: Vec<f64> = compression_amounts
         .iter()
         .copied()
-        .filter(|amount| *amount > 0.0)
+        .filter(|ratio| *ratio < 1.0)
         .collect();
 
     let average_favorable_pct = if favorable_amounts.is_empty() {
@@ -524,7 +526,7 @@ fn plot_statistics(
     chart
         .configure_mesh()
         .x_desc("Input Limit")
-        .y_desc("Compression Amount (%)")
+        .y_desc("Compression Ratio")
         .x_label_formatter(&x_label_formatter)
         .label_style(axis_tick_style)
         .axis_desc_style(axis_label_style)
@@ -582,7 +584,7 @@ fn plot_statistics(
             average_pct_data.iter().copied(),
             BLUE.stroke_width(STROKE_WIDTH),
         ))?
-        .label("Average compression amount (%)")
+        .label("Average compression ratio")
         .legend(|(x, y)| {
             PathElement::new(
                 vec![
@@ -598,7 +600,7 @@ fn plot_statistics(
             median_pct_data.iter().copied(),
             GREEN.stroke_width(STROKE_WIDTH),
         ))?
-        .label("Median compression amount (%)")
+        .label("Median compression ratio")
         .legend(|(x, y)| {
             PathElement::new(
                 vec![
@@ -614,7 +616,7 @@ fn plot_statistics(
             average_favorable_pct_data.iter().copied(),
             MAGENTA.stroke_width(STROKE_WIDTH),
         ))?
-        .label("Average favorable compression amount (%)")
+        .label("Average favorable compression ratio")
         .legend(|(x, y)| {
             PathElement::new(
                 vec![
@@ -630,7 +632,7 @@ fn plot_statistics(
             median_favorable_pct_data.iter().copied(),
             CYAN.stroke_width(STROKE_WIDTH),
         ))?
-        .label("Median favorable compression amount (%)")
+        .label("Median favorable compression ratio")
         .legend(|(x, y)| {
             PathElement::new(
                 vec![
@@ -763,7 +765,7 @@ fn plot_sampled_statistics(
     chart
         .configure_mesh()
         .x_desc("Bit Size Limit")
-        .y_desc("Compression Amount (%)")
+        .y_desc("Compression Ratio")
         .x_label_formatter(&x_label_bits_formatter)
         .label_style(axis_tick_style)
         .axis_desc_style(axis_label_style)
@@ -821,7 +823,7 @@ fn plot_sampled_statistics(
             average_pct_data.iter().copied(),
             BLUE.stroke_width(STROKE_WIDTH),
         ))?
-        .label("Average compression amount (%)")
+        .label("Average compression ratio")
         .legend(|(x, y)| {
             PathElement::new(
                 vec![
@@ -837,7 +839,7 @@ fn plot_sampled_statistics(
             median_pct_data.iter().copied(),
             GREEN.stroke_width(STROKE_WIDTH),
         ))?
-        .label("Median compression amount (%)")
+        .label("Median compression ratio")
         .legend(|(x, y)| {
             PathElement::new(
                 vec![
@@ -853,7 +855,7 @@ fn plot_sampled_statistics(
             average_favorable_pct_data.iter().copied(),
             MAGENTA.stroke_width(STROKE_WIDTH),
         ))?
-        .label("Average favorable compression amount (%)")
+        .label("Average favorable compression ratio")
         .legend(|(x, y)| {
             PathElement::new(
                 vec![
@@ -869,7 +871,7 @@ fn plot_sampled_statistics(
             median_favorable_pct_data.iter().copied(),
             CYAN.stroke_width(STROKE_WIDTH),
         ))?
-        .label("Median favorable compression amount (%)")
+        .label("Median favorable compression ratio")
         .legend(|(x, y)| {
             PathElement::new(
                 vec![
