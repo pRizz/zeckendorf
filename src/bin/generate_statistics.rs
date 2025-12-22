@@ -1,6 +1,6 @@
 //! Binary for generating statistics about the compression ratio of the Zeckendorf representation
 //!
-//! The statistics are saved in the statistics_history directory in a file named statistics_up_to_<limit>_inputs.csv
+//! The statistics are saved in the statistics_history directory in a file named statistics_up_to_<limit>_inputs.csv and sampled_statistics_up_to_<limit>_bits.csv
 //!
 //! The purpose of this binary is to determine the average compression ratio, median compression ratio, best compression ratio, and chance of compression being favorable for a given limit. As we compress to higher limits, the statistics should become more stable.
 //!
@@ -8,7 +8,7 @@
 //!
 //! The meaning of "compression up to input" in the csv header is such that the statistics are gathered for all inputs up to and including the given limit. For example, "compression up to 100" means that the corresponding statistics in that row in the csv are gathered for all inputs from 1 to 100.
 //!
-//! Run with: `cargo run --bin generate_statistics --features plotting`
+//! Run with: `cargo run --release --bin generate_statistics --features plotting`
 
 use plotters::prelude::*;
 
@@ -26,18 +26,19 @@ const PLOT_WIDTH: u32 = 3840;
 const PLOT_HEIGHT: u32 = 2160;
 const LEGEND_MARGIN: u32 = 50;
 
-// Time taken to generate statistics for limits [10, 100, 1000, 10000, 100000]: 1.337864666s
+// Time taken to generate bit limit statistics: 111.330666ms
 const INPUT_LIMITS: [u64; 5] = [10, 100, 1_000, 10_000, 100_000];
 
-// Time taken to generate statistics for limits [10, 100, 1000, 10000, 100000, 1000000]: 9.208086875s
+// Time taken to generate bit limit statistics: 861.613791ms
 // const INPUT_LIMITS: [u64; 6] = [10, 100, 1_000, 10_000, 100_000, 1_000_000];
 
-// Time taken to generate statistics for limits [10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000]: 1142.74973475s or ~19 minutes; 1142 / 100000000 ~ 0.00001142 seconds per input, or 11.42 microseconds per input on average.
+// Time taken to generate bit limit statistics: 110.184340667s; 110 / 100000000 ~ 1.1 microseconds per input on average.
 // const INPUT_LIMITS: [u64; 8] = [10, 100, 1_000, 10_000, 100_000, 1_000_000, 10_000_000, 100_000_000];
 
 // Sampled statistics configuration
+// Time taken to generate sampled statistics: 16.027274541s
 const BIT_SIZE_LIMITS: [u64; 8] = [20, 50, 100, 200, 500, 1_000, 2_000, 5_000];
-const SAMPLES_PER_BIT_SIZE: u64 = 20_000;
+const SAMPLES_PER_BIT_SIZE: u64 = 100_000;
 
 // Seed for the random number generator to ensure reproducible results
 const RNG_SEED: u64 = 42;
@@ -112,6 +113,8 @@ fn write_stats_csv(csv_content: &str, file_name_without_extension: &str) {
 }
 
 fn generate_bit_limit_stats() {
+    let start_time = Instant::now();
+    println!("\n=== Generating bit limit statistics ===");
     let csv_header = "compression up to input,chance of compression being favorable,average compression amount in percent,median compression amount in percent,best compression amount in percent,best compression input,average favorable compression amount in percent,median favorable compression amount in percent\n";
 
     let all_stats = INPUT_LIMITS
@@ -119,7 +122,7 @@ fn generate_bit_limit_stats() {
         .map(|&limit| gather_stats_for_limit(limit))
         .collect::<Vec<CompressionStats>>();
     let statistics_file_name = format!(
-        "statistics_up_to_{}_inputs.csv",
+        "statistics_up_to_{}_inputs",
         INPUT_LIMITS.last().unwrap()
     );
     let csv_content = generate_stats_csv(&all_stats, csv_header);
@@ -132,6 +135,11 @@ fn generate_bit_limit_stats() {
     if let Err(e) = plot_statistics(&plot_filename, &all_stats) {
         eprintln!("Error: Failed to plot statistics: {e}");
     }
+    let end_time = Instant::now();
+    println!(
+        "Time taken to generate bit limit statistics: {:?}",
+        end_time.duration_since(start_time)
+    );
 }
 
 fn generate_sampled_bit_limit_stats() {
@@ -145,7 +153,7 @@ fn generate_sampled_bit_limit_stats() {
         .collect::<Vec<CompressionStats>>();
     let csv_content = generate_stats_csv(&sampled_stats, csv_header);
     let sampled_statistics_file_name = format!(
-        "sampled_statistics_up_to_{}_bits.csv",
+        "sampled_statistics_up_to_{}_bits",
         BIT_SIZE_LIMITS.last().unwrap()
     );
     write_stats_csv(&csv_content, &sampled_statistics_file_name);

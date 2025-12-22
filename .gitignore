@@ -3,3 +3,4 @@ generated_data/
 .DS_Store
 flamegraph.svg
 cargo-flamegraph.trace
+profile.json.gz

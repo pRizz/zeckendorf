@@ -1,7 +1,7 @@
 //! Binary for generating plots using plotters
 //!
 //! This binary requires the `plotting` feature to be enabled.
-//! Run with: `cargo run --bin plot --features plotting`
+//! Run with: `cargo run --release --bin plot --features plotting`
 
 use num_bigint::BigUint;
 use plotters::prelude::*;

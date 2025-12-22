@@ -7,4 +7,4 @@
 # `sudo ./scripts/gen_flamegraph.sh`
 # Root permissions are required to properly profile the program.
 
-CARGO_PROFILE_RELEASE_DEBUG=true cargo flamegraph --root --bin zeckendorf --features plotting --deterministic
+CARGO_PROFILE_RELEASE_DEBUG=true cargo flamegraph --root --bin zeckendorf --features plotting -- --deterministic

@@ -3,7 +3,7 @@ use std::time::Instant;
 use zeckendorf_rs::*;
 
 /// Example usages:
-/// `cargo run --bin zeckendorf`
+/// `cargo run --release --bin zeckendorf`
 
 fn main() {
     let start_time = Instant::now();
