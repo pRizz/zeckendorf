@@ -10,6 +10,7 @@
 //!
 //! Run with: `cargo run --release --bin generate_statistics --features plotting`
 
+use num_format::{Locale, ToFormattedString};
 use plotters::prelude::*;
 
 use num_bigint::BigUint;
@@ -37,6 +38,7 @@ const INPUT_LIMITS: [u64; 5] = [10, 100, 1_000, 10_000, 100_000];
 
 // Sampled statistics configuration
 // Time taken to generate sampled statistics: 16.027274541s
+// FIXME: seems to break at 2000 bits
 const BIT_SIZE_LIMITS: [u64; 8] = [20, 50, 100, 200, 500, 1_000, 2_000, 5_000];
 const SAMPLES_PER_BIT_SIZE: u64 = 100_000;
 
@@ -125,12 +127,20 @@ fn generate_bit_limit_stats() {
     let csv_content = generate_stats_csv(&all_stats, csv_header);
     write_stats_csv(&csv_content, &statistics_file_name);
 
-    let plot_filename = format!(
-        "plots/compression_statistics_up_to_{}_inputs.png",
+    let plot_filename_ratios = format!(
+        "plots/compression_ratios_up_to_{}_inputs.png",
         INPUT_LIMITS.last().unwrap()
     );
-    if let Err(e) = plot_statistics(&plot_filename, &all_stats) {
-        eprintln!("Error: Failed to plot statistics: {e}");
+    if let Err(e) = plot_compression_ratios(&plot_filename_ratios, &all_stats) {
+        eprintln!("Error: Failed to plot compression ratios: {e}");
+    }
+
+    let plot_filename_favorable = format!(
+        "plots/favorable_percentages_up_to_{}_inputs.png",
+        INPUT_LIMITS.last().unwrap()
+    );
+    if let Err(e) = plot_favorable_percentages(&plot_filename_favorable, &all_stats) {
+        eprintln!("Error: Failed to plot favorable percentages: {e}");
     }
     let end_time = Instant::now();
     println!(
@@ -160,12 +170,20 @@ fn generate_sampled_bit_limit_stats() {
         sampled_end_time.duration_since(sampled_start_time)
     );
 
-    let plot_filename = format!(
-        "plots/compression_statistics_sampled_up_to_{}_bits.png",
+    let plot_filename_ratios = format!(
+        "plots/compression_ratios_sampled_up_to_{}_bits.png",
         BIT_SIZE_LIMITS.last().unwrap()
     );
-    if let Err(e) = plot_sampled_statistics(&plot_filename, &sampled_stats) {
-        eprintln!("Error: Failed to plot sampled statistics: {e}");
+    if let Err(e) = plot_sampled_compression_ratios(&plot_filename_ratios, &sampled_stats) {
+        eprintln!("Error: Failed to plot sampled compression ratios: {e}");
+    }
+
+    let plot_filename_favorable = format!(
+        "plots/favorable_percentages_sampled_up_to_{}_bits.png",
+        BIT_SIZE_LIMITS.last().unwrap()
+    );
+    if let Err(e) = plot_sampled_favorable_percentages(&plot_filename_favorable, &sampled_stats) {
+        eprintln!("Error: Failed to plot sampled favorable percentages: {e}");
     }
 }
 
@@ -449,12 +467,12 @@ fn median(values: &mut [f64]) -> Option<f64> {
     }
 }
 
-fn plot_statistics(
+fn plot_compression_ratios(
     filename: &str,
     stats: &[CompressionStats],
 ) -> Result<(), Box<dyn std::error::Error>> {
     let start_time = Instant::now();
-    println!("Plotting compression statistics");
+    println!("Plotting compression ratios");
 
     // Ensure plots directory exists
     std::fs::create_dir_all("plots").expect("Failed to create plots directory");
@@ -462,19 +480,17 @@ fn plot_statistics(
     let root = BitMapBackend::new(filename, (PLOT_WIDTH, PLOT_HEIGHT)).into_drawing_area();
     root.fill(&WHITE)?;
 
-    // Find the min and max values for y-axis
+    // Find the min and max values for y-axis (only compression ratios)
     let mut min_y = f64::INFINITY;
     let mut max_y = f64::NEG_INFINITY;
 
     for stat in stats {
         min_y = min_y
-            .min(stat.favorable_pct)
             .min(stat.average_pct)
             .min(stat.median_pct)
             .min(stat.average_favorable_pct)
             .min(stat.median_favorable_pct);
         max_y = max_y
-            .max(stat.favorable_pct)
             .max(stat.average_pct)
             .max(stat.median_pct)
             .max(stat.average_favorable_pct)
@@ -492,7 +508,7 @@ fn plot_statistics(
 
     let mut chart = ChartBuilder::on(&root)
         .caption(
-            "Zeckendorf Compression Statistics",
+            "Zeckendorf Compression Ratios",
             ("sans-serif", CAPTION_FONT_SIZE).into_font(),
         )
         .margin(CHART_MARGIN)
@@ -533,11 +549,6 @@ fn plot_statistics(
         .draw()?;
 
     // Prepare data for each series
-    let favorable_pct_data: Vec<(f64, f64)> = stats
-        .iter()
-        .map(|s| (s.limit as f64, s.favorable_pct))
-        .collect();
-
     let average_pct_data: Vec<(f64, f64)> = stats
         .iter()
         .map(|s| (s.limit as f64, s.average_pct))
@@ -563,22 +574,6 @@ fn plot_statistics(
     const LEGEND_PATH_RIGHT_OFFSET: i32 = 10;
 
     // Draw each series with different colors
-    chart
-        .draw_series(LineSeries::new(
-            favorable_pct_data.iter().copied(),
-            RED.stroke_width(STROKE_WIDTH),
-        ))?
-        .label("Chance of compression being favorable (%)")
-        .legend(|(x, y)| {
-            PathElement::new(
-                vec![
-                    (x - LEGEND_PATH_LEFT_OFFSET, y),
-                    (x + LEGEND_PATH_RIGHT_OFFSET, y),
-                ],
-                RED.stroke_width(STROKE_WIDTH),
-            )
-        });
-
     chart
         .draw_series(LineSeries::new(
             average_pct_data.iter().copied(),
@@ -647,12 +642,6 @@ fn plot_statistics(
 
     // Draw dots at each point
     chart.draw_series(
-        favorable_pct_data
-            .iter()
-            .map(|point| Circle::new(*point, POINT_SIZE, RED.filled())),
-    )?;
-
-    chart.draw_series(
         average_pct_data
             .iter()
             .map(|point| Circle::new(*point, POINT_SIZE, BLUE.filled())),
@@ -678,6 +667,134 @@ fn plot_statistics(
 
     chart
         .configure_series_labels()
+        .position(SeriesLabelPosition::LowerRight)
+        .margin(LEGEND_MARGIN)
+        .label_font(("sans-serif", LEGEND_FONT_SIZE).into_font())
+        .background_style(&WHITE.mix(0.8))
+        .border_style(&BLACK)
+        .draw()?;
+
+    root.present()?;
+    println!("Compression ratios plot saved to {}", filename);
+    let end_time = Instant::now();
+    println!(
+        "Time taken to plot compression ratios: {:?}",
+        end_time.duration_since(start_time)
+    );
+    Ok(())
+}
+
+fn plot_favorable_percentages(
+    filename: &str,
+    stats: &[CompressionStats],
+) -> Result<(), Box<dyn std::error::Error>> {
+    let start_time = Instant::now();
+    println!("Plotting favorable percentages");
+
+    // Ensure plots directory exists
+    std::fs::create_dir_all("plots").expect("Failed to create plots directory");
+
+    let root = BitMapBackend::new(filename, (PLOT_WIDTH, PLOT_HEIGHT)).into_drawing_area();
+    root.fill(&WHITE)?;
+
+    // Find the min and max values for y-axis (only favorable percentages)
+    let mut min_y = f64::INFINITY;
+    let mut max_y = f64::NEG_INFINITY;
+
+    for stat in stats {
+        min_y = min_y.min(stat.favorable_pct);
+        max_y = max_y.max(stat.favorable_pct);
+    }
+
+    // Add some padding
+    let y_range = max_y - min_y;
+    let y_min = (min_y - y_range * 0.1).max(0.0);
+    let y_max = (max_y + y_range * 0.1).min(100.0);
+
+    // Get x-axis range (logarithmic)
+    let x_min = INPUT_LIMITS.first().copied().unwrap_or(1) as f64;
+    let x_max = INPUT_LIMITS.last().copied().unwrap_or(1) as f64;
+
+    let mut chart = ChartBuilder::on(&root)
+        .caption(
+            "Chance of Compression Being Favorable",
+            ("sans-serif", CAPTION_FONT_SIZE).into_font(),
+        )
+        .margin(CHART_MARGIN)
+        .x_label_area_size(260)
+        .y_label_area_size(300)
+        .build_cartesian_2d((x_min..x_max).log_scale(), y_min..y_max)?;
+
+    let axis_label_style =
+        TextStyle::from(("sans-serif", AXIS_FONT_SIZE).into_font()).color(&BLACK);
+    let axis_tick_style =
+        TextStyle::from(("sans-serif", AXIS_TICK_FONT_SIZE).into_font()).color(&BLACK);
+
+    // Custom formatter for x-axis labels in scientific notation, because the numbers on the x-axis get too large to be displayed comfortably.
+    // Example: 1000000 -> 1e6
+    let x_label_formatter = |x: &f64| {
+        if *x == 0.0 {
+            "0".to_string()
+        } else {
+            let exponent = x.log10().floor() as i32;
+            let mantissa = x / 10_f64.powi(exponent);
+            // Round mantissa to 1 decimal place if needed, otherwise show as integer
+            let rounded_mantissa = mantissa.round();
+            if (mantissa - rounded_mantissa).abs() < 1e-10 {
+                format!("{}e{}", rounded_mantissa as i64, exponent)
+            } else {
+                format!("{:.1}e{}", mantissa, exponent)
+            }
+        }
+    };
+
+    chart
+        .configure_mesh()
+        .x_desc("Input Limit")
+        .y_desc("Chance of Compression Being Favorable (%)")
+        .x_label_formatter(&x_label_formatter)
+        .label_style(axis_tick_style)
+        .axis_desc_style(axis_label_style)
+        .draw()?;
+
+    // Prepare data for favorable percentage series
+    let favorable_pct_data: Vec<(f64, f64)> = stats
+        .iter()
+        .map(|s| (s.limit as f64, s.favorable_pct))
+        .collect();
+
+    const STROKE_WIDTH: u32 = 3;
+    const LEGEND_PATH_LEFT_OFFSET: i32 = 30;
+    const LEGEND_PATH_RIGHT_OFFSET: i32 = 10;
+
+    // Draw the series
+    chart
+        .draw_series(LineSeries::new(
+            favorable_pct_data.iter().copied(),
+            RED.stroke_width(STROKE_WIDTH),
+        ))?
+        .label("Chance of compression being favorable (%)")
+        .legend(|(x, y)| {
+            PathElement::new(
+                vec![
+                    (x - LEGEND_PATH_LEFT_OFFSET, y),
+                    (x + LEGEND_PATH_RIGHT_OFFSET, y),
+                ],
+                RED.stroke_width(STROKE_WIDTH),
+            )
+        });
+
+    const POINT_SIZE: u32 = 5;
+
+    // Draw dots at each point
+    chart.draw_series(
+        favorable_pct_data
+            .iter()
+            .map(|point| Circle::new(*point, POINT_SIZE, RED.filled())),
+    )?;
+
+    chart
+        .configure_series_labels()
         .position(SeriesLabelPosition::UpperRight)
         .margin(LEGEND_MARGIN)
         .label_font(("sans-serif", LEGEND_FONT_SIZE).into_font())
@@ -686,21 +803,21 @@ fn plot_statistics(
         .draw()?;
 
     root.present()?;
-    println!("Compression statistics plot saved to {}", filename);
+    println!("Favorable percentages plot saved to {}", filename);
     let end_time = Instant::now();
     println!(
-        "Time taken to plot compression statistics: {:?}",
+        "Time taken to plot favorable percentages: {:?}",
         end_time.duration_since(start_time)
     );
     Ok(())
 }
 
-fn plot_sampled_statistics(
+fn plot_sampled_compression_ratios(
     filename: &str,
     stats: &[CompressionStats],
 ) -> Result<(), Box<dyn std::error::Error>> {
     let start_time = Instant::now();
-    println!("Plotting sampled compression statistics");
+    println!("Plotting sampled compression ratios");
 
     // Ensure plots directory exists
     std::fs::create_dir_all("plots").expect("Failed to create plots directory");
@@ -708,19 +825,17 @@ fn plot_sampled_statistics(
     let root = BitMapBackend::new(filename, (PLOT_WIDTH, PLOT_HEIGHT)).into_drawing_area();
     root.fill(&WHITE)?;
 
-    // Find the min and max values for y-axis
+    // Find the min and max values for y-axis (only compression ratios)
     let mut min_y = f64::INFINITY;
     let mut max_y = f64::NEG_INFINITY;
 
     for stat in stats {
         min_y = min_y
-            .min(stat.favorable_pct)
             .min(stat.average_pct)
             .min(stat.median_pct)
             .min(stat.average_favorable_pct)
             .min(stat.median_favorable_pct);
         max_y = max_y
-            .max(stat.favorable_pct)
             .max(stat.average_pct)
             .max(stat.median_pct)
             .max(stat.average_favorable_pct)
@@ -738,10 +853,7 @@ fn plot_sampled_statistics(
 
     let mut chart = ChartBuilder::on(&root)
         .caption(
-            format!(
-                "Zeckendorf Compression Statistics\n(Sampled, {} samples per bit size limit)",
-                SAMPLES_PER_BIT_SIZE
-            ),
+            format!("Zeckendorf Compression Ratios"),
             ("sans-serif", CAPTION_FONT_SIZE).into_font(),
         )
         .margin(CHART_MARGIN)
@@ -764,7 +876,10 @@ fn plot_sampled_statistics(
 
     chart
         .configure_mesh()
-        .x_desc("Bit Size Limit")
+        .x_desc(format!(
+            "Bit Size Limit ({} samples per limit), Log Scale",
+            SAMPLES_PER_BIT_SIZE.to_formatted_string(&Locale::en)
+        ))
         .y_desc("Compression Ratio")
         .x_label_formatter(&x_label_bits_formatter)
         .label_style(axis_tick_style)
@@ -772,11 +887,6 @@ fn plot_sampled_statistics(
         .draw()?;
 
     // Prepare data for each series
-    let favorable_pct_data: Vec<(f64, f64)> = stats
-        .iter()
-        .map(|s| (s.limit as f64, s.favorable_pct))
-        .collect();
-
     let average_pct_data: Vec<(f64, f64)> = stats
         .iter()
         .map(|s| (s.limit as f64, s.average_pct))
@@ -802,22 +912,6 @@ fn plot_sampled_statistics(
     const LEGEND_PATH_RIGHT_OFFSET: i32 = 10;
 
     // Draw each series with different colors
-    chart
-        .draw_series(LineSeries::new(
-            favorable_pct_data.iter().copied(),
-            RED.stroke_width(STROKE_WIDTH),
-        ))?
-        .label("Chance of compression being favorable (%)")
-        .legend(|(x, y)| {
-            PathElement::new(
-                vec![
-                    (x - LEGEND_PATH_LEFT_OFFSET, y),
-                    (x + LEGEND_PATH_RIGHT_OFFSET, y),
-                ],
-                RED.stroke_width(STROKE_WIDTH),
-            )
-        });
-
     chart
         .draw_series(LineSeries::new(
             average_pct_data.iter().copied(),
@@ -886,12 +980,6 @@ fn plot_sampled_statistics(
 
     // Draw dots at each point
     chart.draw_series(
-        favorable_pct_data
-            .iter()
-            .map(|point| Circle::new(*point, POINT_SIZE, RED.filled())),
-    )?;
-
-    chart.draw_series(
         average_pct_data
             .iter()
             .map(|point| Circle::new(*point, POINT_SIZE, BLUE.filled())),
@@ -917,6 +1005,128 @@ fn plot_sampled_statistics(
 
     chart
         .configure_series_labels()
+        .position(SeriesLabelPosition::LowerLeft)
+        .margin(LEGEND_MARGIN)
+        .label_font(("sans-serif", LEGEND_FONT_SIZE).into_font())
+        .background_style(&WHITE.mix(0.8))
+        .border_style(&BLACK)
+        .draw()?;
+
+    root.present()?;
+    println!("Sampled compression ratios plot saved to {}", filename);
+    let end_time = Instant::now();
+    println!(
+        "Time taken to plot sampled compression ratios: {:?}",
+        end_time.duration_since(start_time)
+    );
+    Ok(())
+}
+
+fn plot_sampled_favorable_percentages(
+    filename: &str,
+    stats: &[CompressionStats],
+) -> Result<(), Box<dyn std::error::Error>> {
+    let start_time = Instant::now();
+    println!("Plotting sampled favorable percentages");
+
+    // Ensure plots directory exists
+    std::fs::create_dir_all("plots").expect("Failed to create plots directory");
+
+    let root = BitMapBackend::new(filename, (PLOT_WIDTH, PLOT_HEIGHT)).into_drawing_area();
+    root.fill(&WHITE)?;
+
+    // Find the min and max values for y-axis (only favorable percentages)
+    let mut min_y = f64::INFINITY;
+    let mut max_y = f64::NEG_INFINITY;
+
+    for stat in stats {
+        min_y = min_y.min(stat.favorable_pct);
+        max_y = max_y.max(stat.favorable_pct);
+    }
+
+    // Add some padding
+    let y_range = max_y - min_y;
+    let y_min = (min_y - y_range * 0.1).max(0.0);
+    let y_max = (max_y + y_range * 0.1).min(100.0);
+
+    // Get x-axis range (logarithmic) - using bit sizes
+    let x_min = BIT_SIZE_LIMITS.first().copied().unwrap_or(1) as f64;
+    let x_max = BIT_SIZE_LIMITS.last().copied().unwrap_or(1) as f64;
+
+    let mut chart = ChartBuilder::on(&root)
+        .caption(
+            format!("Chance of Compression Being Favorable"),
+            ("sans-serif", CAPTION_FONT_SIZE).into_font(),
+        )
+        .margin(CHART_MARGIN)
+        .x_label_area_size(260)
+        .y_label_area_size(300)
+        .build_cartesian_2d((x_min..x_max).log_scale(), (y_min..y_max).log_scale())?;
+
+    let axis_label_style =
+        TextStyle::from(("sans-serif", AXIS_FONT_SIZE).into_font()).color(&BLACK);
+    let axis_tick_style =
+        TextStyle::from(("sans-serif", AXIS_TICK_FONT_SIZE).into_font()).color(&BLACK);
+
+    let x_label_bits_formatter = |x: &f64| {
+        if *x >= 1000.0 {
+            format!("{:.0} kbits", x / 1000.0)
+        } else {
+            format!("{:.0} bits", x)
+        }
+    };
+
+    chart
+        .configure_mesh()
+        // Format the samples per limit as a string with comma separation for thousands
+        .x_desc(format!(
+            "Bit Size Limit ({} samples per limit), Log Scale",
+            SAMPLES_PER_BIT_SIZE.to_formatted_string(&Locale::en)
+        ))
+        .y_desc("Chance of Compression Being Favorable (%)")
+        .x_label_formatter(&x_label_bits_formatter)
+        .label_style(axis_tick_style)
+        .axis_desc_style(axis_label_style)
+        .draw()?;
+
+    // Prepare data for favorable percentage series
+    let favorable_pct_data: Vec<(f64, f64)> = stats
+        .iter()
+        .map(|s| (s.limit as f64, s.favorable_pct))
+        .collect();
+
+    const STROKE_WIDTH: u32 = 3;
+    const LEGEND_PATH_LEFT_OFFSET: i32 = 30;
+    const LEGEND_PATH_RIGHT_OFFSET: i32 = 10;
+
+    // Draw the series
+    chart
+        .draw_series(LineSeries::new(
+            favorable_pct_data.iter().copied(),
+            RED.stroke_width(STROKE_WIDTH),
+        ))?
+        .label("Chance of compression being favorable (%)")
+        .legend(|(x, y)| {
+            PathElement::new(
+                vec![
+                    (x - LEGEND_PATH_LEFT_OFFSET, y),
+                    (x + LEGEND_PATH_RIGHT_OFFSET, y),
+                ],
+                RED.stroke_width(STROKE_WIDTH),
+            )
+        });
+
+    const POINT_SIZE: u32 = 5;
+
+    // Draw dots at each point
+    chart.draw_series(
+        favorable_pct_data
+            .iter()
+            .map(|point| Circle::new(*point, POINT_SIZE, RED.filled())),
+    )?;
+
+    chart
+        .configure_series_labels()
         .position(SeriesLabelPosition::UpperRight)
         .margin(LEGEND_MARGIN)
         .label_font(("sans-serif", LEGEND_FONT_SIZE).into_font())
@@ -925,10 +1135,10 @@ fn plot_sampled_statistics(
         .draw()?;
 
     root.present()?;
-    println!("Sampled compression statistics plot saved to {}", filename);
+    println!("Sampled favorable percentages plot saved to {}", filename);
     let end_time = Instant::now();
     println!(
-        "Time taken to plot sampled compression statistics: {:?}",
+        "Time taken to plot sampled favorable percentages: {:?}",
         end_time.duration_since(start_time)
     );
     Ok(())
