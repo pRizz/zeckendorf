@@ -13,7 +13,7 @@
 use plotters::prelude::*;
 
 use num_bigint::BigUint;
-use rand::{rngs::StdRng, Rng, SeedableRng};
+use rand::{Rng, SeedableRng, rngs::StdRng};
 use std::{cmp::Ordering, fs, path::Path, time::Instant};
 use zeckendorf_rs::zeckendorf_compress_be;
 
@@ -121,10 +121,7 @@ fn generate_bit_limit_stats() {
         .iter()
         .map(|&limit| gather_stats_for_limit(limit))
         .collect::<Vec<CompressionStats>>();
-    let statistics_file_name = format!(
-        "statistics_up_to_{}_inputs",
-        INPUT_LIMITS.last().unwrap()
-    );
+    let statistics_file_name = format!("statistics_up_to_{}_inputs", INPUT_LIMITS.last().unwrap());
     let csv_content = generate_stats_csv(&all_stats, csv_header);
     write_stats_csv(&csv_content, &statistics_file_name);
 
