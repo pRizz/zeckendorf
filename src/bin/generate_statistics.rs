@@ -37,10 +37,16 @@ const INPUT_LIMITS: [u64; 5] = [10, 100, 1_000, 10_000, 100_000];
 // const INPUT_LIMITS: [u64; 8] = [10, 100, 1_000, 10_000, 100_000, 1_000_000, 10_000_000, 100_000_000];
 
 // Sampled statistics configuration
-// Time taken to generate sampled statistics: 16.027274541s
-// FIXME: seems to break at 2000 bits
-const BIT_SIZE_LIMITS: [u64; 8] = [20, 50, 100, 200, 500, 1_000, 2_000, 5_000];
-const SAMPLES_PER_BIT_SIZE: u64 = 100_000;
+// The odds of compression being favorable starts to decrease significantly at around 1000 bits.
+// I added more samplings around 1000 bits to get a more accurate picture of the decrease.
+// At 1500 bits, the odds of compression being favorable is around 100 / 250,000 samples or 0.04%.
+// At and after 1600 bits, there were no favorable samples out of 250,000 samples.
+// Time taken to generate sampled statistics: 95.059394875s
+const BIT_SIZE_LIMITS: [u64; 21] = [
+    20, 50, 100, 200, 500, 600, 700, 800, 900, 1_000, 1_100, 1_200, 1_300, 1_400, 1_500, 1_600,
+    1_700, 1_800, 1_900, 2_000, 5_000,
+];
+const SAMPLES_PER_BIT_SIZE: u64 = 250_000;
 
 // Seed for the random number generator to ensure reproducible results
 const RNG_SEED: u64 = 42;
@@ -51,14 +57,16 @@ struct CompressionStats {
     favorable_pct: f64,
     average_pct: f64,
     median_pct: f64,
-    best_compressed_input: Option<u64>,
-    best_compression_amount: f64,
-    average_favorable_pct: f64,
-    median_favorable_pct: f64,
+    maybe_best_compressed_input: Option<u64>,
+    maybe_best_compression_amount: Option<f64>,
+    maybe_average_favorable_pct: Option<f64>,
+    maybe_median_favorable_pct: Option<f64>,
 }
 
 fn main() {
     let start_time = Instant::now();
+
+    // debug_2000_bits_case();
 
     generate_bit_limit_stats();
     generate_sampled_bit_limit_stats();
@@ -82,12 +90,15 @@ fn generate_stats_csv(stats: &[CompressionStats], csv_header: &str) -> String {
             stat.favorable_pct,
             stat.average_pct,
             stat.median_pct,
-            stat.best_compression_amount,
-            stat.best_compressed_input
+            stat.maybe_best_compression_amount
+                .map_or("None".to_string(), |f| f.to_string()),
+            stat.maybe_best_compressed_input
                 .map(|input| input.to_string())
                 .unwrap_or_else(|| "".to_string()),
-            stat.average_favorable_pct,
-            stat.median_favorable_pct
+            stat.maybe_average_favorable_pct
+                .map_or("None".to_string(), |f| f.to_string()),
+            stat.maybe_median_favorable_pct
+                .map_or("None".to_string(), |f| f.to_string())
         );
         println!("{}", line);
         output.push_str(&line);
@@ -218,10 +229,10 @@ fn gather_stats_for_limit(limit: u64) -> CompressionStats {
             favorable_pct: 0.0,
             average_pct: 0.0,
             median_pct: 0.0,
-            best_compression_amount: 0.0,
-            best_compressed_input: None,
-            average_favorable_pct: 0.0,
-            median_favorable_pct: 0.0,
+            maybe_best_compression_amount: None,
+            maybe_best_compressed_input: None,
+            maybe_average_favorable_pct: None,
+            maybe_median_favorable_pct: None,
         };
     }
 
@@ -247,24 +258,19 @@ fn gather_stats_for_limit(limit: u64) -> CompressionStats {
         .filter(|ratio| *ratio < 1.0)
         .collect();
 
-    let average_favorable_pct = if favorable_amounts.is_empty() {
-        0.0
+    let maybe_average_favorable_pct = if favorable_amounts.is_empty() {
+        None
     } else {
-        favorable_amounts.iter().sum::<f64>() / favorable_amounts.len() as f64
+        Some(favorable_amounts.iter().sum::<f64>() / favorable_amounts.len() as f64)
     };
 
-    let maybe_favorable_median = median(&mut favorable_amounts);
-    let median_favorable_pct = if let Some(value) = maybe_favorable_median {
-        value
-    } else {
-        0.0
-    };
+    let maybe_median_favorable_pct = median(&mut favorable_amounts);
 
-    let (best_compressed_input, best_compression_amount) =
+    let (maybe_best_compressed_input, maybe_best_compression_amount) =
         if let Some((best_value_input, best_compression_amount)) = maybe_best_value_amount_pair {
-            (Some(best_value_input), best_compression_amount)
+            (Some(best_value_input), Some(best_compression_amount))
         } else {
-            (None, 0.0)
+            (None, None)
         };
 
     let end_time = Instant::now();
@@ -279,10 +285,10 @@ fn gather_stats_for_limit(limit: u64) -> CompressionStats {
         favorable_pct,
         average_pct,
         median_pct,
-        best_compressed_input,
-        best_compression_amount,
-        average_favorable_pct,
-        median_favorable_pct,
+        maybe_best_compressed_input,
+        maybe_best_compression_amount,
+        maybe_average_favorable_pct,
+        maybe_median_favorable_pct,
     }
 }
 
@@ -340,6 +346,100 @@ fn generate_random_bytes_of_roughly_bit_size(bit_size: u64, rng: &mut StdRng) ->
     bytes
 }
 
+/// Debug function to investigate issues with the 2000 bits case.
+/// This function will:
+/// 1. Generate multiple samples at exactly 2000 bits
+/// 2. Show detailed information about each sample including:
+///    - The generated bytes and their actual bit size
+///    - The compression ratio
+///    - Any anomalies or edge cases
+/// 3. Compare with nearby bit sizes (1999, 2000, 2001) to see if there's a threshold issue
+fn _debug_2000_bits_case() {
+    println!("\n=== Debugging 2000 bits case ===");
+
+    let test_bit_sizes = [1999, 2000, 2001];
+    let num_test_samples = 10;
+    let mut rng = StdRng::seed_from_u64(RNG_SEED);
+
+    for &bit_size in &test_bit_sizes {
+        println!("\n--- Testing bit size: {} ---", bit_size);
+
+        let mut sample_stats = Vec::new();
+
+        for sample_idx in 0..num_test_samples {
+            let random_data = generate_random_bytes_of_roughly_bit_size(bit_size, &mut rng);
+
+            // Calculate actual bit size from bytes
+            let bytes_bit_size = random_data.len() * 8;
+
+            // Calculate actual bit size if interpreted as BigUint (leading zeros might be stripped)
+            let maybe_bigint = BigUint::from_bytes_be(&random_data);
+            let bigint_bit_size = maybe_bigint.bits();
+
+            // Get compression ratio
+            let maybe_compression_ratio = compression_amount_percent_bytes(&random_data);
+
+            // Show first few bytes for inspection
+            let preview_len = random_data.len().min(8);
+            let preview_bytes: Vec<u8> = random_data.iter().take(preview_len).copied().collect();
+
+            println!(
+                "Sample {}: bytes_len={}, bytes_bit_size={}, bigint_bit_size={}, preview_bytes={:?}, compression_ratio={:?}",
+                sample_idx + 1,
+                random_data.len(),
+                bytes_bit_size,
+                bigint_bit_size,
+                preview_bytes,
+                maybe_compression_ratio
+            );
+
+            if let Some(ratio) = maybe_compression_ratio {
+                sample_stats.push(ratio);
+
+                // Check for anomalies
+                if ratio > 10.0 || ratio < 0.01 {
+                    println!("  ⚠️  ANOMALY: Extreme compression ratio detected!");
+                }
+                if bytes_bit_size != bigint_bit_size as usize {
+                    println!(
+                        "  ⚠️  WARNING: Bit size mismatch! bytes_bit_size={}, bigint_bit_size={}",
+                        bytes_bit_size, bigint_bit_size
+                    );
+                }
+            } else {
+                println!("  ⚠️  WARNING: Compression ratio is None (compression not possible)");
+            }
+        }
+
+        if !sample_stats.is_empty() {
+            let avg_ratio = sample_stats.iter().sum::<f64>() / sample_stats.len() as f64;
+            let min_ratio = sample_stats.iter().copied().fold(f64::INFINITY, f64::min);
+            let max_ratio = sample_stats
+                .iter()
+                .copied()
+                .fold(f64::NEG_INFINITY, f64::max);
+            let favorable_count = sample_stats.iter().filter(|&&r| r < 1.0).count();
+
+            println!(
+                "Summary for {} bits: avg_ratio={:.6}, min_ratio={:.6}, max_ratio={:.6}, favorable_count={}/{}",
+                bit_size,
+                avg_ratio,
+                min_ratio,
+                max_ratio,
+                favorable_count,
+                sample_stats.len()
+            );
+        }
+    }
+
+    // Also test the actual gather_sampled_stats function with a small sample size
+    println!("\n--- Testing gather_sampled_stats with 2000 bits (small sample) ---");
+    let test_stats = gather_sampled_stats(2000, 100);
+    println!("Result: {:?}", test_stats);
+
+    println!("\n=== End of 2000 bits debugging ===\n");
+}
+
 fn gather_sampled_stats(bit_size_limit: u64, num_samples: u64) -> CompressionStats {
     let start_time = Instant::now();
     let mut rng = StdRng::seed_from_u64(RNG_SEED);
@@ -368,10 +468,10 @@ fn gather_sampled_stats(bit_size_limit: u64, num_samples: u64) -> CompressionSta
             favorable_pct: 0.0,
             average_pct: 0.0,
             median_pct: 0.0,
-            best_compression_amount: 0.0,
-            best_compressed_input: None,
-            average_favorable_pct: 0.0,
-            median_favorable_pct: 0.0,
+            maybe_best_compression_amount: None,
+            maybe_best_compressed_input: None,
+            maybe_average_favorable_pct: None,
+            maybe_median_favorable_pct: None,
         };
     }
 
@@ -397,20 +497,13 @@ fn gather_sampled_stats(bit_size_limit: u64, num_samples: u64) -> CompressionSta
         .filter(|ratio| *ratio < 1.0)
         .collect();
 
-    let average_favorable_pct = if favorable_amounts.is_empty() {
-        0.0
+    let maybe_average_favorable_pct = if favorable_amounts.is_empty() {
+        None
     } else {
-        favorable_amounts.iter().sum::<f64>() / favorable_amounts.len() as f64
+        Some(favorable_amounts.iter().sum::<f64>() / favorable_amounts.len() as f64)
     };
 
-    let maybe_favorable_median = median(&mut favorable_amounts);
-    let median_favorable_pct = if let Some(value) = maybe_favorable_median {
-        value
-    } else {
-        0.0
-    };
-
-    let best_compression_amount = maybe_best_compression_amount.unwrap_or(0.0);
+    let maybe_median_favorable_pct = median(&mut favorable_amounts);
 
     let end_time = Instant::now();
     println!(
@@ -428,10 +521,10 @@ fn gather_sampled_stats(bit_size_limit: u64, num_samples: u64) -> CompressionSta
         favorable_pct,
         average_pct,
         median_pct,
-        best_compressed_input: None,
-        best_compression_amount,
-        average_favorable_pct,
-        median_favorable_pct,
+        maybe_best_compressed_input: None,
+        maybe_best_compression_amount,
+        maybe_average_favorable_pct,
+        maybe_median_favorable_pct,
     }
 }
 
@@ -488,13 +581,16 @@ fn plot_compression_ratios(
         min_y = min_y
             .min(stat.average_pct)
             .min(stat.median_pct)
-            .min(stat.average_favorable_pct)
-            .min(stat.median_favorable_pct);
+            .min(stat.maybe_average_favorable_pct.unwrap_or(f64::INFINITY))
+            .min(stat.maybe_median_favorable_pct.unwrap_or(f64::INFINITY));
         max_y = max_y
             .max(stat.average_pct)
             .max(stat.median_pct)
-            .max(stat.average_favorable_pct)
-            .max(stat.median_favorable_pct);
+            .max(
+                stat.maybe_average_favorable_pct
+                    .unwrap_or(f64::NEG_INFINITY),
+            )
+            .max(stat.maybe_median_favorable_pct.unwrap_or(f64::NEG_INFINITY));
     }
 
     // Add some padding
@@ -561,12 +657,18 @@ fn plot_compression_ratios(
 
     let average_favorable_pct_data: Vec<(f64, f64)> = stats
         .iter()
-        .map(|s| (s.limit as f64, s.average_favorable_pct))
+        .map_while(|s| {
+            s.maybe_average_favorable_pct
+                .map(|average_favorable_pct| (s.limit as f64, average_favorable_pct))
+        })
         .collect();
 
     let median_favorable_pct_data: Vec<(f64, f64)> = stats
         .iter()
-        .map(|s| (s.limit as f64, s.median_favorable_pct))
+        .map_while(|s| {
+            s.maybe_median_favorable_pct
+                .map(|median_favorable_pct| (s.limit as f64, median_favorable_pct))
+        })
         .collect();
 
     const STROKE_WIDTH: u32 = 3;
@@ -833,13 +935,16 @@ fn plot_sampled_compression_ratios(
         min_y = min_y
             .min(stat.average_pct)
             .min(stat.median_pct)
-            .min(stat.average_favorable_pct)
-            .min(stat.median_favorable_pct);
+            .min(stat.maybe_average_favorable_pct.unwrap_or(f64::INFINITY))
+            .min(stat.maybe_median_favorable_pct.unwrap_or(f64::INFINITY));
         max_y = max_y
             .max(stat.average_pct)
             .max(stat.median_pct)
-            .max(stat.average_favorable_pct)
-            .max(stat.median_favorable_pct);
+            .max(
+                stat.maybe_average_favorable_pct
+                    .unwrap_or(f64::NEG_INFINITY),
+            )
+            .max(stat.maybe_median_favorable_pct.unwrap_or(f64::NEG_INFINITY));
     }
 
     // Add some padding
@@ -899,12 +1004,18 @@ fn plot_sampled_compression_ratios(
 
     let average_favorable_pct_data: Vec<(f64, f64)> = stats
         .iter()
-        .map(|s| (s.limit as f64, s.average_favorable_pct))
+        .map_while(|stat| {
+            stat.maybe_average_favorable_pct
+                .map(|average_favorable_pct| (stat.limit as f64, average_favorable_pct))
+        })
         .collect();
 
     let median_favorable_pct_data: Vec<(f64, f64)> = stats
         .iter()
-        .map(|s| (s.limit as f64, s.median_favorable_pct))
+        .map_while(|stat| {
+            stat.maybe_median_favorable_pct
+                .map(|median_favorable_pct| (stat.limit as f64, median_favorable_pct))
+        })
         .collect();
 
     const STROKE_WIDTH: u32 = 3;
@@ -1005,7 +1116,7 @@ fn plot_sampled_compression_ratios(
 
     chart
         .configure_series_labels()
-        .position(SeriesLabelPosition::LowerLeft)
+        .position(SeriesLabelPosition::LowerRight)
         .margin(LEGEND_MARGIN)
         .label_font(("sans-serif", LEGEND_FONT_SIZE).into_font())
         .background_style(&WHITE.mix(0.8))
