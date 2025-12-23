@@ -107,7 +107,6 @@ pub fn memoized_fibonacci_recursive(fi: u64) -> u64 {
 
 /// fibonacci(x) is equal to 0 if x is 0; 1 if x is 1; else return fibonacci(x - 1) + fibonacci(x - 2)
 /// fi stands for Fibonacci Index
-/// This function fails for large numbers (e.g. 100_000) with stack overflow.
 ///
 /// # Examples
 ///
@@ -160,6 +159,42 @@ pub fn memoized_fibonacci_bigint_iterative(fi: u64) -> Arc<BigUint> {
     }
 
     Arc::clone(&fibonacci_cache[fi])
+}
+
+/// fibonacci(x) is equal to 0 if x is 0; 1 if x is 1; else return fibonacci(x - 1) + fibonacci(x - 2)
+/// fi stands for Fibonacci Index
+///
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::slow_fibonacci_bigint_iterative;
+/// # use num_bigint::BigUint;
+/// # use num_traits::{One, Zero};
+/// // Base cases
+/// assert_eq!(*slow_fibonacci_bigint_iterative(0u64), BigUint::zero());
+/// assert_eq!(*slow_fibonacci_bigint_iterative(1u64), BigUint::one());
+///
+/// // Small Fibonacci numbers
+/// assert_eq!(*slow_fibonacci_bigint_iterative(2u64), BigUint::from(1u64));
+/// assert_eq!(*slow_fibonacci_bigint_iterative(3u64), BigUint::from(2u64));
+/// assert_eq!(*slow_fibonacci_bigint_iterative(4u64), BigUint::from(3u64));
+/// assert_eq!(*slow_fibonacci_bigint_iterative(5u64), BigUint::from(5u64));
+/// assert_eq!(*slow_fibonacci_bigint_iterative(6u64), BigUint::from(8u64));
+/// assert_eq!(*slow_fibonacci_bigint_iterative(7u64), BigUint::from(13u64));
+/// assert_eq!(*slow_fibonacci_bigint_iterative(8u64), BigUint::from(21u64));
+/// assert_eq!(*slow_fibonacci_bigint_iterative(9u64), BigUint::from(34u64));
+/// assert_eq!(*slow_fibonacci_bigint_iterative(10u64), BigUint::from(55u64));
+/// ```
+pub fn slow_fibonacci_bigint_iterative(fi: u64) -> Arc<BigUint> {
+    let mut f0 = BigUint::zero();
+    let mut f1 = BigUint::one();
+    for _ in 0..fi {
+        let f2 = &f0 + &f1;
+        f0 = f1;
+        f1 = f2;
+    }
+
+    Arc::new(f0)
 }
 
 /// A descending Zeckendorf list is a sorted list of unique Fibonacci indices, in descending order, that sum to the given number.

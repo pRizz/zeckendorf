@@ -1,0 +1,28 @@
+//! Benchmark for the Fibonacci functions
+//!
+//! Run with: `cargo bench --bench fibonacci_bench`
+
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
+use std::hint::black_box;
+use zeckendorf_rs::slow_fibonacci_bigint_iterative;
+
+/// Fibonacci indices to benchmark.
+const BIGINT_FIBONACCI_INDICES: [u64; 4] = [10_000, 20_000, 50_000, 100_000];
+
+fn bench_slow_fibonacci_bigint_iterative(c: &mut Criterion) {
+    let mut group = c.benchmark_group("slow_fibonacci_bigint_iterative");
+
+    for &fi in &BIGINT_FIBONACCI_INDICES {
+        group.bench_with_input(BenchmarkId::from_parameter(fi), &fi, |b, &fi| {
+            b.iter(|| {
+                let result = slow_fibonacci_bigint_iterative(black_box(fi));
+                black_box(result);
+            });
+        });
+    }
+
+    group.finish();
+}
+
+criterion_group!(benches, bench_slow_fibonacci_bigint_iterative);
+criterion_main!(benches);

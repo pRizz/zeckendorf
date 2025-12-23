@@ -1,9 +1,12 @@
+//! This binary is basically a playground/scratchpad used to test the library and its functions.
+//!
+//! Example usages:
+//! `cargo run --release --bin zeckendorf`
+
 use num_bigint::BigUint;
+use num_format::ToFormattedString;
 use std::time::Instant;
 use zeckendorf_rs::*;
-
-/// Example usages:
-/// `cargo run --release --bin zeckendorf`
 
 fn main() {
     let start_time = Instant::now();
@@ -83,6 +86,13 @@ fn main() {
     test_bit_count_for_all_ones_effective_zeckendorf_bits_ascending();
 
     test_find_fibonacci_by_bit_count();
+
+    test_slow_fibonacci_bigint_iterative();
+
+    test_slow_fibonacci_bigint_iterative_large(100_000);
+    test_slow_fibonacci_bigint_iterative_large(200_000);
+    test_slow_fibonacci_bigint_iterative_large(500_000);
+    test_slow_fibonacci_bigint_iterative_large(1_000_000);
 
     let end_time = Instant::now();
     println!("Time taken: {:?}", end_time.duration_since(start_time));
@@ -206,5 +216,30 @@ fn test_find_fibonacci_by_bit_count() {
     println!(
         "Time taken to find Fibonacci numbers by bit count: {:?}",
         end_time.duration_since(start_time)
+    );
+}
+
+fn test_slow_fibonacci_bigint_iterative() {
+    println!("Testing slow Fibonacci bigint iterative function");
+    for i in 0..20 {
+        let fibonacci = slow_fibonacci_bigint_iterative(i);
+        println!("The {i}th Fibonacci number is: {}", fibonacci);
+    }
+}
+
+fn test_slow_fibonacci_bigint_iterative_large(fi: u64) {
+    println!(
+        "Testing slow Fibonacci bigint iterative function for index: {}",
+        fi.to_formatted_string(&num_format::Locale::en)
+    );
+    let start_time = Instant::now();
+    let fibonacci = slow_fibonacci_bigint_iterative(fi);
+    std::hint::black_box(fibonacci);
+    // println!("The {fi}th Fibonacci number is: {}", fibonacci);
+    let end_time = Instant::now();
+    println!(
+        "It took {:0.3?} to calculate the {}th Fibonacci number",
+        end_time.duration_since(start_time),
+        fi.to_formatted_string(&num_format::Locale::en)
     );
 }

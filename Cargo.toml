@@ -36,5 +36,9 @@ required-features = ["plotting"]
 name = "zeckendorf_bench"
 harness = false
 
+[[bench]]
+name = "fibonacci_bench"
+harness = false
+
 [dev-dependencies]
 criterion = { version = "0.8.1", features = ["csv_output", "html_reports"] }
