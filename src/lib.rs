@@ -49,6 +49,15 @@ static ZECKENDORF_MAP: LazyLock<RwLock<HashMap<u64, Vec<u64>>>> =
 static ZECKENDORF_BIGINT_MAP: LazyLock<RwLock<HashMap<BigUint, Vec<u64>>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
+/// Sparse cache for fast doubling Fibonacci algorithm
+pub static FAST_DOUBLING_FIBONACCI_BIGINT_CACHE: LazyLock<RwLock<HashMap<u64, Arc<BigUint>>>> =
+    LazyLock::new(|| {
+        let mut map = HashMap::new();
+        map.insert(0, Arc::new(BigUint::zero()));
+        map.insert(1, Arc::new(BigUint::one()));
+        RwLock::new(map)
+    });
+
 /// fibonacci(x) is equal to 0 if x is 0; 1 if x is 1; else return fibonacci(x - 1) + fibonacci(x - 2)
 /// fi stands for Fibonacci Index
 /// This function fails for large numbers (e.g. 100_000) with stack overflow.
@@ -234,25 +243,141 @@ pub fn fast_doubling_fibonacci_bigint(fi: u64) -> Arc<BigUint> {
     let mut a = BigUint::zero();
     let mut b = BigUint::one();
     let mut m = BigUint::zero();
-    let mut bit = highest_one_bit(fi);
-    while bit != 0 {
+    let mut fi_msb = highest_one_bit(fi);
+    while fi_msb != 0 {
         let d = a.clone() * ((b.clone() << 1) - &a);
         let e = a.pow(2) + b.pow(2);
         a = d;
         b = e;
         m *= 2u8;
 
-        if fi & bit != 0 {
+        if fi & fi_msb != 0 {
             let tmp = a + &b;
             a = b;
             b = tmp;
             m += 1u8;
         }
 
-        bit >>= 1;
+        fi_msb >>= 1;
     }
 
     Arc::new(a)
+}
+
+/// fibonacci(x) is equal to 0 if x is 0; 1 if x is 1; else return fibonacci(x - 1) + fibonacci(x - 2)
+/// fi stands for Fibonacci Index
+///
+/// This function is faster than slow_fibonacci_bigint_iterative by using a method called Fast Doubling,
+/// an optimization of the Matrix Exponentiation method. See https://www.nayuki.io/page/fast-fibonacci-algorithms for more details.
+///
+/// This function includes memoization using a sparse HashMap cache (FAST_DOUBLING_FIBONACCI_BIGINT_CACHE)
+/// to cache results. The implementation uses a HashMap instead of a Vec to allow sparse caching of only
+/// the computed values, which is more memory-efficient for large, non-contiguous Fibonacci index ranges.
+///
+/// The algorithm tracks the Fibonacci index `m` during the fast doubling loop. According to the
+/// fast doubling algorithm, we maintain `(a, b)` representing `(F(m), F(m+1))`, and at each step:
+/// - When we double: `m` becomes `2m`, and we compute `(F(2m), F(2m+1))`
+/// - When we advance (if bit is set): `m` becomes `2m+1`, and we compute `(F(2m+1), F(2m+2))`
+///
+/// Intermediate values (F(m) at each step) are collected during the loop and then batch-written to
+/// the cache at the end to reduce lock contention. This approach allows caching intermediate values
+/// on the fly while maintaining good performance.
+///
+/// TODO: use Karatsuba multiplication to speed up the multiplication of BigUint.
+/// 
+/// TODO: if we have a cache miss, we could try intelligently walking backwards from the target index to find the nearest cached values and continue the fast doubling algorithm from there.
+///
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::memoized_fast_doubling_fibonacci_bigint;
+/// # use num_bigint::BigUint;
+/// # use num_traits::{One, Zero};
+/// // Base cases
+/// assert_eq!(*memoized_fast_doubling_fibonacci_bigint(0u64), BigUint::zero());
+/// assert_eq!(*memoized_fast_doubling_fibonacci_bigint(1u64), BigUint::one());
+///
+/// // Small Fibonacci numbers
+/// assert_eq!(*memoized_fast_doubling_fibonacci_bigint(2u64), BigUint::from(1u64));
+/// assert_eq!(*memoized_fast_doubling_fibonacci_bigint(3u64), BigUint::from(2u64));
+/// assert_eq!(*memoized_fast_doubling_fibonacci_bigint(4u64), BigUint::from(3u64));
+/// assert_eq!(*memoized_fast_doubling_fibonacci_bigint(5u64), BigUint::from(5u64));
+/// assert_eq!(*memoized_fast_doubling_fibonacci_bigint(6u64), BigUint::from(8u64));
+/// assert_eq!(*memoized_fast_doubling_fibonacci_bigint(7u64), BigUint::from(13u64));
+/// assert_eq!(*memoized_fast_doubling_fibonacci_bigint(8u64), BigUint::from(21u64));
+/// assert_eq!(*memoized_fast_doubling_fibonacci_bigint(9u64), BigUint::from(34u64));
+/// assert_eq!(*memoized_fast_doubling_fibonacci_bigint(10u64), BigUint::from(55u64));
+/// ```
+pub fn memoized_fast_doubling_fibonacci_bigint(fi: u64) -> Arc<BigUint> {
+    // Try to get the value with a read lock first
+    {
+        let cache = FAST_DOUBLING_FIBONACCI_BIGINT_CACHE
+            .read()
+            .expect("Failed to read fast doubling Fibonacci cache");
+        if let Some(cached_value) = cache.get(&fi) {
+            return Arc::clone(cached_value);
+        }
+    }
+
+    // If not found, calculate using fast doubling and cache intermediate values
+    // The algorithm maintains (a, b) representing (F(m), F(m+1)) where m is the current index
+    // Based on fast doubling identities from https://www.nayuki.io/page/fast-fibonacci-algorithms:
+    // F(2k) = F(k) * [2*F(k+1) - F(k)]
+    // F(2k+1) = F(k+1)^2 + F(k)^2
+    let mut a = BigUint::zero();
+    let mut b = BigUint::one();
+    let mut m: u64 = 0;
+    let mut fi_msb = highest_one_bit(fi);
+    let mut values_to_cache: Vec<(u64, Arc<BigUint>)> = Vec::new();
+
+    while fi_msb != 0 {
+        // Double: (F(m), F(m+1)) -> (F(2m), F(2m+1))
+        // Using the fast doubling identities:
+        // F(2m) = d = F(m) * [2*F(m+1) - F(m)]
+        let d = a.clone() * ((b.clone() << 1) - &a);
+        // F(2m+1) = e = F(m+1)^2 + F(m)^2
+        let e = b.pow(2) + a.pow(2);
+        a = d;
+        b = e;
+        m *= 2;
+
+        // Track F(2m) for caching (we'll check if it's already cached when we write)
+        values_to_cache.push((m, Arc::new(a.clone())));
+
+        if fi & fi_msb != 0 {
+            // Advance: (F(2m), F(2m+1)) -> (F(2m+1), F(2m+2))
+            // F(2m+2) = F(2m+1) + F(2m)
+            let tmp = a + &b;
+            a = b;
+            b = tmp;
+            m += 1;
+
+            // Track F(2m+1) for caching
+            values_to_cache.push((m, Arc::new(a.clone())));
+        }
+
+        fi_msb >>= 1;
+    }
+
+    // Cache all intermediate values and the final result in a single batch write
+    let result = Arc::new(a);
+    values_to_cache.push((fi, Arc::clone(&result)));
+
+    let mut cache = FAST_DOUBLING_FIBONACCI_BIGINT_CACHE
+        .write()
+        .expect("Failed to write fast doubling Fibonacci cache");
+
+    // Re-check the final value in case another thread updated it while we were computing
+    if let Some(cached_value) = cache.get(&fi) {
+        return Arc::clone(cached_value);
+    }
+
+    // Insert all values that aren't already cached
+    for (fi, value) in values_to_cache {
+        cache.entry(fi).or_insert(value);
+    }
+
+    result
 }
 
 /// Returns a u64 value with only the most significant set bit of n preserved.

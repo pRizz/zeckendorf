@@ -89,10 +89,12 @@ fn main() {
 
     test_slow_fibonacci_bigint_iterative();
 
-    test_slow_fibonacci_bigint_iterative_large(100_000);
-    test_slow_fibonacci_bigint_iterative_large(200_000);
-    test_slow_fibonacci_bigint_iterative_large(500_000);
-    test_slow_fibonacci_bigint_iterative_large(1_000_000);
+    // _test_slow_fibonacci_bigint_iterative_large(100_000);
+    // _test_slow_fibonacci_bigint_iterative_large(200_000);
+    // _test_slow_fibonacci_bigint_iterative_large(500_000);
+    // _test_slow_fibonacci_bigint_iterative_large(1_000_000);
+
+    test_fast_doubling_fibonacci_bigint();
 
     let end_time = Instant::now();
     println!("Time taken: {:?}", end_time.duration_since(start_time));
@@ -227,7 +229,7 @@ fn test_slow_fibonacci_bigint_iterative() {
     }
 }
 
-fn test_slow_fibonacci_bigint_iterative_large(fi: u64) {
+fn _test_slow_fibonacci_bigint_iterative_large(fi: u64) {
     println!(
         "Testing slow Fibonacci bigint iterative function for index: {}",
         fi.to_formatted_string(&num_format::Locale::en)
@@ -242,4 +244,23 @@ fn test_slow_fibonacci_bigint_iterative_large(fi: u64) {
         end_time.duration_since(start_time),
         fi.to_formatted_string(&num_format::Locale::en)
     );
+}
+
+fn test_fast_doubling_fibonacci_bigint() {
+    println!("Testing fast doubling Fibonacci bigint function");
+    let fibonacci = memoized_fast_doubling_fibonacci_bigint(100);
+    println!("The 100th Fibonacci number is: {}", fibonacci);
+    let cache = zeckendorf_rs::FAST_DOUBLING_FIBONACCI_BIGINT_CACHE
+        .read()
+        .expect("Failed to read fast doubling Fibonacci cache");
+    println!(
+        "Querying the 100th Fibonacci number, using the fast doubling algorithm, generated only {} cached Fibonacci numbers",
+        cache.len()
+    );
+    assert_eq!(cache.len(), 10);
+    let mut sorted_cache = cache.iter().collect::<Vec<_>>();
+    sorted_cache.sort_by_key(|(fi, _)| *fi);
+    for (fi, value) in sorted_cache.iter() {
+        println!("The {fi}th Fibonacci number, using the fast doubling algorithm, is: {}", value);
+    }
 }
