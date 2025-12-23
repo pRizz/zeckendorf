@@ -197,6 +197,94 @@ pub fn slow_fibonacci_bigint_iterative(fi: u64) -> Arc<BigUint> {
     Arc::new(f0)
 }
 
+/// fibonacci(x) is equal to 0 if x is 0; 1 if x is 1; else return fibonacci(x - 1) + fibonacci(x - 2)
+/// fi stands for Fibonacci Index
+///
+/// This function is faster than slow_fibonacci_bigint_iterative by using a method called Fast Doubling,
+/// an optimization of the Matrix Exponentiation method. See https://www.nayuki.io/page/fast-fibonacci-algorithms for more details.
+///
+/// Running the Fibonacci benchmarks (`cargo bench --bench fibonacci_bench`),
+/// this function is ~160x faster than slow_fibonacci_bigint_iterative at calculating the 100,000th Fibonacci number.
+/// On my computer, the fast function took around 330µs while the slow function took around 53ms.
+///
+/// TODO: use Karatsuba multiplication to speed up the multiplication of BigUint.
+///
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::fast_fibonacci_bigint_iterative;
+/// # use num_bigint::BigUint;
+/// # use num_traits::{One, Zero};
+/// // Base cases
+/// assert_eq!(*fast_fibonacci_bigint_iterative(0u64), BigUint::zero());
+/// assert_eq!(*fast_fibonacci_bigint_iterative(1u64), BigUint::one());
+///
+/// // Small Fibonacci numbers
+/// assert_eq!(*fast_fibonacci_bigint_iterative(2u64), BigUint::from(1u64));
+/// assert_eq!(*fast_fibonacci_bigint_iterative(3u64), BigUint::from(2u64));
+/// assert_eq!(*fast_fibonacci_bigint_iterative(4u64), BigUint::from(3u64));
+/// assert_eq!(*fast_fibonacci_bigint_iterative(5u64), BigUint::from(5u64));
+/// assert_eq!(*fast_fibonacci_bigint_iterative(6u64), BigUint::from(8u64));
+/// assert_eq!(*fast_fibonacci_bigint_iterative(7u64), BigUint::from(13u64));
+/// assert_eq!(*fast_fibonacci_bigint_iterative(8u64), BigUint::from(21u64));
+/// assert_eq!(*fast_fibonacci_bigint_iterative(9u64), BigUint::from(34u64));
+/// assert_eq!(*fast_fibonacci_bigint_iterative(10u64), BigUint::from(55u64));
+/// ```
+pub fn fast_fibonacci_bigint_iterative(fi: u64) -> Arc<BigUint> {
+    let mut a = BigUint::zero();
+    let mut b = BigUint::one();
+    let mut m = BigUint::zero();
+    let mut bit = highest_one_bit(fi);
+    while bit != 0 {
+        let d = a.clone() * ((b.clone() << 1) - &a);
+        let e = a.pow(2) + b.pow(2);
+        a = d;
+        b = e;
+        m *= 2u8;
+
+        if fi & bit != 0 {
+            let tmp = a + &b;
+            a = b;
+            b = tmp;
+            m += 1u8;
+        }
+
+        bit >>= 1;
+    }
+
+    Arc::new(a)
+}
+
+/// Returns a u64 value with only the most significant set bit of n preserved.
+///
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::highest_one_bit;
+/// assert_eq!(highest_one_bit(0), 0);
+/// assert_eq!(highest_one_bit(1), 1);
+/// assert_eq!(highest_one_bit(2), 2);
+/// assert_eq!(highest_one_bit(3), 2);
+/// assert_eq!(highest_one_bit(4), 4);
+/// assert_eq!(highest_one_bit(5), 4);
+/// assert_eq!(highest_one_bit(6), 4);
+/// assert_eq!(highest_one_bit(7), 4);
+/// assert_eq!(highest_one_bit(8), 8);
+/// assert_eq!(highest_one_bit(9), 8);
+/// assert_eq!(highest_one_bit(10), 8);
+/// assert_eq!(highest_one_bit(11), 8);
+/// assert_eq!(highest_one_bit(12), 8);
+/// assert_eq!(highest_one_bit(13), 8);
+/// assert_eq!(highest_one_bit(14), 8);
+/// ```
+pub fn highest_one_bit(n: u64) -> u64 {
+    if n == 0 {
+        return 0;
+    }
+
+    1u64 << (63 - n.leading_zeros())
+}
+
 /// A descending Zeckendorf list is a sorted list of unique Fibonacci indices, in descending order, that sum to the given number.
 /// A Fibonacci index is the index of the Fibonacci number in the Fibonacci sequence.
 /// fibonacci(fibonacci_index) = fibonacci_number
