@@ -17,6 +17,10 @@ const CHART_MARGIN: u32 = 120;
 const PLOT_WIDTH: u32 = 3840;
 const PLOT_HEIGHT: u32 = 2160;
 const LEGEND_MARGIN: u32 = 50;
+const SERIES_LINE_STROKE_WIDTH: u32 = 3;
+const SERIES_LINE_DOT_SIZE: u32 = 5;
+const LEGEND_PATH_LEFT_OFFSET: i32 = 30;
+const LEGEND_PATH_RIGHT_OFFSET: i32 = 10;
 
 fn main() {
     let start_time = Instant::now();
@@ -31,16 +35,23 @@ fn main() {
     // Example: Plot compression ratios
     plot_compression_ratios("plots/compression_ratios_0_to_100.png", 0..100)
         .expect("Failed to plot compression ratios");
-    // plot_compression_ratios("plots/compression_ratios_0_to_257.png", 0..257)
-    //     .expect("Failed to plot compression ratios");
-    // plot_compression_ratios("plots/compression_ratios_0_to_1_000.png", 0..1_000)
-    //     .expect("Failed to plot compression ratios");
-    // plot_compression_ratios("plots/compression_ratios_0_to_10_000.png", 0..10_000).expect("Failed to plot compression ratios");
-    // plot_compression_ratios("plots/compression_ratios_0_to_100_000.png", 0..100_000).expect("Failed to plot compression ratios");
-    // // Takes about 11 seconds to generate
-    // plot_compression_ratios("plots/compression_ratios_0_to_1_000_000.png", 0..1_000_000).expect("Failed to plot compression ratios");
-    // // Takes about 104 seconds to generate
-    // plot_compression_ratios("plots/compression_ratios_0_to_10_000_000.png", 0..10_000_000).expect("Failed to plot compression ratios");
+    plot_compression_ratios("plots/compression_ratios_0_to_257.png", 0..257)
+        .expect("Failed to plot compression ratios");
+    plot_compression_ratios("plots/compression_ratios_0_to_1_000.png", 0..1_000)
+        .expect("Failed to plot compression ratios");
+    plot_compression_ratios("plots/compression_ratios_0_to_10_000.png", 0..10_000)
+        .expect("Failed to plot compression ratios");
+    plot_compression_ratios("plots/compression_ratios_0_to_100_000.png", 0..100_000)
+        .expect("Failed to plot compression ratios");
+    // Takes about 1 second to generate
+    plot_compression_ratios("plots/compression_ratios_0_to_1_000_000.png", 0..1_000_000)
+        .expect("Failed to plot compression ratios");
+    // Takes about 9 seconds to generate
+    plot_compression_ratios(
+        "plots/compression_ratios_0_to_10_000_000.png",
+        0..10_000_000,
+    )
+    .expect("Failed to plot compression ratios");
 
     let end_time = Instant::now();
     println!("Time taken: {:?}", end_time.duration_since(start_time));
@@ -100,14 +111,25 @@ fn plot_fibonacci_numbers(
 
     // Draw the line
     chart
-        .draw_series(LineSeries::new(data.iter().copied(), &RED))?
+        .draw_series(LineSeries::new(
+            data.iter().copied(),
+            RED.stroke_width(SERIES_LINE_STROKE_WIDTH),
+        ))?
         .label("Fibonacci Numbers")
-        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+        .legend(|(x, y)| {
+            PathElement::new(
+                vec![
+                    (x - LEGEND_PATH_LEFT_OFFSET, y),
+                    (x + LEGEND_PATH_RIGHT_OFFSET, y),
+                ],
+                RED.stroke_width(SERIES_LINE_STROKE_WIDTH),
+            )
+        });
 
     // Draw dots at each point
     chart.draw_series(
         data.iter()
-            .map(|point| Circle::new(*point, 3, RED.filled())),
+            .map(|point| Circle::new(*point, SERIES_LINE_DOT_SIZE, RED.filled())),
     )?;
 
     // Draw text labels above each point showing x,y coordinates
@@ -204,19 +226,32 @@ fn plot_compression_ratios(
         })
         .collect();
 
+    const THINNER_SERIES_LINE_STROKE_WIDTH: u32 = 1;
     chart
-        .draw_series(LineSeries::new(data, &BLUE))?
+        .draw_series(LineSeries::new(
+            data,
+            BLUE.stroke_width(THINNER_SERIES_LINE_STROKE_WIDTH),
+        ))?
         .label("Compression Ratio")
-        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+        .legend(|(x, y)| {
+            PathElement::new(
+                vec![
+                    (x - LEGEND_PATH_LEFT_OFFSET, y),
+                    (x + LEGEND_PATH_RIGHT_OFFSET, y),
+                ],
+                BLUE.stroke_width(THINNER_SERIES_LINE_STROKE_WIDTH),
+            )
+        });
 
     // Draw a line at ratio 1.0 (no compression benefit)
     chart.draw_series(LineSeries::new(
         vec![(range.start as f64, 1.0), (range.end as f64, 1.0)],
-        GREEN.mix(0.5).stroke_width(3),
+        GREEN.mix(0.5).stroke_width(SERIES_LINE_STROKE_WIDTH),
     ))?;
 
     chart
         .configure_series_labels()
+        .position(SeriesLabelPosition::LowerRight)
         .margin(LEGEND_MARGIN)
         .label_font(("sans-serif", LEGEND_FONT_SIZE).into_font())
         .background_style(&WHITE.mix(0.8))

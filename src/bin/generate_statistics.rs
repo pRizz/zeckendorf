@@ -26,6 +26,10 @@ const CHART_MARGIN: u32 = 120;
 const PLOT_WIDTH: u32 = 3840;
 const PLOT_HEIGHT: u32 = 2160;
 const LEGEND_MARGIN: u32 = 50;
+const SERIES_LINE_STROKE_WIDTH: u32 = 3;
+const SERIES_LINE_DOT_SIZE: u32 = 5;
+const LEGEND_PATH_LEFT_OFFSET: i32 = 30;
+const LEGEND_PATH_RIGHT_OFFSET: i32 = 10;
 
 // Time taken to generate bit limit statistics: 111.330666ms
 const INPUT_LIMITS: [u64; 5] = [10, 100, 1_000, 10_000, 100_000];
@@ -671,15 +675,11 @@ fn plot_compression_ratios(
         })
         .collect();
 
-    const STROKE_WIDTH: u32 = 3;
-    const LEGEND_PATH_LEFT_OFFSET: i32 = 30;
-    const LEGEND_PATH_RIGHT_OFFSET: i32 = 10;
-
     // Draw each series with different colors
     chart
         .draw_series(LineSeries::new(
             average_pct_data.iter().copied(),
-            BLUE.stroke_width(STROKE_WIDTH),
+            BLUE.stroke_width(SERIES_LINE_STROKE_WIDTH),
         ))?
         .label("Average compression ratio")
         .legend(|(x, y)| {
@@ -688,14 +688,14 @@ fn plot_compression_ratios(
                     (x - LEGEND_PATH_LEFT_OFFSET, y),
                     (x + LEGEND_PATH_RIGHT_OFFSET, y),
                 ],
-                BLUE.stroke_width(STROKE_WIDTH),
+                BLUE.stroke_width(SERIES_LINE_STROKE_WIDTH),
             )
         });
 
     chart
         .draw_series(LineSeries::new(
             median_pct_data.iter().copied(),
-            GREEN.stroke_width(STROKE_WIDTH),
+            GREEN.stroke_width(SERIES_LINE_STROKE_WIDTH),
         ))?
         .label("Median compression ratio")
         .legend(|(x, y)| {
@@ -704,14 +704,14 @@ fn plot_compression_ratios(
                     (x - LEGEND_PATH_LEFT_OFFSET, y),
                     (x + LEGEND_PATH_RIGHT_OFFSET, y),
                 ],
-                GREEN.stroke_width(STROKE_WIDTH),
+                GREEN.stroke_width(SERIES_LINE_STROKE_WIDTH),
             )
         });
 
     chart
         .draw_series(LineSeries::new(
             average_favorable_pct_data.iter().copied(),
-            MAGENTA.stroke_width(STROKE_WIDTH),
+            MAGENTA.stroke_width(SERIES_LINE_STROKE_WIDTH),
         ))?
         .label("Average favorable compression ratio")
         .legend(|(x, y)| {
@@ -720,14 +720,14 @@ fn plot_compression_ratios(
                     (x - LEGEND_PATH_LEFT_OFFSET, y),
                     (x + LEGEND_PATH_RIGHT_OFFSET, y),
                 ],
-                MAGENTA.stroke_width(STROKE_WIDTH),
+                MAGENTA.stroke_width(SERIES_LINE_STROKE_WIDTH),
             )
         });
 
     chart
         .draw_series(LineSeries::new(
             median_favorable_pct_data.iter().copied(),
-            CYAN.stroke_width(STROKE_WIDTH),
+            CYAN.stroke_width(SERIES_LINE_STROKE_WIDTH),
         ))?
         .label("Median favorable compression ratio")
         .legend(|(x, y)| {
@@ -736,35 +736,33 @@ fn plot_compression_ratios(
                     (x - LEGEND_PATH_LEFT_OFFSET, y),
                     (x + LEGEND_PATH_RIGHT_OFFSET, y),
                 ],
-                CYAN.stroke_width(STROKE_WIDTH),
+                CYAN.stroke_width(SERIES_LINE_STROKE_WIDTH),
             )
         });
-
-    const POINT_SIZE: u32 = 5;
 
     // Draw dots at each point
     chart.draw_series(
         average_pct_data
             .iter()
-            .map(|point| Circle::new(*point, POINT_SIZE, BLUE.filled())),
+            .map(|point| Circle::new(*point, SERIES_LINE_DOT_SIZE, BLUE.filled())),
     )?;
 
     chart.draw_series(
         median_pct_data
             .iter()
-            .map(|point| Circle::new(*point, POINT_SIZE, GREEN.filled())),
+            .map(|point| Circle::new(*point, SERIES_LINE_DOT_SIZE, GREEN.filled())),
     )?;
 
     chart.draw_series(
         average_favorable_pct_data
             .iter()
-            .map(|point| Circle::new(*point, POINT_SIZE, MAGENTA.filled())),
+            .map(|point| Circle::new(*point, SERIES_LINE_DOT_SIZE, MAGENTA.filled())),
     )?;
 
     chart.draw_series(
         median_favorable_pct_data
             .iter()
-            .map(|point| Circle::new(*point, POINT_SIZE, CYAN.filled())),
+            .map(|point| Circle::new(*point, SERIES_LINE_DOT_SIZE, CYAN.filled())),
     )?;
 
     chart
@@ -865,15 +863,11 @@ fn plot_favorable_percentages(
         .map(|s| (s.limit as f64, s.favorable_pct))
         .collect();
 
-    const STROKE_WIDTH: u32 = 3;
-    const LEGEND_PATH_LEFT_OFFSET: i32 = 30;
-    const LEGEND_PATH_RIGHT_OFFSET: i32 = 10;
-
     // Draw the series
     chart
         .draw_series(LineSeries::new(
             favorable_pct_data.iter().copied(),
-            RED.stroke_width(STROKE_WIDTH),
+            RED.stroke_width(SERIES_LINE_STROKE_WIDTH),
         ))?
         .label("Chance of compression being favorable (%)")
         .legend(|(x, y)| {
@@ -882,7 +876,7 @@ fn plot_favorable_percentages(
                     (x - LEGEND_PATH_LEFT_OFFSET, y),
                     (x + LEGEND_PATH_RIGHT_OFFSET, y),
                 ],
-                RED.stroke_width(STROKE_WIDTH),
+                RED.stroke_width(SERIES_LINE_STROKE_WIDTH),
             )
         });
 
@@ -1087,31 +1081,29 @@ fn plot_sampled_compression_ratios(
             )
         });
 
-    const POINT_SIZE: u32 = 5;
-
     // Draw dots at each point
     chart.draw_series(
         average_pct_data
             .iter()
-            .map(|point| Circle::new(*point, POINT_SIZE, BLUE.filled())),
+            .map(|point| Circle::new(*point, SERIES_LINE_DOT_SIZE, BLUE.filled())),
     )?;
 
     chart.draw_series(
         median_pct_data
             .iter()
-            .map(|point| Circle::new(*point, POINT_SIZE, GREEN.filled())),
+            .map(|point| Circle::new(*point, SERIES_LINE_DOT_SIZE, GREEN.filled())),
     )?;
 
     chart.draw_series(
         average_favorable_pct_data
             .iter()
-            .map(|point| Circle::new(*point, POINT_SIZE, MAGENTA.filled())),
+            .map(|point| Circle::new(*point, SERIES_LINE_DOT_SIZE, MAGENTA.filled())),
     )?;
 
     chart.draw_series(
         median_favorable_pct_data
             .iter()
-            .map(|point| Circle::new(*point, POINT_SIZE, CYAN.filled())),
+            .map(|point| Circle::new(*point, SERIES_LINE_DOT_SIZE, CYAN.filled())),
     )?;
 
     chart
