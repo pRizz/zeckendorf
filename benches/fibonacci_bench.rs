@@ -4,7 +4,7 @@
 
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use std::hint::black_box;
-use zeckendorf_rs::{fast_fibonacci_bigint_iterative, slow_fibonacci_bigint_iterative};
+use zeckendorf_rs::{fast_doubling_fibonacci_bigint, slow_fibonacci_bigint_iterative};
 
 /// Fibonacci indices to benchmark.
 const FIBONACCI_INDICES: [u64; 4] = [10_000, 20_000, 50_000, 100_000];
@@ -24,13 +24,13 @@ fn bench_slow_fibonacci_bigint_iterative(c: &mut Criterion) {
     group.finish();
 }
 
-fn bench_fast_fibonacci_bigint_iterative(c: &mut Criterion) {
-    let mut group = c.benchmark_group("fast_fibonacci_bigint_iterative");
+fn bench_fast_doubling_fibonacci_bigint(c: &mut Criterion) {
+    let mut group = c.benchmark_group("fast_doubling_fibonacci_bigint");
 
     for &fi in &FIBONACCI_INDICES {
         group.bench_with_input(BenchmarkId::from_parameter(fi), &fi, |b, &fi| {
             b.iter(|| {
-                let result = fast_fibonacci_bigint_iterative(black_box(fi));
+                let result = fast_doubling_fibonacci_bigint(black_box(fi));
                 black_box(result);
             });
         });
@@ -42,6 +42,6 @@ fn bench_fast_fibonacci_bigint_iterative(c: &mut Criterion) {
 criterion_group!(
     benches,
     bench_slow_fibonacci_bigint_iterative,
-    bench_fast_fibonacci_bigint_iterative
+    bench_fast_doubling_fibonacci_bigint
 );
 criterion_main!(benches);

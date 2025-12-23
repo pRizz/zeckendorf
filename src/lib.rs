@@ -212,25 +212,25 @@ pub fn slow_fibonacci_bigint_iterative(fi: u64) -> Arc<BigUint> {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::fast_fibonacci_bigint_iterative;
+/// # use zeckendorf_rs::fast_doubling_fibonacci_bigint;
 /// # use num_bigint::BigUint;
 /// # use num_traits::{One, Zero};
 /// // Base cases
-/// assert_eq!(*fast_fibonacci_bigint_iterative(0u64), BigUint::zero());
-/// assert_eq!(*fast_fibonacci_bigint_iterative(1u64), BigUint::one());
+/// assert_eq!(*fast_doubling_fibonacci_bigint(0u64), BigUint::zero());
+/// assert_eq!(*fast_doubling_fibonacci_bigint(1u64), BigUint::one());
 ///
 /// // Small Fibonacci numbers
-/// assert_eq!(*fast_fibonacci_bigint_iterative(2u64), BigUint::from(1u64));
-/// assert_eq!(*fast_fibonacci_bigint_iterative(3u64), BigUint::from(2u64));
-/// assert_eq!(*fast_fibonacci_bigint_iterative(4u64), BigUint::from(3u64));
-/// assert_eq!(*fast_fibonacci_bigint_iterative(5u64), BigUint::from(5u64));
-/// assert_eq!(*fast_fibonacci_bigint_iterative(6u64), BigUint::from(8u64));
-/// assert_eq!(*fast_fibonacci_bigint_iterative(7u64), BigUint::from(13u64));
-/// assert_eq!(*fast_fibonacci_bigint_iterative(8u64), BigUint::from(21u64));
-/// assert_eq!(*fast_fibonacci_bigint_iterative(9u64), BigUint::from(34u64));
-/// assert_eq!(*fast_fibonacci_bigint_iterative(10u64), BigUint::from(55u64));
+/// assert_eq!(*fast_doubling_fibonacci_bigint(2u64), BigUint::from(1u64));
+/// assert_eq!(*fast_doubling_fibonacci_bigint(3u64), BigUint::from(2u64));
+/// assert_eq!(*fast_doubling_fibonacci_bigint(4u64), BigUint::from(3u64));
+/// assert_eq!(*fast_doubling_fibonacci_bigint(5u64), BigUint::from(5u64));
+/// assert_eq!(*fast_doubling_fibonacci_bigint(6u64), BigUint::from(8u64));
+/// assert_eq!(*fast_doubling_fibonacci_bigint(7u64), BigUint::from(13u64));
+/// assert_eq!(*fast_doubling_fibonacci_bigint(8u64), BigUint::from(21u64));
+/// assert_eq!(*fast_doubling_fibonacci_bigint(9u64), BigUint::from(34u64));
+/// assert_eq!(*fast_doubling_fibonacci_bigint(10u64), BigUint::from(55u64));
 /// ```
-pub fn fast_fibonacci_bigint_iterative(fi: u64) -> Arc<BigUint> {
+pub fn fast_doubling_fibonacci_bigint(fi: u64) -> Arc<BigUint> {
     let mut a = BigUint::zero();
     let mut b = BigUint::one();
     let mut m = BigUint::zero();
