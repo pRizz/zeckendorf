@@ -23,7 +23,7 @@ fn main() {
     for i in 0..20 {
         println!(
             "The bigint {i}th Fibonacci number is: {}",
-            memoized_fibonacci_bigint_iterative(i)
+            memoized_slow_fibonacci_bigint_iterative(i)
         );
     }
     for i in 0..20 {
@@ -62,7 +62,7 @@ fn main() {
     // Time taken: ~65.6s for iterative
     // let limit = 1_000_000u64;
 
-    let big_fibonacci = memoized_fibonacci_bigint_iterative(limit);
+    let big_fibonacci = memoized_slow_fibonacci_bigint_iterative(limit);
     println!("The {limit}th Fibonacci number is: {}", big_fibonacci);
     // it takes 6 bits to represent the 10th Fibonacci number
     // it takes 69424 bits to represent the 100_000th Fibonacci number
@@ -191,7 +191,7 @@ fn test_bit_count_for_all_ones_effective_zeckendorf_bits_ascending() {
 fn find_fibonacci_by_bit_count(target_bits: u64) -> (u64, BigUint) {
     let mut index = 0u64;
     loop {
-        let fibonacci = memoized_fibonacci_bigint_iterative(index);
+        let fibonacci = memoized_slow_fibonacci_bigint_iterative(index);
         let bit_count = fibonacci.bits();
         if bit_count >= target_bits {
             return (index, (*fibonacci).clone());
@@ -261,6 +261,9 @@ fn test_fast_doubling_fibonacci_bigint() {
     let mut sorted_cache = cache.iter().collect::<Vec<_>>();
     sorted_cache.sort_by_key(|(fi, _)| *fi);
     for (fi, value) in sorted_cache.iter() {
-        println!("The {fi}th Fibonacci number, using the fast doubling algorithm, is: {}", value);
+        println!(
+            "The {fi}th Fibonacci number, using the fast doubling algorithm, is: {}",
+            value
+        );
     }
 }

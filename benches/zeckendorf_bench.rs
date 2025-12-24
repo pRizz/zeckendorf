@@ -1,6 +1,6 @@
 //! Benchmark for the Zeckendorf compression and decompression functions
 //!
-//! Run with: `cargo bench`
+//! Run with: `cargo bench --bench zeckendorf_bench`
 //!
 //! The benchmarks are run for a variety of byte sizes, from 4 to 16K.
 //!

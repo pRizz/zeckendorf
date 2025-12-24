@@ -120,27 +120,27 @@ pub fn memoized_fibonacci_recursive(fi: u64) -> u64 {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::memoized_fibonacci_bigint_iterative;
+/// # use zeckendorf_rs::memoized_slow_fibonacci_bigint_iterative;
 /// # use num_bigint::BigUint;
 /// # use num_traits::{One, Zero};
 /// // Base cases
-/// assert_eq!(*memoized_fibonacci_bigint_iterative(0u64), BigUint::zero());
-/// assert_eq!(*memoized_fibonacci_bigint_iterative(1u64), BigUint::one());
+/// assert_eq!(*memoized_slow_fibonacci_bigint_iterative(0u64), BigUint::zero());
+/// assert_eq!(*memoized_slow_fibonacci_bigint_iterative(1u64), BigUint::one());
 ///
 /// // Small Fibonacci numbers
-/// assert_eq!(*memoized_fibonacci_bigint_iterative(2u64), BigUint::from(1u64));
-/// assert_eq!(*memoized_fibonacci_bigint_iterative(3u64), BigUint::from(2u64));
-/// assert_eq!(*memoized_fibonacci_bigint_iterative(4u64), BigUint::from(3u64));
-/// assert_eq!(*memoized_fibonacci_bigint_iterative(5u64), BigUint::from(5u64));
-/// assert_eq!(*memoized_fibonacci_bigint_iterative(6u64), BigUint::from(8u64));
-/// assert_eq!(*memoized_fibonacci_bigint_iterative(7u64), BigUint::from(13u64));
-/// assert_eq!(*memoized_fibonacci_bigint_iterative(8u64), BigUint::from(21u64));
-/// assert_eq!(*memoized_fibonacci_bigint_iterative(9u64), BigUint::from(34u64));
-/// assert_eq!(*memoized_fibonacci_bigint_iterative(10u64), BigUint::from(55u64));
+/// assert_eq!(*memoized_slow_fibonacci_bigint_iterative(2u64), BigUint::from(1u64));
+/// assert_eq!(*memoized_slow_fibonacci_bigint_iterative(3u64), BigUint::from(2u64));
+/// assert_eq!(*memoized_slow_fibonacci_bigint_iterative(4u64), BigUint::from(3u64));
+/// assert_eq!(*memoized_slow_fibonacci_bigint_iterative(5u64), BigUint::from(5u64));
+/// assert_eq!(*memoized_slow_fibonacci_bigint_iterative(6u64), BigUint::from(8u64));
+/// assert_eq!(*memoized_slow_fibonacci_bigint_iterative(7u64), BigUint::from(13u64));
+/// assert_eq!(*memoized_slow_fibonacci_bigint_iterative(8u64), BigUint::from(21u64));
+/// assert_eq!(*memoized_slow_fibonacci_bigint_iterative(9u64), BigUint::from(34u64));
+/// assert_eq!(*memoized_slow_fibonacci_bigint_iterative(10u64), BigUint::from(55u64));
 /// ```
 ///
 /// TODO: consider returning a reference to the cached value to avoid the clone.
-pub fn memoized_fibonacci_bigint_iterative(fi: u64) -> Arc<BigUint> {
+pub fn memoized_slow_fibonacci_bigint_iterative(fi: u64) -> Arc<BigUint> {
     let fi = fi as usize;
 
     // Try to get the value with a read lock first
@@ -284,8 +284,10 @@ pub fn fast_doubling_fibonacci_bigint(fi: u64) -> Arc<BigUint> {
 /// on the fly while maintaining good performance.
 ///
 /// TODO: use Karatsuba multiplication to speed up the multiplication of BigUint.
-/// 
+///
 /// TODO: if we have a cache miss, we could try intelligently walking backwards from the target index to find the nearest cached values and continue the fast doubling algorithm from there.
+///
+/// FIXME: for some reason, using this fast Fibonacci function in the Zeckendorf functions slows down the Zeckendorf codec benchmarks.
 ///
 /// # Examples
 ///
@@ -556,7 +558,7 @@ pub fn memoized_zeckendorf_list_descending_for_bigint(n: &BigUint) -> Vec<u64> {
     let mut high = 1u64;
 
     // Exponential search for upper bound
-    while *memoized_fibonacci_bigint_iterative(high) < current_n {
+    while *memoized_slow_fibonacci_bigint_iterative(high) < current_n {
         low = high;
         high *= 2;
     }
@@ -568,7 +570,7 @@ pub fn memoized_zeckendorf_list_descending_for_bigint(n: &BigUint) -> Vec<u64> {
             low = 1;
             break;
         }
-        if *memoized_fibonacci_bigint_iterative(mid) < current_n {
+        if *memoized_slow_fibonacci_bigint_iterative(mid) < current_n {
             low = mid + 1;
         } else {
             high = mid - 1;
@@ -579,7 +581,7 @@ pub fn memoized_zeckendorf_list_descending_for_bigint(n: &BigUint) -> Vec<u64> {
     let mut zeckendorf_list: Vec<u64> = Vec::new();
     while current_n > BigUint::zero() {
         let current_fibonacci_value =
-            memoized_fibonacci_bigint_iterative(max_fibonacci_index_smaller_than_n);
+            memoized_slow_fibonacci_bigint_iterative(max_fibonacci_index_smaller_than_n);
         if *current_fibonacci_value > current_n {
             max_fibonacci_index_smaller_than_n -= 1;
             continue;
@@ -945,7 +947,7 @@ pub fn ezba_to_ezla(ezba_bits: &[u8]) -> Vec<u64> {
 /// ```
 pub fn zl_to_bigint(zl: &[u64]) -> BigUint {
     zl.iter().fold(BigUint::zero(), |acc, fi| {
-        acc + &*memoized_fibonacci_bigint_iterative(*fi)
+        acc + &*memoized_slow_fibonacci_bigint_iterative(*fi)
     })
 }
 
