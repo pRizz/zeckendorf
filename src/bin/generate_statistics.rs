@@ -52,6 +52,14 @@ const BIT_SIZE_LIMITS: [u64; 21] = [
 ];
 const SAMPLES_PER_BIT_SIZE: u64 = 250_000;
 
+// Wide-scale sampled statistics configuration
+// Samples at sparser bit size limits with a much higher ceiling: 1e3, 1e4, 1e5
+const WIDE_SCALE_BIT_SIZE_LIMITS: [u64; 3] = [1_000, 10_000, 100_000];
+// ⚠️ process gets killed after sampling at 1 Mbit, with out of memory error.
+// const WIDE_SCALE_BIT_SIZE_LIMITS: [u64; 5] = [1_000, 10_000, 100_000, 1_000_000, 10_000_000];
+const WIDE_SCALE_STARTING_SAMPLES_PER_BIT_SIZE: u64 = 100_000;
+const WIDE_SCALE_SAMPLE_REDUCTION_FACTOR: f64 = 0.15;
+
 // Seed for the random number generator to ensure reproducible results
 const RNG_SEED: u64 = 42;
 
@@ -74,6 +82,7 @@ fn main() {
 
     generate_bit_limit_stats();
     generate_sampled_bit_limit_stats();
+    generate_wide_scale_sampled_bit_limit_stats();
 
     let end_time = Instant::now();
     println!(
@@ -199,6 +208,55 @@ fn generate_sampled_bit_limit_stats() {
     );
     if let Err(e) = plot_sampled_favorable_percentages(&plot_filename_favorable, &sampled_stats) {
         eprintln!("Error: Failed to plot sampled favorable percentages: {e}");
+    }
+}
+
+fn generate_wide_scale_sampled_bit_limit_stats() {
+    let csv_header = "max bit size,chance of compression being favorable,average compression ratio,median compression ratio,best compression ratio,best compression input,average favorable compression ratio,median favorable compression ratio\n";
+
+    println!("\n=== Generating wide-scale sampled statistics ===");
+    let wide_scale_start_time = Instant::now();
+    let wide_scale_stats = WIDE_SCALE_BIT_SIZE_LIMITS
+        .iter()
+        .enumerate()
+        .map(|(index, &bit_size_limit)| {
+            // Reduce samples by a factor after each iteration because computations gets more costly as the bit size limit increases.
+            let sample_count = (WIDE_SCALE_STARTING_SAMPLES_PER_BIT_SIZE as f64
+                * (WIDE_SCALE_SAMPLE_REDUCTION_FACTOR.powi(index as i32)))
+                as u64;
+            gather_sampled_stats(bit_size_limit, sample_count)
+        })
+        .collect::<Vec<CompressionStats>>();
+    let csv_content = generate_stats_csv(&wide_scale_stats, csv_header);
+    let wide_scale_statistics_file_name = format!(
+        "wide_scale_sampled_statistics_up_to_{}_bits",
+        WIDE_SCALE_BIT_SIZE_LIMITS.last().unwrap()
+    );
+    write_stats_csv(&csv_content, &wide_scale_statistics_file_name);
+    let wide_scale_end_time = Instant::now();
+    println!(
+        "Time taken to generate wide-scale sampled statistics: {:?}",
+        wide_scale_end_time.duration_since(wide_scale_start_time)
+    );
+
+    let plot_filename_ratios = format!(
+        "plots/compression_ratios_wide_scale_sampled_up_to_{}_bits.png",
+        WIDE_SCALE_BIT_SIZE_LIMITS.last().unwrap()
+    );
+    if let Err(e) =
+        plot_wide_scale_sampled_compression_ratios(&plot_filename_ratios, &wide_scale_stats)
+    {
+        eprintln!("Error: Failed to plot wide-scale sampled compression ratios: {e}");
+    }
+
+    let plot_filename_favorable = format!(
+        "plots/favorable_percentages_wide_scale_sampled_up_to_{}_bits.png",
+        WIDE_SCALE_BIT_SIZE_LIMITS.last().unwrap()
+    );
+    if let Err(e) =
+        plot_wide_scale_sampled_favorable_percentages(&plot_filename_favorable, &wide_scale_stats)
+    {
+        eprintln!("Error: Failed to plot wide-scale sampled favorable percentages: {e}");
     }
 }
 
@@ -1242,6 +1300,361 @@ fn plot_sampled_favorable_percentages(
     let end_time = Instant::now();
     println!(
         "Time taken to plot sampled favorable percentages: {:?}",
+        end_time.duration_since(start_time)
+    );
+    Ok(())
+}
+
+fn plot_wide_scale_sampled_compression_ratios(
+    filename: &str,
+    stats: &[CompressionStats],
+) -> Result<(), Box<dyn std::error::Error>> {
+    let start_time = Instant::now();
+    println!("Plotting wide-scale sampled compression ratios");
+
+    // Ensure plots directory exists
+    std::fs::create_dir_all("plots").expect("Failed to create plots directory");
+
+    let root = BitMapBackend::new(filename, (PLOT_WIDTH, PLOT_HEIGHT)).into_drawing_area();
+    root.fill(&WHITE)?;
+
+    // Find the min and max values for y-axis (only compression ratios)
+    let mut min_y = f64::INFINITY;
+    let mut max_y = f64::NEG_INFINITY;
+
+    for stat in stats {
+        min_y = min_y
+            .min(stat.average_pct)
+            .min(stat.median_pct)
+            .min(stat.maybe_average_favorable_pct.unwrap_or(f64::INFINITY))
+            .min(stat.maybe_median_favorable_pct.unwrap_or(f64::INFINITY));
+        max_y = max_y
+            .max(stat.average_pct)
+            .max(stat.median_pct)
+            .max(
+                stat.maybe_average_favorable_pct
+                    .unwrap_or(f64::NEG_INFINITY),
+            )
+            .max(stat.maybe_median_favorable_pct.unwrap_or(f64::NEG_INFINITY));
+    }
+
+    // Add some padding
+    let y_range = max_y - min_y;
+    let y_min = min_y - y_range * 0.1;
+    let y_max = max_y + y_range * 0.1;
+
+    // Get x-axis range (logarithmic) - using wide-scale bit sizes
+    let x_min = WIDE_SCALE_BIT_SIZE_LIMITS.first().copied().unwrap_or(1) as f64;
+    let x_max = WIDE_SCALE_BIT_SIZE_LIMITS.last().copied().unwrap_or(1) as f64;
+
+    let mut chart = ChartBuilder::on(&root)
+        .caption(
+            format!("Zeckendorf Compression Ratios (Wide-Scale Sampling)"),
+            ("sans-serif", CAPTION_FONT_SIZE).into_font(),
+        )
+        .margin(CHART_MARGIN)
+        .x_label_area_size(260)
+        .y_label_area_size(300)
+        .build_cartesian_2d((x_min..x_max).log_scale(), y_min..y_max)?;
+
+    let axis_label_style =
+        TextStyle::from(("sans-serif", AXIS_FONT_SIZE).into_font()).color(&BLACK);
+    let axis_tick_style =
+        TextStyle::from(("sans-serif", AXIS_TICK_FONT_SIZE).into_font()).color(&BLACK);
+
+    // Custom formatter for x-axis labels in scientific notation for large bit sizes
+    let x_label_formatter = |x: &f64| {
+        if *x == 0.0 {
+            "0".to_string()
+        } else {
+            let exponent = x.log10().floor() as i32;
+            let mantissa = x / 10_f64.powi(exponent);
+            // Round mantissa to 1 decimal place if needed, otherwise show as integer
+            let rounded_mantissa = mantissa.round();
+            if (mantissa - rounded_mantissa).abs() < 1e-10 {
+                format!("{}e{}", rounded_mantissa as i64, exponent)
+            } else {
+                format!("{:.1}e{}", mantissa, exponent)
+            }
+        }
+    };
+
+    chart
+        .configure_mesh()
+        .x_desc(format!(
+            "Bit Size Limit (starting with {} samples), Log Scale",
+            WIDE_SCALE_STARTING_SAMPLES_PER_BIT_SIZE.to_formatted_string(&Locale::en)
+        ))
+        .y_desc("Compression Ratio")
+        .x_label_formatter(&x_label_formatter)
+        .label_style(axis_tick_style)
+        .axis_desc_style(axis_label_style)
+        .draw()?;
+
+    // Prepare data for each series
+    let average_pct_data: Vec<(f64, f64)> = stats
+        .iter()
+        .map(|s| (s.limit as f64, s.average_pct))
+        .collect();
+
+    let median_pct_data: Vec<(f64, f64)> = stats
+        .iter()
+        .map(|s| (s.limit as f64, s.median_pct))
+        .collect();
+
+    let average_favorable_pct_data: Vec<(f64, f64)> = stats
+        .iter()
+        .map_while(|stat| {
+            stat.maybe_average_favorable_pct
+                .map(|average_favorable_pct| (stat.limit as f64, average_favorable_pct))
+        })
+        .collect();
+
+    let median_favorable_pct_data: Vec<(f64, f64)> = stats
+        .iter()
+        .map_while(|stat| {
+            stat.maybe_median_favorable_pct
+                .map(|median_favorable_pct| (stat.limit as f64, median_favorable_pct))
+        })
+        .collect();
+
+    // Draw each series with different colors
+    chart
+        .draw_series(LineSeries::new(
+            average_pct_data.iter().copied(),
+            BLUE.stroke_width(SERIES_LINE_STROKE_WIDTH),
+        ))?
+        .label("Average compression ratio")
+        .legend(|(x, y)| {
+            PathElement::new(
+                vec![
+                    (x - LEGEND_PATH_LEFT_OFFSET, y),
+                    (x + LEGEND_PATH_RIGHT_OFFSET, y),
+                ],
+                BLUE.stroke_width(SERIES_LINE_STROKE_WIDTH),
+            )
+        });
+
+    chart
+        .draw_series(LineSeries::new(
+            median_pct_data.iter().copied(),
+            GREEN.stroke_width(SERIES_LINE_STROKE_WIDTH),
+        ))?
+        .label("Median compression ratio")
+        .legend(|(x, y)| {
+            PathElement::new(
+                vec![
+                    (x - LEGEND_PATH_LEFT_OFFSET, y),
+                    (x + LEGEND_PATH_RIGHT_OFFSET, y),
+                ],
+                GREEN.stroke_width(SERIES_LINE_STROKE_WIDTH),
+            )
+        });
+
+    chart
+        .draw_series(LineSeries::new(
+            average_favorable_pct_data.iter().copied(),
+            MAGENTA.stroke_width(SERIES_LINE_STROKE_WIDTH),
+        ))?
+        .label("Average favorable compression ratio")
+        .legend(|(x, y)| {
+            PathElement::new(
+                vec![
+                    (x - LEGEND_PATH_LEFT_OFFSET, y),
+                    (x + LEGEND_PATH_RIGHT_OFFSET, y),
+                ],
+                MAGENTA.stroke_width(SERIES_LINE_STROKE_WIDTH),
+            )
+        });
+
+    chart
+        .draw_series(LineSeries::new(
+            median_favorable_pct_data.iter().copied(),
+            CYAN.stroke_width(SERIES_LINE_STROKE_WIDTH),
+        ))?
+        .label("Median favorable compression ratio")
+        .legend(|(x, y)| {
+            PathElement::new(
+                vec![
+                    (x - LEGEND_PATH_LEFT_OFFSET, y),
+                    (x + LEGEND_PATH_RIGHT_OFFSET, y),
+                ],
+                CYAN.stroke_width(SERIES_LINE_STROKE_WIDTH),
+            )
+        });
+
+    // Draw dots at each point
+    chart.draw_series(
+        average_pct_data
+            .iter()
+            .map(|point| Circle::new(*point, SERIES_LINE_DOT_SIZE, BLUE.filled())),
+    )?;
+
+    chart.draw_series(
+        median_pct_data
+            .iter()
+            .map(|point| Circle::new(*point, SERIES_LINE_DOT_SIZE, GREEN.filled())),
+    )?;
+
+    chart.draw_series(
+        average_favorable_pct_data
+            .iter()
+            .map(|point| Circle::new(*point, SERIES_LINE_DOT_SIZE, MAGENTA.filled())),
+    )?;
+
+    chart.draw_series(
+        median_favorable_pct_data
+            .iter()
+            .map(|point| Circle::new(*point, SERIES_LINE_DOT_SIZE, CYAN.filled())),
+    )?;
+
+    chart
+        .configure_series_labels()
+        .position(SeriesLabelPosition::LowerRight)
+        .margin(LEGEND_MARGIN)
+        .label_font(("sans-serif", LEGEND_FONT_SIZE).into_font())
+        .background_style(&WHITE.mix(0.8))
+        .border_style(&BLACK)
+        .draw()?;
+
+    root.present()?;
+    println!(
+        "Wide-scale sampled compression ratios plot saved to {}",
+        filename
+    );
+    let end_time = Instant::now();
+    println!(
+        "Time taken to plot wide-scale sampled compression ratios: {:?}",
+        end_time.duration_since(start_time)
+    );
+    Ok(())
+}
+
+/// We know the chance of compression being favorable decreases towards 0 as the bit size limit increases, but we have this for completeness.
+fn plot_wide_scale_sampled_favorable_percentages(
+    filename: &str,
+    stats: &[CompressionStats],
+) -> Result<(), Box<dyn std::error::Error>> {
+    let start_time = Instant::now();
+    println!("Plotting wide-scale sampled favorable percentages");
+
+    // Ensure plots directory exists
+    std::fs::create_dir_all("plots").expect("Failed to create plots directory");
+
+    let root = BitMapBackend::new(filename, (PLOT_WIDTH, PLOT_HEIGHT)).into_drawing_area();
+    root.fill(&WHITE)?;
+
+    // Find the min and max values for y-axis (only favorable percentages)
+    let mut min_y = f64::INFINITY;
+    let mut max_y = f64::NEG_INFINITY;
+
+    for stat in stats {
+        min_y = min_y.min(stat.favorable_pct);
+        max_y = max_y.max(stat.favorable_pct);
+    }
+
+    // Add some padding
+    let y_range = max_y - min_y;
+    let y_min = (min_y - y_range * 0.1).max(0.0);
+    let y_max = (max_y + y_range * 0.1).min(100.0);
+
+    // Get x-axis range (logarithmic) - using wide-scale bit sizes
+    let x_min = WIDE_SCALE_BIT_SIZE_LIMITS.first().copied().unwrap_or(1) as f64;
+    let x_max = WIDE_SCALE_BIT_SIZE_LIMITS.last().copied().unwrap_or(1) as f64;
+
+    let mut chart = ChartBuilder::on(&root)
+        .caption(
+            format!("Chance of Compression Being Favorable (Wide-Scale Sampling)"),
+            ("sans-serif", CAPTION_FONT_SIZE).into_font(),
+        )
+        .margin(CHART_MARGIN)
+        .x_label_area_size(260)
+        .y_label_area_size(300)
+        .build_cartesian_2d((x_min..x_max).log_scale(), (y_min..y_max).log_scale())?;
+
+    let axis_label_style =
+        TextStyle::from(("sans-serif", AXIS_FONT_SIZE).into_font()).color(&BLACK);
+    let axis_tick_style =
+        TextStyle::from(("sans-serif", AXIS_TICK_FONT_SIZE).into_font()).color(&BLACK);
+
+    // Custom formatter for x-axis labels in scientific notation for large bit sizes
+    let x_label_formatter = |x: &f64| {
+        if *x == 0.0 {
+            "0".to_string()
+        } else {
+            let exponent = x.log10().floor() as i32;
+            let mantissa = x / 10_f64.powi(exponent);
+            // Round mantissa to 1 decimal place if needed, otherwise show as integer
+            let rounded_mantissa = mantissa.round();
+            if (mantissa - rounded_mantissa).abs() < 1e-10 {
+                format!("{}e{}", rounded_mantissa as i64, exponent)
+            } else {
+                format!("{:.1}e{}", mantissa, exponent)
+            }
+        }
+    };
+
+    chart
+        .configure_mesh()
+        .x_desc(format!(
+            "Bit Size Limit (starting with {} samples), Log Scale",
+            WIDE_SCALE_STARTING_SAMPLES_PER_BIT_SIZE.to_formatted_string(&Locale::en)
+        ))
+        .y_desc("Chance of Compression Being Favorable (%)")
+        .x_label_formatter(&x_label_formatter)
+        .label_style(axis_tick_style)
+        .axis_desc_style(axis_label_style)
+        .draw()?;
+
+    // Prepare data for favorable percentage series
+    let favorable_pct_data: Vec<(f64, f64)> = stats
+        .iter()
+        .map(|s| (s.limit as f64, s.favorable_pct))
+        .collect();
+
+    // Draw the series
+    chart
+        .draw_series(LineSeries::new(
+            favorable_pct_data.iter().copied(),
+            RED.stroke_width(SERIES_LINE_STROKE_WIDTH),
+        ))?
+        .label("Chance of compression being favorable (%)")
+        .legend(|(x, y)| {
+            PathElement::new(
+                vec![
+                    (x - LEGEND_PATH_LEFT_OFFSET, y),
+                    (x + LEGEND_PATH_RIGHT_OFFSET, y),
+                ],
+                RED.stroke_width(SERIES_LINE_STROKE_WIDTH),
+            )
+        });
+
+    const POINT_SIZE: u32 = 5;
+
+    // Draw dots at each point
+    chart.draw_series(
+        favorable_pct_data
+            .iter()
+            .map(|point| Circle::new(*point, POINT_SIZE, RED.filled())),
+    )?;
+
+    chart
+        .configure_series_labels()
+        .position(SeriesLabelPosition::UpperRight)
+        .margin(LEGEND_MARGIN)
+        .label_font(("sans-serif", LEGEND_FONT_SIZE).into_font())
+        .background_style(&WHITE.mix(0.8))
+        .border_style(&BLACK)
+        .draw()?;
+
+    root.present()?;
+    println!(
+        "Wide-scale sampled favorable percentages plot saved to {}",
+        filename
+    );
+    let end_time = Instant::now();
+    println!(
+        "Time taken to plot wide-scale sampled favorable percentages: {:?}",
         end_time.duration_since(start_time)
     );
     Ok(())

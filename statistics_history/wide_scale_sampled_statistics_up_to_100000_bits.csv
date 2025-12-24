@@ -1,0 +1,4 @@
+max bit size,chance of compression being favorable,average compression ratio,median compression ratio,best compression ratio,best compression input,average favorable compression ratio,median favorable compression ratio
+1000,0.005000,1.041434,1.041000,0.996,,0.9975,0.998
+10000,0.000000,1.042207,1.042200,1.0283,,None,None
+100000,0.000000,1.042241,1.042210,1.0388,,None,None
