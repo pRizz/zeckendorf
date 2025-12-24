@@ -3,6 +3,7 @@
 //! Example usages:
 //! `cargo run --release --bin zeckendorf`
 
+use bitvec::prelude::*;
 use num_bigint::BigUint;
 use num_format::ToFormattedString;
 use std::time::Instant;
@@ -165,9 +166,9 @@ fn flamegraph_zeckendorf_decompress_be() {
 }
 
 fn test_bit_count_for_all_ones_effective_zeckendorf_bits_ascending() {
-    let one_hundred_thousand_ones = vec![1; 100000];
+    let one_hundred_thousand_ones: BitVec<u8, Lsb0> = (0..100000).map(|_| true).collect();
     // println!("One hundred thousand ones: {:?}", one_hundred_thousand_ones);
-    let ezla = ezba_to_ezla(&one_hundred_thousand_ones);
+    let ezla = ezba_to_ezla(one_hundred_thousand_ones.as_bitslice());
     // println!("Effective Zeckendorf list ascending: {:?}", ezla);
     let zla = ezl_to_zl(&ezla);
     // println!("Zeckendorf list ascending: {:?}", zla);

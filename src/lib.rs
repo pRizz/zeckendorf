@@ -6,6 +6,7 @@
 //! If we first interpret the input data as a big integer, we can then represent the integer as a sum of non-consecutive Fibonacci numbers.
 //! Sometimes this results in a more compact representation of the data, but it is not guaranteed.
 
+use bitvec::prelude::*;
 use num_bigint::BigUint;
 use num_traits::{One, Zero};
 use std::collections::HashMap;
@@ -762,16 +763,17 @@ pub fn ezl_to_zl(ezl: &[u64]) -> Vec<u64> {
 ///
 /// ```
 /// # use zeckendorf_rs::ezba_from_ezld;
-/// assert_eq!(ezba_from_ezld(&[]), vec![0]);
-/// assert_eq!(ezba_from_ezld(&[0]), vec![1]); // 0th EFI is 2nd FI, which is 1
-/// assert_eq!(ezba_from_ezld(&[1]), vec![0, 1]); // 1st EFI is 3rd FI, which is 2
-/// assert_eq!(ezba_from_ezld(&[2]), vec![0, 0, 1]); // 2nd EFI is 4th FI, which is 3
-/// assert_eq!(ezba_from_ezld(&[2, 0]), vec![1, 1]); // 2nd EFI is 4th FI, which is 3 and 0th EFI is 2nd FI, which is 1, which sums to 4
-/// assert_eq!(ezba_from_ezld(&[3]), vec![0, 0, 0, 1]); // 3rd EFI is 5th FI, which is 5
+/// # use bitvec::prelude::*;
+/// assert_eq!(ezba_from_ezld(&[]), bitvec![u8, Lsb0; 0]);
+/// assert_eq!(ezba_from_ezld(&[0]), bitvec![u8, Lsb0; 1]); // 0th EFI is 2nd FI, which is 1
+/// assert_eq!(ezba_from_ezld(&[1]), bitvec![u8, Lsb0; 0, 1]); // 1st EFI is 3rd FI, which is 2
+/// assert_eq!(ezba_from_ezld(&[2]), bitvec![u8, Lsb0; 0, 0, 1]); // 2nd EFI is 4th FI, which is 3
+/// assert_eq!(ezba_from_ezld(&[2, 0]), bitvec![u8, Lsb0; 1, 1]); // 2nd EFI is 4th FI, which is 3 and 0th EFI is 2nd FI, which is 1, which sums to 4
+/// assert_eq!(ezba_from_ezld(&[3]), bitvec![u8, Lsb0; 0, 0, 0, 1]); // 3rd EFI is 5th FI, which is 5
 /// ```
-pub fn ezba_from_ezld(effective_zeckendorf_list_descending: &[u64]) -> Vec<u8> {
+pub fn ezba_from_ezld(effective_zeckendorf_list_descending: &[u64]) -> BitVec<u8, Lsb0> {
     if effective_zeckendorf_list_descending.is_empty() {
-        return vec![SKIP_BIT];
+        return bitvec![u8, Lsb0; 0];
     }
 
     let effective_zeckendorf_list_ascending: Vec<u64> = effective_zeckendorf_list_descending
@@ -780,7 +782,7 @@ pub fn ezba_from_ezld(effective_zeckendorf_list_descending: &[u64]) -> Vec<u8> {
         .rev()
         .collect();
 
-    let mut effective_zeckendorf_bits_ascending = Vec::new();
+    let mut effective_zeckendorf_bits_ascending = BitVec::new();
 
     let mut current_ezla_index = 0;
 
@@ -791,11 +793,11 @@ pub fn ezba_from_ezld(effective_zeckendorf_list_descending: &[u64]) -> Vec<u8> {
     while current_efi <= max_efi {
         let current_ezla_value = effective_zeckendorf_list_ascending[current_ezla_index];
         if current_ezla_value == current_efi {
-            effective_zeckendorf_bits_ascending.push(USE_BIT);
+            effective_zeckendorf_bits_ascending.push(true);
             current_efi += 2;
             current_ezla_index += 1
         } else {
-            effective_zeckendorf_bits_ascending.push(SKIP_BIT);
+            effective_zeckendorf_bits_ascending.push(false);
             current_efi += 1;
         }
     }
@@ -803,7 +805,7 @@ pub fn ezba_from_ezld(effective_zeckendorf_list_descending: &[u64]) -> Vec<u8> {
     return effective_zeckendorf_bits_ascending;
 }
 
-/// Packs a slice of bits (0s and 1s) from an ezba (Effective Zeckendorf Bits Ascending) into bytes.
+/// Packs a slice of bits from an ezba (Effective Zeckendorf Bits Ascending) into bytes.
 ///
 /// The output bytes are in little endian order, so the first byte is the least significant byte and the last byte is the most significant byte.
 ///
@@ -815,28 +817,25 @@ pub fn ezba_from_ezld(effective_zeckendorf_list_descending: &[u64]) -> Vec<u8> {
 ///
 /// ```
 /// # use zeckendorf_rs::pack_ezba_bits_to_bytes;
-/// assert_eq!(pack_ezba_bits_to_bytes(&[0]), vec![0]);
-/// assert_eq!(pack_ezba_bits_to_bytes(&[1]), vec![1]);
-/// assert_eq!(pack_ezba_bits_to_bytes(&[0, 1]), vec![0b10]);
-/// assert_eq!(pack_ezba_bits_to_bytes(&[0, 0, 1]), vec![0b100]);
-/// assert_eq!(pack_ezba_bits_to_bytes(&[1, 1]), vec![0b11]);
+/// # use bitvec::prelude::*;
+/// assert_eq!(pack_ezba_bits_to_bytes(&bitvec![u8, Lsb0; 0]), vec![0]);
+/// assert_eq!(pack_ezba_bits_to_bytes(&bitvec![u8, Lsb0; 1]), vec![1]);
+/// assert_eq!(pack_ezba_bits_to_bytes(&bitvec![u8, Lsb0; 0, 1]), vec![0b10]);
+/// assert_eq!(pack_ezba_bits_to_bytes(&bitvec![u8, Lsb0; 0, 0, 1]), vec![0b100]);
+/// assert_eq!(pack_ezba_bits_to_bytes(&bitvec![u8, Lsb0; 1, 1]), vec![0b11]);
 /// ```
-pub fn pack_ezba_bits_to_bytes(ezba: &[u8]) -> Vec<u8> {
-    let mut out = Vec::with_capacity((ezba.len() + 7) / 8);
-
-    for chunk in ezba.chunks(8) {
-        let mut b = 0u8;
-
-        for (i, &bit) in chunk.iter().enumerate() {
-            if bit == 1 {
-                b |= 1 << i;
+pub fn pack_ezba_bits_to_bytes(ezba: &BitSlice<u8, Lsb0>) -> Vec<u8> {
+    ezba.chunks(8)
+        .map(|chunk| {
+            let mut b = 0u8;
+            for (i, bit) in chunk.iter().enumerate() {
+                if *bit {
+                    b |= 1 << i;
+                }
             }
-        }
-
-        out.push(b);
-    }
-
-    out
+            b
+        })
+        .collect()
 }
 
 /// Compresses a slice of bytes using the Zeckendorf algorithm.
@@ -871,48 +870,50 @@ pub fn zeckendorf_compress_be(data: &[u8]) -> Vec<u8> {
     let data_as_ezba = ezba_from_ezld(&data_as_ezld);
     // println!("Data as ezba: {:?}", data_as_ezba);
     // Compress the data
-    compressed_data = pack_ezba_bits_to_bytes(&data_as_ezba);
+    compressed_data = pack_ezba_bits_to_bytes(data_as_ezba.as_bitslice());
     // println!("Compressed data: {:?}", compressed_data);
     return compressed_data;
 }
 
-/// Unpacks a vector of bytes into a vector of bits (0s and 1s) from an ezba (Effective Zeckendorf Bits Ascending).
+/// Unpacks a vector of bytes into a BitVec of bits from an ezba (Effective Zeckendorf Bits Ascending).
 ///
 /// # Examples
 ///
 /// ```
 /// # use zeckendorf_rs::unpack_bytes_to_ezba_bits;
-/// assert_eq!(unpack_bytes_to_ezba_bits(&[0]), vec![0, 0, 0, 0, 0, 0, 0, 0]);
-/// assert_eq!(unpack_bytes_to_ezba_bits(&[1]), vec![1, 0, 0, 0, 0, 0, 0, 0]);
-/// assert_eq!(unpack_bytes_to_ezba_bits(&[0b111]), vec![1, 1, 1, 0, 0, 0, 0, 0]);
-/// assert_eq!(unpack_bytes_to_ezba_bits(&[1, 1]), vec![1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]);
+/// # use bitvec::prelude::*;
+/// assert_eq!(unpack_bytes_to_ezba_bits(&[0]), bitvec![u8, Lsb0; 0, 0, 0, 0, 0, 0, 0, 0]);
+/// assert_eq!(unpack_bytes_to_ezba_bits(&[1]), bitvec![u8, Lsb0; 1, 0, 0, 0, 0, 0, 0, 0]);
+/// assert_eq!(unpack_bytes_to_ezba_bits(&[0b111]), bitvec![u8, Lsb0; 1, 1, 1, 0, 0, 0, 0, 0]);
+/// assert_eq!(unpack_bytes_to_ezba_bits(&[1, 1]), bitvec![u8, Lsb0; 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]);
 /// ```
-pub fn unpack_bytes_to_ezba_bits(bytes: &[u8]) -> Vec<u8> {
-    let mut ezba_bits = Vec::with_capacity(bytes.len() * 8);
+pub fn unpack_bytes_to_ezba_bits(bytes: &[u8]) -> BitVec<u8, Lsb0> {
+    let mut ezba_bits = BitVec::with_capacity(bytes.len() * 8);
     for byte in bytes {
         for i in 0..8 {
-            ezba_bits.push((byte >> i) & 1);
+            ezba_bits.push((byte >> i) & 1 != 0);
         }
     }
     return ezba_bits;
 }
 
-/// Converts a vector of bits (0s and 1s) from an ezba (Effective Zeckendorf Bits Ascending) into a vector of effective fibonacci indices,
+/// Converts a BitSlice of bits from an ezba (Effective Zeckendorf Bits Ascending) into a vector of effective fibonacci indices,
 /// the Effective Zeckendorf List Ascending.
 ///
 /// # Examples
 ///
 /// ```
 /// # use zeckendorf_rs::ezba_to_ezla;
-/// assert_eq!(ezba_to_ezla(&[0, 0, 0, 0, 0, 0, 0, 0]), vec![]);
-/// assert_eq!(ezba_to_ezla(&[1, 0, 0, 0, 0, 0, 0, 0]), vec![0]);
-/// assert_eq!(ezba_to_ezla(&[1, 1, 1, 0, 0, 0, 0, 0]), vec![0, 2, 4]);
+/// # use bitvec::prelude::*;
+/// assert_eq!(ezba_to_ezla(&bitvec![u8, Lsb0; 0, 0, 0, 0, 0, 0, 0, 0]), vec![]);
+/// assert_eq!(ezba_to_ezla(&bitvec![u8, Lsb0; 1, 0, 0, 0, 0, 0, 0, 0]), vec![0]);
+/// assert_eq!(ezba_to_ezla(&bitvec![u8, Lsb0; 1, 1, 1, 0, 0, 0, 0, 0]), vec![0, 2, 4]);
 /// ```
-pub fn ezba_to_ezla(ezba_bits: &[u8]) -> Vec<u64> {
+pub fn ezba_to_ezla(ezba_bits: &BitSlice<u8, Lsb0>) -> Vec<u64> {
     let mut ezla = Vec::new();
     let mut current_efi = 0;
     for bit in ezba_bits {
-        if *bit == USE_BIT {
+        if *bit {
             ezla.push(current_efi);
             current_efi += 2;
         } else {
@@ -970,7 +971,7 @@ pub fn zeckendorf_decompress_be(compressed_data: &[u8]) -> Vec<u8> {
     let compressed_data_as_bits = unpack_bytes_to_ezba_bits(compressed_data);
     // println!("Compressed data as bits: {:?}", compressed_data_as_bits);
     // Unpack the bits into an ezla (Effective Zeckendorf List Ascending)
-    let compressed_data_as_ezla = ezba_to_ezla(&compressed_data_as_bits);
+    let compressed_data_as_ezla = ezba_to_ezla(compressed_data_as_bits.as_bitslice());
     // println!("Compressed data as ezla: {:?}", compressed_data_as_ezla);
     // Convert the ezla to a zla (Zeckendorf List Ascending)
     let compressed_data_as_zla = ezl_to_zl(&compressed_data_as_ezla);
