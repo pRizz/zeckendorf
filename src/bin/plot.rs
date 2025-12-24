@@ -35,23 +35,35 @@ fn main() {
     // Example: Plot compression ratios
     plot_compression_ratios("plots/compression_ratios_0_to_100.png", 0..100)
         .expect("Failed to plot compression ratios");
-    plot_compression_ratios("plots/compression_ratios_0_to_257.png", 0..257)
-        .expect("Failed to plot compression ratios");
-    plot_compression_ratios("plots/compression_ratios_0_to_1_000.png", 0..1_000)
-        .expect("Failed to plot compression ratios");
-    plot_compression_ratios("plots/compression_ratios_0_to_10_000.png", 0..10_000)
-        .expect("Failed to plot compression ratios");
-    plot_compression_ratios("plots/compression_ratios_0_to_100_000.png", 0..100_000)
-        .expect("Failed to plot compression ratios");
-    // Takes about 1 second to generate
-    plot_compression_ratios("plots/compression_ratios_0_to_1_000_000.png", 0..1_000_000)
-        .expect("Failed to plot compression ratios");
-    // Takes about 9 seconds to generate
-    plot_compression_ratios(
-        "plots/compression_ratios_0_to_10_000_000.png",
-        0..10_000_000,
-    )
-    .expect("Failed to plot compression ratios");
+    // plot_compression_ratios("plots/compression_ratios_0_to_257.png", 0..257)
+    //     .expect("Failed to plot compression ratios");
+    // plot_compression_ratios("plots/compression_ratios_0_to_1_000.png", 0..1_000)
+    //     .expect("Failed to plot compression ratios");
+    // plot_compression_ratios("plots/compression_ratios_0_to_10_000.png", 0..10_000)
+    //     .expect("Failed to plot compression ratios");
+    // plot_compression_ratios("plots/compression_ratios_0_to_100_000.png", 0..100_000)
+    //     .expect("Failed to plot compression ratios");
+    // // Takes about 1 second to generate
+    // plot_compression_ratios("plots/compression_ratios_0_to_1_000_000.png", 0..1_000_000)
+    //     .expect("Failed to plot compression ratios");
+    // // Takes about 9 seconds to generate
+    // plot_compression_ratios(
+    //     "plots/compression_ratios_0_to_10_000_000.png",
+    //     0..10_000_000,
+    // )
+    // .expect("Failed to plot compression ratios");
+    // // Takes about 100 seconds and 22 GB of memory to generate
+    // plot_compression_ratios(
+    //     "plots/compression_ratios_0_to_100_000_000.png",
+    //     0..100_000_000,
+    // )
+    // .expect("Failed to plot compression ratios");
+    // // ⚠️ Unable to plot 1 billion inputs because it takes too long and uses too much memory. The process was killed by the OS (exit code 137) after about an hour and using 190 GB of memory + swap space.
+    // plot_compression_ratios(
+    //     "plots/compression_ratios_0_to_1_000_000_000.png",
+    //     0..1_000_000_000,
+    // )
+    // .expect("Failed to plot compression ratios");
 
     let end_time = Instant::now();
     println!("Time taken: {:?}", end_time.duration_since(start_time));
@@ -192,10 +204,30 @@ fn plot_compression_ratios(
         TextStyle::from(("sans-serif", AXIS_FONT_SIZE).into_font()).color(&BLACK);
     let axis_tick_style =
         TextStyle::from(("sans-serif", AXIS_TICK_FONT_SIZE).into_font()).color(&BLACK);
+
+    // Custom formatter for x-axis labels: use scientific notation for values >= 1000
+    // Example: 1000 -> 1e3, 300000 -> 3e5
+    let x_label_formatter = |x: &f64| {
+        if *x >= 1000.0 {
+            let exponent = x.log10().floor() as i32;
+            let mantissa = x / 10_f64.powi(exponent);
+            // Round mantissa to 1 decimal place if needed, otherwise show as integer
+            let rounded_mantissa = mantissa.round();
+            if (mantissa - rounded_mantissa).abs() < 1e-10 {
+                format!("{}e{}", rounded_mantissa as i64, exponent)
+            } else {
+                format!("{:.1}e{}", mantissa, exponent)
+            }
+        } else {
+            format!("{:.0}", x)
+        }
+    };
+
     chart
         .configure_mesh()
         .x_desc("Input Value")
         .y_desc("Compression Ratio (Compressed / Original)")
+        .x_label_formatter(&x_label_formatter)
         .label_style(axis_tick_style)
         .axis_desc_style(axis_label_style)
         .draw()?;
