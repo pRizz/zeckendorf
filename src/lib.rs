@@ -65,23 +65,23 @@ pub static FAST_DOUBLING_FIBONACCI_BIGINT_CACHE: LazyLock<RwLock<HashMap<u64, Ar
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::memoized_fibonacci_recursive;
+/// # use zeckendorf_rs::memoized_slow_fibonacci_recursive;
 /// // Base cases
-/// assert_eq!(memoized_fibonacci_recursive(0), 0);
-/// assert_eq!(memoized_fibonacci_recursive(1), 1);
+/// assert_eq!(memoized_slow_fibonacci_recursive(0), 0);
+/// assert_eq!(memoized_slow_fibonacci_recursive(1), 1);
 ///
 /// // Small Fibonacci numbers
-/// assert_eq!(memoized_fibonacci_recursive(2), 1);
-/// assert_eq!(memoized_fibonacci_recursive(3), 2);
-/// assert_eq!(memoized_fibonacci_recursive(4), 3);
-/// assert_eq!(memoized_fibonacci_recursive(5), 5);
-/// assert_eq!(memoized_fibonacci_recursive(6), 8);
-/// assert_eq!(memoized_fibonacci_recursive(7), 13);
-/// assert_eq!(memoized_fibonacci_recursive(8), 21);
-/// assert_eq!(memoized_fibonacci_recursive(9), 34);
-/// assert_eq!(memoized_fibonacci_recursive(10), 55);
+/// assert_eq!(memoized_slow_fibonacci_recursive(2), 1);
+/// assert_eq!(memoized_slow_fibonacci_recursive(3), 2);
+/// assert_eq!(memoized_slow_fibonacci_recursive(4), 3);
+/// assert_eq!(memoized_slow_fibonacci_recursive(5), 5);
+/// assert_eq!(memoized_slow_fibonacci_recursive(6), 8);
+/// assert_eq!(memoized_slow_fibonacci_recursive(7), 13);
+/// assert_eq!(memoized_slow_fibonacci_recursive(8), 21);
+/// assert_eq!(memoized_slow_fibonacci_recursive(9), 34);
+/// assert_eq!(memoized_slow_fibonacci_recursive(10), 55);
 /// ```
-pub fn memoized_fibonacci_recursive(fi: u64) -> u64 {
+pub fn memoized_slow_fibonacci_recursive(fi: u64) -> u64 {
     let fi = fi as usize;
 
     // Try to get the value with a read lock first
@@ -461,7 +461,7 @@ pub fn memoized_zeckendorf_list_descending_for_integer(n: u64) -> Vec<u64> {
     let mut high = 1u64;
 
     // Exponential search for upper bound
-    while memoized_fibonacci_recursive(high) < current_n {
+    while memoized_slow_fibonacci_recursive(high) < current_n {
         low = high;
         high *= 2;
         // Fibonacci numbers above index 93 will overflow u64
@@ -477,7 +477,7 @@ pub fn memoized_zeckendorf_list_descending_for_integer(n: u64) -> Vec<u64> {
             low = 1;
             break;
         }
-        if memoized_fibonacci_recursive(mid) < current_n {
+        if memoized_slow_fibonacci_recursive(mid) < current_n {
             low = mid + 1;
         } else {
             high = mid - 1;
@@ -488,7 +488,7 @@ pub fn memoized_zeckendorf_list_descending_for_integer(n: u64) -> Vec<u64> {
     let mut zeckendorf_list: Vec<u64> = Vec::new();
     while current_n > 0 {
         let current_fibonacci_value =
-            memoized_fibonacci_recursive(max_fibonacci_index_smaller_than_n);
+            memoized_slow_fibonacci_recursive(max_fibonacci_index_smaller_than_n);
         if current_fibonacci_value > current_n {
             max_fibonacci_index_smaller_than_n -= 1;
             continue;
@@ -713,7 +713,7 @@ pub fn fi_to_efi_bigint(fi: BigUint) -> BigUint {
 /// assert_eq!(memoized_effective_fibonacci(10), 144);
 /// ```
 pub fn memoized_effective_fibonacci(efi: u64) -> u64 {
-    return memoized_fibonacci_recursive(efi_to_fi(efi));
+    return memoized_slow_fibonacci_recursive(efi_to_fi(efi));
 }
 
 /// An Effective Zeckendorf List (EZL) has a lowest EFI of 0, which is an FI of 2.

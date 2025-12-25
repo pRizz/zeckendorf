@@ -81,7 +81,7 @@ fn plot_fibonacci_numbers(
     // Find the maximum Fibonacci value in the range to set the log scale upper bound
     let max_fib = range
         .clone()
-        .map(|i| memoized_fibonacci_recursive(i))
+        .map(|i| memoized_slow_fibonacci_recursive(i))
         .max()
         .unwrap_or(1) as f64;
 
@@ -115,7 +115,7 @@ fn plot_fibonacci_numbers(
     let data: Vec<(f64, f64)> = range
         .clone()
         .map(|i| {
-            let fib = memoized_fibonacci_recursive(i);
+            let fib = memoized_slow_fibonacci_recursive(i);
             (i as f64, fib as f64)
         })
         .filter(|(_, y)| *y > 0.0)

@@ -17,7 +17,7 @@ fn main() {
     for i in 0..20 {
         println!(
             "The {i}th Fibonacci number is: {}",
-            memoized_fibonacci_recursive(i)
+            memoized_slow_fibonacci_recursive(i)
         );
     }
     for i in 0..20 {
