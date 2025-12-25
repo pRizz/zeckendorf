@@ -602,6 +602,38 @@ pub fn memoized_zeckendorf_list_descending_for_bigint(n: &BigUint) -> Vec<u64> {
 pub const USE_BIT: u8 = 1;
 pub const SKIP_BIT: u8 = 0;
 
+/// Result of attempting compression by interpreting the input data as both big endian and little endian big integers.
+///
+/// This enum represents which interpretation produced the best compression result, or if neither
+/// produced compression (both were larger than the original).
+#[derive(Debug, Clone, PartialEq)]
+pub enum CompressionResult {
+    /// Big endian compression produced the smallest output.
+    /// Contains the compressed data and the size of the little endian attempt for comparison.
+    BigEndianBest {
+        /// The compressed data using big endian interpretation
+        compressed_data: Vec<u8>,
+        /// Compressed size using little endian interpretation (for comparison)
+        le_size: usize,
+    },
+    /// Little endian compression produced the smallest output.
+    /// Contains the compressed data and the size of the big endian attempt for comparison.
+    LittleEndianBest {
+        /// The compressed data using little endian interpretation
+        compressed_data: Vec<u8>,
+        /// Compressed size using big endian interpretation (for comparison)
+        be_size: usize,
+    },
+    /// Neither compression method produced a smaller output than the original.
+    /// Contains sizes for both attempts.
+    Neither {
+        /// Compressed size using big endian interpretation
+        be_size: usize,
+        /// Compressed size using little endian interpretation
+        le_size: usize,
+    },
+}
+
 /// Effective Fibonacci Index to Fibonacci Index: FI(efi) === efi + 2, where efi is the Effective Fibonacci Index
 ///
 /// # Examples
@@ -876,6 +908,41 @@ pub fn zeckendorf_compress_be(data: &[u8]) -> Vec<u8> {
     return compressed_data;
 }
 
+/// Compresses a slice of bytes using the Zeckendorf algorithm.
+///
+/// Assumes the input data is interpreted as a little endian integer. The output data is in little endian order, so the first bit and byte is the least significant bit and byte and the last bit and byte is the most significant bit and byte.
+///
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::zeckendorf_compress_le;
+/// assert_eq!(zeckendorf_compress_le(&[0]), vec![0]);
+/// assert_eq!(zeckendorf_compress_le(&[1]), vec![1]);
+/// assert_eq!(zeckendorf_compress_le(&[12]), vec![0b111]);
+/// assert_eq!(zeckendorf_compress_le(&[54]), vec![30]);
+/// assert_eq!(zeckendorf_compress_le(&[55]), vec![0, 1]); // 55 is the 10 indexed Fibonacci number, which is the 8 indexed effective Fibonacci number, and therefore is the first number needing two bytes to contain these 8 bits, because there is 1 "use bit" and 7 "skip bits" in the effective zeckendorf bits ascending.
+/// assert_eq!(zeckendorf_compress_le(&[255]), vec![33, 2]);
+/// assert_eq!(zeckendorf_compress_le(&[0, 1]), vec![34, 2]);
+/// ```
+pub fn zeckendorf_compress_le(data: &[u8]) -> Vec<u8> {
+    let compressed_data: Vec<u8>;
+    // Turn data into a bigint
+    let data_as_bigint = BigUint::from_bytes_le(data);
+    // println!("Data as bigint: {:?}", data_as_bigint);
+    // Get the effective zeckendorf list descending
+    let data_as_zld = memoized_zeckendorf_list_descending_for_bigint(&data_as_bigint);
+    // println!("Data as zld: {:?}", data_as_zld);
+    let data_as_ezld = zl_to_ezl(&data_as_zld);
+    // println!("Data as ezld: {:?}", data_as_ezld);
+    // Get the effective zeckendorf bits ascending
+    let data_as_ezba = ezba_from_ezld(&data_as_ezld);
+    // println!("Data as ezba: {:?}", data_as_ezba);
+    // Compress the data
+    compressed_data = pack_ezba_bits_to_bytes(&data_as_ezba);
+    // println!("Compressed data: {:?}", compressed_data);
+    return compressed_data;
+}
+
 /// Unpacks a vector of bytes into a vector of bits (0s and 1s) from an ezba (Effective Zeckendorf Bits Ascending).
 ///
 /// # Examples
@@ -979,4 +1046,84 @@ pub fn zeckendorf_decompress_be(compressed_data: &[u8]) -> Vec<u8> {
     let compressed_data_as_bigint = zl_to_bigint(&compressed_data_as_zla);
     // println!("Compressed data as bigint: {:?}", compressed_data_as_bigint);
     return compressed_data_as_bigint.to_bytes_be();
+}
+
+/// Decompresses a slice of bytes compressed using the Zeckendorf algorithm, assuming the original data was compressed using the little endian bytes interpretation.
+///
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::zeckendorf_decompress_le;
+/// assert_eq!(zeckendorf_decompress_le(&[0]), vec![0]);
+/// assert_eq!(zeckendorf_decompress_le(&[1]), vec![1]);
+/// assert_eq!(zeckendorf_decompress_le(&[0b111]), vec![12]);
+/// assert_eq!(zeckendorf_decompress_le(&[33, 2]), vec![255]);
+/// assert_eq!(zeckendorf_decompress_le(&[34, 2]), vec![0, 1]);
+/// ```
+pub fn zeckendorf_decompress_le(compressed_data: &[u8]) -> Vec<u8> {
+    // Unpack the compressed data into bits
+    let compressed_data_as_bits = unpack_bytes_to_ezba_bits(compressed_data);
+    // println!("Compressed data as bits: {:?}", compressed_data_as_bits);
+    // Unpack the bits into an ezla (Effective Zeckendorf List Ascending)
+    let compressed_data_as_ezla = ezba_to_ezla(&compressed_data_as_bits);
+    // println!("Compressed data as ezla: {:?}", compressed_data_as_ezla);
+    // Convert the ezla to a zla (Zeckendorf List Ascending)
+    let compressed_data_as_zla = ezl_to_zl(&compressed_data_as_ezla);
+    // println!("Compressed data as zla: {:?}", compressed_data_as_zla);
+    // Convert the zla to a bigint
+    let compressed_data_as_bigint = zl_to_bigint(&compressed_data_as_zla);
+    // println!("Compressed data as bigint: {:?}", compressed_data_as_bigint);
+    return compressed_data_as_bigint.to_bytes_le();
+}
+
+/// Attempts to compress the input data using both big endian and little endian interpretations,
+/// and returns the best result.
+///
+/// This function tries compressing the input data with both endian interpretations and returns
+/// an enum indicating which method produced the smallest output, or if neither produced compression.
+///
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::zeckendorf_compress_best;
+/// # use zeckendorf_rs::CompressionResult;
+/// let data = vec![1, 0];
+/// let result = zeckendorf_compress_best(&data);
+/// match result {
+///     CompressionResult::BigEndianBest { compressed_data, le_size } => {
+///         // Use compressed_data for decompression with zeckendorf_decompress_be
+///     }
+///     CompressionResult::LittleEndianBest { compressed_data, be_size } => {
+///         // Use compressed_data for decompression with zeckendorf_decompress_le
+///     }
+///     CompressionResult::Neither { be_size, le_size } => {
+///         // Neither method compressed the data
+///     }
+/// }
+/// ```
+pub fn zeckendorf_compress_best(data: &[u8]) -> CompressionResult {
+    let input_size = data.len();
+
+    // Try both compression methods
+    let be_compressed = zeckendorf_compress_be(data);
+    let le_compressed = zeckendorf_compress_le(data);
+
+    let be_size = be_compressed.len();
+    let le_size = le_compressed.len();
+
+    // Determine which compression method is best
+    if be_size < input_size && be_size < le_size {
+        CompressionResult::BigEndianBest {
+            compressed_data: be_compressed,
+            le_size,
+        }
+    } else if le_size < input_size && le_size <= be_size {
+        // Less than or equal to because if they are equal, we prefer LE
+        CompressionResult::LittleEndianBest {
+            compressed_data: le_compressed,
+            be_size,
+        }
+    } else {
+        CompressionResult::Neither { be_size, le_size }
+    }
 }
