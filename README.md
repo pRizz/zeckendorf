@@ -20,7 +20,14 @@ The Zeckendorf algorithm represents numbers as a sum of non-consecutive Fibonacc
 
 ## Installation
 
-Add this to your `Cargo.toml`:
+### Install from crates.io
+
+Run:
+```bash
+cargo add zeckendorf
+```
+
+Or add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
@@ -32,6 +39,27 @@ For plotting features:
 ```toml
 [dependencies]
 zeckendorf = { version = "0.1.0", features = ["plotting"] }
+```
+
+### Install from GitHub (development version)
+
+Run:
+```bash
+cargo add zeckendorf --git https://github.com/pRizz/zeckendorf
+```
+
+Or add this to your `Cargo.toml`:
+
+```toml
+[dependencies]
+zeckendorf = { git = "https://github.com/pRizz/zeckendorf" }
+```
+
+For plotting features:
+
+```toml
+[dependencies]
+zeckendorf = { git = "https://github.com/pRizz/zeckendorf", features = ["plotting"] }
 ```
 
 ## Usage
