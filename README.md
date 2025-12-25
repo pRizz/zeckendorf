@@ -4,11 +4,13 @@ A Rust library for compressing and decompressing data using the Zeckendorf repre
 
 ## Overview
 
-The Zeckendorf algorithm represents numbers as a sum of non-consecutive Fibonacci numbers. This library interprets input data as a big integer, converts it to its Zeckendorf representation, and sometimes achieves compression. However, compression is not guaranteed; the algorithm may result in a larger representation depending on the input data.
+The Zeckendorf algorithm represents numbers as a sum of non-consecutive Fibonacci numbers. This library interprets input data as a big integer (either big-endian or little-endian), converts it to its Zeckendorf representation, and sometimes achieves compression. However, compression is not guaranteed; the algorithm may result in a larger representation depending on the input data. The library can automatically try both endian interpretations and select the one that produces the best compression.
 
 ## Features
 
 - **Compression & Decompression**: Convert data to/from Zeckendorf representation
+- **Multiple Endian Interpretations**: Support for both big-endian and little-endian input interpretations
+- **Automatic Best Compression**: Try both endian interpretations and automatically select the best result
 - **Multiple Fibonacci Algorithms**: 
   - Slow recursive (memoized, for small numbers)
   - Slow iterative (memoized, for large numbers)
@@ -66,16 +68,59 @@ zeckendorf = { git = "https://github.com/pRizz/zeckendorf", features = ["plottin
 
 ### Basic Compression/Decompression
 
+#### Big-Endian Interpretation
+
 ```rust
 use zeckendorf_rs::{zeckendorf_compress_be, zeckendorf_decompress_be};
 
-// Compress data
+// Compress data (interpreted as big-endian integer)
 let data = vec![12u8];
 let compressed = zeckendorf_compress_be(&data);
 
 // Decompress data
 let decompressed = zeckendorf_decompress_be(&compressed);
 assert_eq!(data, decompressed);
+```
+
+#### Little-Endian Interpretation
+
+```rust
+use zeckendorf_rs::{zeckendorf_compress_le, zeckendorf_decompress_le};
+
+// Compress data (interpreted as little-endian integer)
+let data = vec![12u8];
+let compressed = zeckendorf_compress_le(&data);
+
+// Decompress data
+let decompressed = zeckendorf_decompress_le(&compressed);
+assert_eq!(data, decompressed);
+```
+
+#### Automatic Best Compression
+
+```rust
+use zeckendorf_rs::{zeckendorf_compress_best, zeckendorf_decompress_be, zeckendorf_decompress_le, CompressionResult};
+
+// Try both endian interpretations and get the best result
+let data = vec![1, 0];
+let result = zeckendorf_compress_best(&data);
+
+match result {
+    CompressionResult::BigEndianBest { compressed_data, le_size } => {
+        // Big-endian produced the best compression
+        let decompressed = zeckendorf_decompress_be(&compressed_data);
+        assert_eq!(data, decompressed);
+    }
+    CompressionResult::LittleEndianBest { compressed_data, be_size } => {
+        // Little-endian produced the best compression
+        let decompressed = zeckendorf_decompress_le(&compressed_data);
+        assert_eq!(data, decompressed);
+    }
+    CompressionResult::Neither { be_size, le_size } => {
+        // Neither method compressed the data (both were larger than original)
+        println!("Neither method compressed: BE size = {}, LE size = {}", be_size, le_size);
+    }
+}
 ```
 
 ### Fibonacci Numbers
@@ -197,10 +242,12 @@ Every positive integer can be uniquely represented as a sum of non-consecutive F
 
 ### Compression Process
 
-1. Input data is interpreted as a big-endian integer
+1. Input data is interpreted as either a big-endian or little-endian integer (you can choose, or use `zeckendorf_compress_best` to try both)
 2. The integer is converted to its Zeckendorf representation (list of Fibonacci indices)
 3. The representation is encoded as bits (use/skip bits)
 4. Bits are packed into bytes (little-endian output)
+
+The library provides functions to compress with either interpretation, or you can use `zeckendorf_compress_best` to automatically try both and select the one that produces the smallest output.
 
 ### Effective Fibonacci Indices
 
@@ -215,7 +262,7 @@ This avoids redundant Fibonacci numbers (F(0)=0 and F(1)=F(2)=1).
 
 - Compression is not guaranteed—some inputs may result in larger output
 - Compression effectiveness decreases as input size increases
-- The current implementation interprets input as big-endian (see TODO in code for potential improvements)
+- The library supports both big-endian and little-endian interpretations, but other byte orderings or word boundaries are not currently explored
 
 ## License
 
