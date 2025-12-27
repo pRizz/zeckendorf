@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# The purpose of this script is to poll the RSS (resident set size (essentially memory usage)) in kilobytes of the zeckendorf program and print the peak RSS.
+# Run with:
+# `./scripts/poll_rss.sh`
+#
+# I am currently running into a problem with decompression taking an inordinate amount of memory.
+# For example, decompressing 10,000 bytes of all ones data takes ~1.87 GB of memory, and
+# attempting to decompress 100,000 bytes of all ones data takes >60 GB of memory and causes the process to be killed by the OS (exit code 137). This is likely due to the Fibonacci memoization cache growing too large at high indices. Perhaps we can limit the size of the cache or do a more sparse cache using the fast doubling Fibonacci algorithm.
+# Snapshot on 2025-12-27 with a limit of 10,000 bytes of all ones data:
+# Peak RSS: 1962032 KB (1916.05 MB, 1.87 GB)
+
+cargo run --release --bin zeckendorf --features plotting -- --deterministic &
+pid=$!
+
+peak=0
+while kill -0 "$pid" 2>/dev/null; do
+  rss_kb=$(ps -o rss= -p "$pid" | tr -d ' ')
+  rss_kb=${rss_kb:-0}
+  (( rss_kb > peak )) && peak=$rss_kb
+  sleep 0.02
+done
+
+wait "$pid"
+peak_mb=$(awk "BEGIN {printf \"%.2f\", $peak/1024}")
+peak_gb=$(awk "BEGIN {printf \"%.2f\", $peak/1048576}")
+echo "Peak RSS: $peak KB ($peak_mb MB, $peak_gb GB)"

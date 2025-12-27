@@ -308,7 +308,10 @@ fn all_ones_decompressions() {
             "In other words, the compressed data was {x:0.3}% of the original data",
             x = size_ratio * 100.0
         );
-        println!("In other other words, the decompressed data was {x:0.3}% of the size of the compressed data", x = 1.0 / size_ratio * 100.0);
+        println!(
+            "In other other words, the decompressed data was {x:0.3}% of the size of the compressed data",
+            x = 1.0 / size_ratio * 100.0
+        );
         all_ones_byte_size *= size_multipier;
     }
 }
