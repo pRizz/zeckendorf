@@ -96,6 +96,8 @@ fn main() {
 
     test_fast_doubling_fibonacci_bigint();
 
+    all_ones_decompressions();
+
     let end_time = Instant::now();
     println!("Time taken: {:?}", end_time.duration_since(start_time));
 }
@@ -265,5 +267,48 @@ fn test_fast_doubling_fibonacci_bigint() {
             "The {fi}th Fibonacci number, using the fast doubling algorithm, is: {}",
             value
         );
+    }
+}
+
+/// Tests the decompression of all ones data of varying sizes.
+/// This is interesting to see how big an all ones Zeckendorf bits list get expanded to when "decompressed".
+/// After testing larger byte sizes, it seems like the decompressed data converges around being ~38.85% larger that the original all ones bits.
+/// More testing is needed to verify larger byte sizes.
+/// Larger byte sizes take an extreme amount of memory to test, on the order of 60 GB, and can cause the process to be killed by the OS (exit code 137).
+fn all_ones_decompressions() {
+    let mut all_ones_byte_size = 10;
+    let size_multipier = 10;
+    let max_byte_size = 10_000;
+    while all_ones_byte_size <= max_byte_size {
+        println!("Testing all ones byte size: {}", all_ones_byte_size);
+        let mock_compressed_all_ones_data = vec![0xFF; all_ones_byte_size];
+        // println!("Mock compressed data byte size: {:?}", mock_compressed_data.len());
+        // println!("Mock compressed data raw bit size: {:?}", mock_compressed_data.len() * 8);
+        let mock_decompressed_data = zeckendorf_decompress_be(&mock_compressed_all_ones_data);
+        println!(
+            "Mock decompressed data byte size: {:?}",
+            mock_decompressed_data.len()
+        );
+        println!(
+            "Mock decompressed data raw bit size: {:?}",
+            mock_decompressed_data.len() * 8
+        );
+        let size_ratio =
+            mock_compressed_all_ones_data.len() as f64 / mock_decompressed_data.len() as f64;
+        println!("Size ratio: {x:0.3}", x = size_ratio);
+        println!(
+            "If an input data happens to be Zeckendorf compressed as all ones of size {all_ones_byte_size} bytes, the decompressed data will be {} bytes",
+            mock_decompressed_data.len()
+        );
+        println!(
+            "This means the input data was compressed by {x:0.3}%",
+            x = (1.0 - size_ratio) * 100.0
+        );
+        println!(
+            "In other words, the compressed data was {x:0.3}% of the original data",
+            x = size_ratio * 100.0
+        );
+        println!("In other other words, the decompressed data was {x:0.3}% of the size of the compressed data", x = 1.0 / size_ratio * 100.0);
+        all_ones_byte_size *= size_multipier;
     }
 }
