@@ -274,7 +274,7 @@ fn test_fast_doubling_fibonacci_bigint() {
 /// This is interesting to see how big an all ones Zeckendorf bits list get expanded to when "decompressed".
 /// After testing larger byte sizes, it seems like the decompressed data converges around being ~38.85% larger that the original all ones bits.
 /// More testing is needed to verify larger byte sizes.
-/// Larger byte sizes take an extreme amount of memory to test, on the order of 60 GB, and can cause the process to be killed by the OS (exit code 137).
+/// Larger byte sizes (like 100,000 bytes) take an extreme amount of memory to test, on the order of 60 GB, and can cause the process to be killed by the OS (exit code 137).
 fn all_ones_decompressions() {
     let mut all_ones_byte_size = 10;
     let size_multipier = 10;
