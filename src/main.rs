@@ -280,6 +280,7 @@ fn all_ones_decompressions() {
     let size_multipier = 10;
     let max_byte_size = 10_000;
     while all_ones_byte_size <= max_byte_size {
+        let start_time = Instant::now();
         println!("Testing all ones byte size: {}", all_ones_byte_size);
         let mock_compressed_all_ones_data = vec![0xFF; all_ones_byte_size];
         // println!("Mock compressed data byte size: {:?}", mock_compressed_data.len());
@@ -311,6 +312,11 @@ fn all_ones_decompressions() {
         println!(
             "In other other words, the decompressed data was {x:0.3}% of the size of the compressed data",
             x = 1.0 / size_ratio * 100.0
+        );
+        let end_time = Instant::now();
+        println!(
+            "Time taken to test all ones decompression for byte size {all_ones_byte_size}: {:?}",
+            end_time.duration_since(start_time)
         );
         all_ones_byte_size *= size_multipier;
     }

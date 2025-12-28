@@ -1015,6 +1015,8 @@ pub fn ezba_to_ezla(ezba_bits: &[u8]) -> Vec<u64> {
 pub fn zl_to_bigint(zl: &[u64]) -> BigUint {
     zl.iter().fold(BigUint::zero(), |acc, fi| {
         acc + &*memoized_slow_fibonacci_bigint_iterative(*fi)
+        // TODO: investigate ways we can get the lower memory usage of the cached fast doubling Fibonacci algorithm but the speed of the cached slow Fibonacci algorithm. As of now, the cached fast doubling Fibonacci algorithm is slower at decompression than the cached slow Fibonacci algorithm at large data inputs, on the order of > 10kB. See the comments in scripts/poll_rss.sh for more information.
+        // acc + &*fast_doubling_fibonacci_bigint(*fi)
     })
 }
 
