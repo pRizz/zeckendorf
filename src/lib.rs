@@ -1020,6 +1020,45 @@ pub fn zl_to_bigint(zl: &[u64]) -> BigUint {
     })
 }
 
+/// Creates an "all ones" Zeckendorf number by creating an Effective Zeckendorf Bits Ascending (EZBA)
+/// with `n` consecutive ones, then converting it to a BigUint.
+///
+/// An "all ones" Zeckendorf number is created by generating a Zeckendorf representation with `n`
+/// consecutive ones (in the Effective Zeckendorf Bits Ascending format), then converting that
+/// representation back to the actual number value. This is useful for understanding how Zeckendorf
+/// representations behave when they contain many ones.
+///
+/// # Arguments
+///
+/// * `n` - The number of consecutive ones in the EZBA representation
+///
+/// # Returns
+///
+/// Returns `BigUint::zero()` if `n` is 0, otherwise returns the BigUint value of the all-ones
+/// Zeckendorf representation.
+///
+/// # Examples
+///
+/// ```
+/// # use zeckendorf_rs::all_ones_zeckendorf_to_bigint;
+/// # use num_bigint::BigUint;
+/// # use num_traits::Zero;
+/// assert_eq!(all_ones_zeckendorf_to_bigint(0), BigUint::zero());
+/// assert_eq!(all_ones_zeckendorf_to_bigint(1), BigUint::from(1u64)); // 1
+/// assert_eq!(all_ones_zeckendorf_to_bigint(2), BigUint::from(4u64)); // 1 + 3
+/// assert_eq!(all_ones_zeckendorf_to_bigint(3), BigUint::from(12u64)); // 1 + 3 + 8
+/// assert_eq!(all_ones_zeckendorf_to_bigint(4), BigUint::from(33u64)); // 1 + 3 + 8 + 21
+/// ```
+pub fn all_ones_zeckendorf_to_bigint(n: usize) -> BigUint {
+    if n == 0 {
+        return BigUint::zero();
+    }
+    let ezba = vec![1u8; n];
+    let ezla = ezba_to_ezla(&ezba);
+    let zla = ezl_to_zl(&ezla);
+    zl_to_bigint(&zla)
+}
+
 /// Decompresses a slice of bytes compressed using the Zeckendorf algorithm, assuming the original data was compressed using the big endian bytes interpretation.
 ///
 /// Assume the original input data was interpreted as a big endian integer, for now. See the TODO in the zeckendorf_compress_be function for more information.
