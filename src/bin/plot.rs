@@ -261,8 +261,8 @@ fn plot_fibonacci_binary_all_ones(
             if i == 0 {
                 return None; // Skip 0 as it would result in an empty Zeckendorf representation
             }
-            let all_ones_bigint = all_ones_zeckendorf_to_bigint(i as usize);
-            let all_ones_f64 = biguint_to_approximate_f64(&all_ones_bigint);
+            let all_ones_biguint = all_ones_zeckendorf_to_biguint(i as usize);
+            let all_ones_f64 = biguint_to_approximate_f64(&all_ones_biguint);
             if all_ones_f64 > 0.0 && all_ones_f64.is_finite() {
                 Some((i as f64, all_ones_f64))
             } else {
@@ -493,8 +493,8 @@ fn plot_fibonacci_binary_all_ones_power3(
             if i == 0 {
                 return None; // Skip 0 as it would result in an empty Zeckendorf representation
             }
-            let all_ones_bigint = all_ones_zeckendorf_to_bigint(i as usize);
-            let all_ones_f64 = biguint_to_approximate_f64(&all_ones_bigint);
+            let all_ones_biguint = all_ones_zeckendorf_to_biguint(i as usize);
+            let all_ones_f64 = biguint_to_approximate_f64(&all_ones_biguint);
             if all_ones_f64 > 0.0 && all_ones_f64.is_finite() {
                 Some((i as f64, all_ones_f64))
             } else {

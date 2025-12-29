@@ -98,6 +98,8 @@ fn main() {
 
     all_ones_decompressions();
 
+    test_all_ones_zeckendorf_ratios();
+
     let end_time = Instant::now();
     println!("Time taken: {:?}", end_time.duration_since(start_time));
 }
@@ -167,7 +169,7 @@ fn flamegraph_zeckendorf_decompress_be() {
 }
 
 fn test_bit_count_for_all_ones_effective_zeckendorf_bits_ascending() {
-    let bigint = all_ones_zeckendorf_to_bigint(100000);
+    let bigint = all_ones_zeckendorf_to_biguint(100000);
     // println!("Bigint: {:?}", bigint);
     println!("Bit count: {:?}", bigint.bits());
 }
@@ -313,5 +315,57 @@ fn all_ones_decompressions() {
             end_time.duration_since(start_time)
         );
         all_ones_byte_size *= size_multipier;
+    }
+}
+
+/// Tests the ratios of all ones Zeckendorf numbers to the previous all ones Zeckendorf numbers.
+///
+/// It turns out that this ratio seems to converge to the golden ratio plus one, which also apparently equals the square of the golden ratio.
+fn test_all_ones_zeckendorf_ratios() {
+    let start_time = Instant::now();
+    let mut prev = all_ones_zeckendorf_to_biguint(1);
+    // Golden ratio is the ratio of the Fibonacci sequence to the previous Fibonacci number.
+    // This constant is in the rust standard library as f64::consts::PHI, but only available on nightly.
+    let golden_ratio = (1.0 + 5_f64.sqrt()) / 2.0;
+    println!("Golden ratio: {golden_ratio}");
+    let golden_ratio_plus_one = golden_ratio + 1.0;
+    println!("Golden ratio plus one: {golden_ratio_plus_one}");
+    // We stop at 46 because the 47th all ones Zeckendorf number is too large to fit in a u64, which causes the f64 approximation to be inaccurate.
+    for i in 2..=46 {
+        let curr = all_ones_zeckendorf_to_biguint(i);
+        println!("The {i}th all ones Zeckendorf number is: {}", curr);
+        let ratio = biguint_to_approximate_f64(&curr) / biguint_to_approximate_f64(&prev);
+        println!(
+            "The {i}th all ones Zeckendorf number is {ratio} times larger than the {}th all ones Zeckendorf number",
+            i - 1
+        );
+        let delta = ratio - golden_ratio_plus_one;
+        println!("The delta between the ratio and the golden ratio plus one is {delta}");
+        prev = curr;
+    }
+    let end_time = Instant::now();
+    println!(
+        "Time taken to test all ones Zeckendorf ratio: {:?}",
+        end_time.duration_since(start_time)
+    );
+}
+
+/// Helper function to convert BigUint to f64 for plotting.
+/// For values that don't fit in f64, uses an approximation based on bits, but capped at 1023 bits to avoid overflow.
+fn biguint_to_approximate_f64(value: &BigUint) -> f64 {
+    // Try to convert to u64 first
+    let digits = value.to_u64_digits();
+    if digits.len() == 1 {
+        digits[0] as f64
+    } else if digits.is_empty() {
+        0.0
+    } else {
+        // For very large numbers, approximate using bits
+        // We'll use: value ≈ 2^bits, but cap to avoid overflow
+        let bits = value.bits() as f64;
+        // f64::MAX is around 1.8e308, which corresponds to 2^1024 - 1
+        // So we cap bits at 1023 to avoid overflow
+        let capped_bits = bits.min(1023.0);
+        2_f64.powf(capped_bits)
     }
 }

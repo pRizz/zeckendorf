@@ -1040,16 +1040,16 @@ pub fn zl_to_bigint(zl: &[u64]) -> BigUint {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::all_ones_zeckendorf_to_bigint;
+/// # use zeckendorf_rs::all_ones_zeckendorf_to_biguint;
 /// # use num_bigint::BigUint;
 /// # use num_traits::Zero;
-/// assert_eq!(all_ones_zeckendorf_to_bigint(0), BigUint::zero());
-/// assert_eq!(all_ones_zeckendorf_to_bigint(1), BigUint::from(1u64)); // 1
-/// assert_eq!(all_ones_zeckendorf_to_bigint(2), BigUint::from(4u64)); // 1 + 3
-/// assert_eq!(all_ones_zeckendorf_to_bigint(3), BigUint::from(12u64)); // 1 + 3 + 8
-/// assert_eq!(all_ones_zeckendorf_to_bigint(4), BigUint::from(33u64)); // 1 + 3 + 8 + 21
+/// assert_eq!(all_ones_zeckendorf_to_biguint(0), BigUint::zero());
+/// assert_eq!(all_ones_zeckendorf_to_biguint(1), BigUint::from(1u64)); // 1
+/// assert_eq!(all_ones_zeckendorf_to_biguint(2), BigUint::from(4u64)); // 1 + 3
+/// assert_eq!(all_ones_zeckendorf_to_biguint(3), BigUint::from(12u64)); // 1 + 3 + 8
+/// assert_eq!(all_ones_zeckendorf_to_biguint(4), BigUint::from(33u64)); // 1 + 3 + 8 + 21
 /// ```
-pub fn all_ones_zeckendorf_to_bigint(n: usize) -> BigUint {
+pub fn all_ones_zeckendorf_to_biguint(n: usize) -> BigUint {
     if n == 0 {
         return BigUint::zero();
     }
