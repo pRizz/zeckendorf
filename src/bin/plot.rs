@@ -94,7 +94,7 @@ fn plot_fibonacci_numbers(
     let max_fib = range
         .clone()
         .map(|i| {
-            let fib = memoized_fast_doubling_fibonacci_bigint(i);
+            let fib = memoized_fast_doubling_fibonacci_biguint(i);
             biguint_to_u64(&fib)
         })
         .max()
@@ -130,7 +130,7 @@ fn plot_fibonacci_numbers(
     let data: Vec<(f64, f64)> = range
         .clone()
         .map(|i| {
-            let fib = memoized_fast_doubling_fibonacci_bigint(i);
+            let fib = memoized_fast_doubling_fibonacci_biguint(i);
             let fib_u64 = biguint_to_u64(&fib);
             (i as f64, fib_u64 as f64)
         })
@@ -234,7 +234,7 @@ fn plot_fibonacci_binary_all_ones(
     let fibonacci_data: Vec<(f64, f64)> = range
         .clone()
         .filter_map(|i| {
-            let fib = memoized_fast_doubling_fibonacci_bigint(i);
+            let fib = memoized_fast_doubling_fibonacci_biguint(i);
             let fib_f64 = biguint_to_approximate_f64(&*fib);
             if fib_f64 > 0.0 && fib_f64.is_finite() {
                 Some((i as f64, fib_f64))
@@ -466,7 +466,7 @@ fn plot_fibonacci_binary_all_ones_power3(
     let fibonacci_data: Vec<(f64, f64)> = range
         .clone()
         .filter_map(|i| {
-            let fib = memoized_fast_doubling_fibonacci_bigint(i);
+            let fib = memoized_fast_doubling_fibonacci_biguint(i);
             let fib_f64 = biguint_to_approximate_f64(&*fib);
             if fib_f64 > 0.0 && fib_f64.is_finite() {
                 Some((i as f64, fib_f64))

@@ -23,7 +23,7 @@ fn main() {
     for i in 0..20 {
         println!(
             "The bigint {i}th Fibonacci number is: {}",
-            memoized_slow_fibonacci_bigint_iterative(i)
+            memoized_slow_fibonacci_biguint_iterative(i)
         );
     }
     for i in 0..20 {
@@ -37,7 +37,7 @@ fn main() {
         println!(
             "Zeckendorf descending list for {}: {:?}",
             i,
-            memoized_zeckendorf_list_descending_for_bigint(&BigUint::from(i as u64))
+            memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(i as u64))
         );
     }
     for i in 0..20 {
@@ -62,7 +62,7 @@ fn main() {
     // Time taken: ~65.6s for iterative
     // let limit = 1_000_000u64;
 
-    let big_fibonacci = memoized_slow_fibonacci_bigint_iterative(limit);
+    let big_fibonacci = memoized_slow_fibonacci_biguint_iterative(limit);
     println!("The {limit}th Fibonacci number is: {}", big_fibonacci);
     // it takes 6 bits to represent the 10th Fibonacci number
     // it takes 69424 bits to represent the 100_000th Fibonacci number
@@ -189,7 +189,7 @@ fn test_bit_count_for_all_ones_effective_zeckendorf_bits_ascending() {
 fn find_fibonacci_by_bit_count(target_bits: u64) -> (u64, BigUint) {
     let mut index = 0u64;
     loop {
-        let fibonacci = memoized_slow_fibonacci_bigint_iterative(index);
+        let fibonacci = memoized_slow_fibonacci_biguint_iterative(index);
         let bit_count = fibonacci.bits();
         if bit_count >= target_bits {
             return (index, (*fibonacci).clone());
@@ -222,7 +222,7 @@ fn test_find_fibonacci_by_bit_count() {
 fn test_slow_fibonacci_bigint_iterative() {
     println!("Testing slow Fibonacci bigint iterative function");
     for i in 0..20 {
-        let fibonacci = slow_fibonacci_bigint_iterative(i);
+        let fibonacci = slow_fibonacci_biguint_iterative(i);
         println!("The {i}th Fibonacci number is: {}", fibonacci);
     }
 }
@@ -233,7 +233,7 @@ fn _test_slow_fibonacci_bigint_iterative_large(fi: u64) {
         fi.to_formatted_string(&num_format::Locale::en)
     );
     let start_time = Instant::now();
-    let fibonacci = slow_fibonacci_bigint_iterative(fi);
+    let fibonacci = slow_fibonacci_biguint_iterative(fi);
     std::hint::black_box(fibonacci);
     // println!("The {fi}th Fibonacci number is: {}", fibonacci);
     let end_time = Instant::now();
@@ -246,9 +246,9 @@ fn _test_slow_fibonacci_bigint_iterative_large(fi: u64) {
 
 fn test_fast_doubling_fibonacci_bigint() {
     println!("Testing fast doubling Fibonacci bigint function");
-    let fibonacci = memoized_fast_doubling_fibonacci_bigint(100);
+    let fibonacci = memoized_fast_doubling_fibonacci_biguint(100);
     println!("The 100th Fibonacci number is: {}", fibonacci);
-    let cache = zeckendorf_rs::FAST_DOUBLING_FIBONACCI_BIGINT_CACHE
+    let cache = zeckendorf_rs::FAST_DOUBLING_FIBONACCI_BIGUINT_CACHE
         .read()
         .expect("Failed to read fast doubling Fibonacci cache");
     println!(

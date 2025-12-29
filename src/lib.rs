@@ -33,7 +33,7 @@ pub fn bit_count_for_number(n: i32) -> u32 {
 // Memoization maps for Fibonacci numbers
 static FIBONACCI_CACHE: LazyLock<RwLock<Vec<u64>>> = LazyLock::new(|| RwLock::new(vec![0, 1]));
 
-static FIBONACCI_BIGINT_CACHE: LazyLock<RwLock<Vec<Arc<BigUint>>>> =
+static FIBONACCI_BIGUINT_CACHE: LazyLock<RwLock<Vec<Arc<BigUint>>>> =
     LazyLock::new(|| RwLock::new(vec![Arc::new(BigUint::zero()), Arc::new(BigUint::one())]));
 
 /// Memoization maps for Zeckendorf representations
@@ -46,11 +46,11 @@ static ZECKENDORF_MAP: LazyLock<RwLock<HashMap<u64, Vec<u64>>>> =
 /// so a u64 can represent Fibonacci values up to
 /// roughly 18 trillion times 694,241 bits which is 1.249*10^19 bits which or 1.56 exabytes.
 /// We will consider larger numbers in the future :-)
-static ZECKENDORF_BIGINT_MAP: LazyLock<RwLock<HashMap<BigUint, Vec<u64>>>> =
+static ZECKENDORF_BIGUINT_MAP: LazyLock<RwLock<HashMap<BigUint, Vec<u64>>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
 /// Sparse cache for fast doubling Fibonacci algorithm
-pub static FAST_DOUBLING_FIBONACCI_BIGINT_CACHE: LazyLock<RwLock<HashMap<u64, Arc<BigUint>>>> =
+pub static FAST_DOUBLING_FIBONACCI_BIGUINT_CACHE: LazyLock<RwLock<HashMap<u64, Arc<BigUint>>>> =
     LazyLock::new(|| {
         let mut map = HashMap::new();
         map.insert(0, Arc::new(BigUint::zero()));
@@ -120,43 +120,43 @@ pub fn memoized_slow_fibonacci_recursive(fi: u64) -> u64 {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::memoized_slow_fibonacci_bigint_iterative;
+/// # use zeckendorf_rs::memoized_slow_fibonacci_biguint_iterative;
 /// # use num_bigint::BigUint;
 /// # use num_traits::{One, Zero};
 /// // Base cases
-/// assert_eq!(*memoized_slow_fibonacci_bigint_iterative(0u64), BigUint::zero());
-/// assert_eq!(*memoized_slow_fibonacci_bigint_iterative(1u64), BigUint::one());
+/// assert_eq!(*memoized_slow_fibonacci_biguint_iterative(0u64), BigUint::zero());
+/// assert_eq!(*memoized_slow_fibonacci_biguint_iterative(1u64), BigUint::one());
 ///
 /// // Small Fibonacci numbers
-/// assert_eq!(*memoized_slow_fibonacci_bigint_iterative(2u64), BigUint::from(1u64));
-/// assert_eq!(*memoized_slow_fibonacci_bigint_iterative(3u64), BigUint::from(2u64));
-/// assert_eq!(*memoized_slow_fibonacci_bigint_iterative(4u64), BigUint::from(3u64));
-/// assert_eq!(*memoized_slow_fibonacci_bigint_iterative(5u64), BigUint::from(5u64));
-/// assert_eq!(*memoized_slow_fibonacci_bigint_iterative(6u64), BigUint::from(8u64));
-/// assert_eq!(*memoized_slow_fibonacci_bigint_iterative(7u64), BigUint::from(13u64));
-/// assert_eq!(*memoized_slow_fibonacci_bigint_iterative(8u64), BigUint::from(21u64));
-/// assert_eq!(*memoized_slow_fibonacci_bigint_iterative(9u64), BigUint::from(34u64));
-/// assert_eq!(*memoized_slow_fibonacci_bigint_iterative(10u64), BigUint::from(55u64));
+/// assert_eq!(*memoized_slow_fibonacci_biguint_iterative(2u64), BigUint::from(1u64));
+/// assert_eq!(*memoized_slow_fibonacci_biguint_iterative(3u64), BigUint::from(2u64));
+/// assert_eq!(*memoized_slow_fibonacci_biguint_iterative(4u64), BigUint::from(3u64));
+/// assert_eq!(*memoized_slow_fibonacci_biguint_iterative(5u64), BigUint::from(5u64));
+/// assert_eq!(*memoized_slow_fibonacci_biguint_iterative(6u64), BigUint::from(8u64));
+/// assert_eq!(*memoized_slow_fibonacci_biguint_iterative(7u64), BigUint::from(13u64));
+/// assert_eq!(*memoized_slow_fibonacci_biguint_iterative(8u64), BigUint::from(21u64));
+/// assert_eq!(*memoized_slow_fibonacci_biguint_iterative(9u64), BigUint::from(34u64));
+/// assert_eq!(*memoized_slow_fibonacci_biguint_iterative(10u64), BigUint::from(55u64));
 /// ```
 ///
 /// TODO: consider returning a reference to the cached value to avoid the clone.
-pub fn memoized_slow_fibonacci_bigint_iterative(fi: u64) -> Arc<BigUint> {
+pub fn memoized_slow_fibonacci_biguint_iterative(fi: u64) -> Arc<BigUint> {
     let fi = fi as usize;
 
     // Try to get the value with a read lock first
     {
-        let fibonacci_cache = FIBONACCI_BIGINT_CACHE
+        let fibonacci_cache = FIBONACCI_BIGUINT_CACHE
             .read()
-            .expect("Failed to read Fibonacci BigInt cache");
+            .expect("Failed to read Fibonacci BigUint cache");
         if let Some(fibonacci_value) = fibonacci_cache.get(fi) {
             return Arc::clone(fibonacci_value);
         }
     }
 
     // If not found, get a write lock to update the cache
-    let mut fibonacci_cache = FIBONACCI_BIGINT_CACHE
+    let mut fibonacci_cache = FIBONACCI_BIGUINT_CACHE
         .write()
-        .expect("Failed to write Fibonacci BigInt cache");
+        .expect("Failed to write Fibonacci BigUint cache");
 
     // Re-check in case another thread updated it while we were waiting for the write lock
     while fibonacci_cache.len() <= fi {
@@ -176,25 +176,25 @@ pub fn memoized_slow_fibonacci_bigint_iterative(fi: u64) -> Arc<BigUint> {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::slow_fibonacci_bigint_iterative;
+/// # use zeckendorf_rs::slow_fibonacci_biguint_iterative;
 /// # use num_bigint::BigUint;
 /// # use num_traits::{One, Zero};
 /// // Base cases
-/// assert_eq!(*slow_fibonacci_bigint_iterative(0u64), BigUint::zero());
-/// assert_eq!(*slow_fibonacci_bigint_iterative(1u64), BigUint::one());
+/// assert_eq!(*slow_fibonacci_biguint_iterative(0u64), BigUint::zero());
+/// assert_eq!(*slow_fibonacci_biguint_iterative(1u64), BigUint::one());
 ///
 /// // Small Fibonacci numbers
-/// assert_eq!(*slow_fibonacci_bigint_iterative(2u64), BigUint::from(1u64));
-/// assert_eq!(*slow_fibonacci_bigint_iterative(3u64), BigUint::from(2u64));
-/// assert_eq!(*slow_fibonacci_bigint_iterative(4u64), BigUint::from(3u64));
-/// assert_eq!(*slow_fibonacci_bigint_iterative(5u64), BigUint::from(5u64));
-/// assert_eq!(*slow_fibonacci_bigint_iterative(6u64), BigUint::from(8u64));
-/// assert_eq!(*slow_fibonacci_bigint_iterative(7u64), BigUint::from(13u64));
-/// assert_eq!(*slow_fibonacci_bigint_iterative(8u64), BigUint::from(21u64));
-/// assert_eq!(*slow_fibonacci_bigint_iterative(9u64), BigUint::from(34u64));
-/// assert_eq!(*slow_fibonacci_bigint_iterative(10u64), BigUint::from(55u64));
+/// assert_eq!(*slow_fibonacci_biguint_iterative(2u64), BigUint::from(1u64));
+/// assert_eq!(*slow_fibonacci_biguint_iterative(3u64), BigUint::from(2u64));
+/// assert_eq!(*slow_fibonacci_biguint_iterative(4u64), BigUint::from(3u64));
+/// assert_eq!(*slow_fibonacci_biguint_iterative(5u64), BigUint::from(5u64));
+/// assert_eq!(*slow_fibonacci_biguint_iterative(6u64), BigUint::from(8u64));
+/// assert_eq!(*slow_fibonacci_biguint_iterative(7u64), BigUint::from(13u64));
+/// assert_eq!(*slow_fibonacci_biguint_iterative(8u64), BigUint::from(21u64));
+/// assert_eq!(*slow_fibonacci_biguint_iterative(9u64), BigUint::from(34u64));
+/// assert_eq!(*slow_fibonacci_biguint_iterative(10u64), BigUint::from(55u64));
 /// ```
-pub fn slow_fibonacci_bigint_iterative(fi: u64) -> Arc<BigUint> {
+pub fn slow_fibonacci_biguint_iterative(fi: u64) -> Arc<BigUint> {
     let mut f0 = BigUint::zero();
     let mut f1 = BigUint::one();
     for _ in 0..fi {
@@ -209,11 +209,11 @@ pub fn slow_fibonacci_bigint_iterative(fi: u64) -> Arc<BigUint> {
 /// fibonacci(x) is equal to 0 if x is 0; 1 if x is 1; else return fibonacci(x - 1) + fibonacci(x - 2)
 /// fi stands for Fibonacci Index
 ///
-/// This function is faster than slow_fibonacci_bigint_iterative by using a method called Fast Doubling,
+/// This function is faster than slow_fibonacci_biguint_iterative by using a method called Fast Doubling,
 /// an optimization of the Matrix Exponentiation method. See https://www.nayuki.io/page/fast-fibonacci-algorithms for more details.
 ///
 /// Running the Fibonacci benchmarks (`cargo bench --bench fibonacci_bench`),
-/// this function is ~160x faster than slow_fibonacci_bigint_iterative at calculating the 100,000th Fibonacci number.
+/// this function is ~160x faster than slow_fibonacci_biguint_iterative at calculating the 100,000th Fibonacci number.
 /// On my computer, the fast function took around 330µs while the slow function took around 53ms.
 ///
 /// TODO: use Karatsuba multiplication to speed up the multiplication of BigUint.
@@ -221,25 +221,25 @@ pub fn slow_fibonacci_bigint_iterative(fi: u64) -> Arc<BigUint> {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::fast_doubling_fibonacci_bigint;
+/// # use zeckendorf_rs::fast_doubling_fibonacci_biguint;
 /// # use num_bigint::BigUint;
 /// # use num_traits::{One, Zero};
 /// // Base cases
-/// assert_eq!(*fast_doubling_fibonacci_bigint(0u64), BigUint::zero());
-/// assert_eq!(*fast_doubling_fibonacci_bigint(1u64), BigUint::one());
+/// assert_eq!(*fast_doubling_fibonacci_biguint(0u64), BigUint::zero());
+/// assert_eq!(*fast_doubling_fibonacci_biguint(1u64), BigUint::one());
 ///
 /// // Small Fibonacci numbers
-/// assert_eq!(*fast_doubling_fibonacci_bigint(2u64), BigUint::from(1u64));
-/// assert_eq!(*fast_doubling_fibonacci_bigint(3u64), BigUint::from(2u64));
-/// assert_eq!(*fast_doubling_fibonacci_bigint(4u64), BigUint::from(3u64));
-/// assert_eq!(*fast_doubling_fibonacci_bigint(5u64), BigUint::from(5u64));
-/// assert_eq!(*fast_doubling_fibonacci_bigint(6u64), BigUint::from(8u64));
-/// assert_eq!(*fast_doubling_fibonacci_bigint(7u64), BigUint::from(13u64));
-/// assert_eq!(*fast_doubling_fibonacci_bigint(8u64), BigUint::from(21u64));
-/// assert_eq!(*fast_doubling_fibonacci_bigint(9u64), BigUint::from(34u64));
-/// assert_eq!(*fast_doubling_fibonacci_bigint(10u64), BigUint::from(55u64));
+/// assert_eq!(*fast_doubling_fibonacci_biguint(2u64), BigUint::from(1u64));
+/// assert_eq!(*fast_doubling_fibonacci_biguint(3u64), BigUint::from(2u64));
+/// assert_eq!(*fast_doubling_fibonacci_biguint(4u64), BigUint::from(3u64));
+/// assert_eq!(*fast_doubling_fibonacci_biguint(5u64), BigUint::from(5u64));
+/// assert_eq!(*fast_doubling_fibonacci_biguint(6u64), BigUint::from(8u64));
+/// assert_eq!(*fast_doubling_fibonacci_biguint(7u64), BigUint::from(13u64));
+/// assert_eq!(*fast_doubling_fibonacci_biguint(8u64), BigUint::from(21u64));
+/// assert_eq!(*fast_doubling_fibonacci_biguint(9u64), BigUint::from(34u64));
+/// assert_eq!(*fast_doubling_fibonacci_biguint(10u64), BigUint::from(55u64));
 /// ```
-pub fn fast_doubling_fibonacci_bigint(fi: u64) -> Arc<BigUint> {
+pub fn fast_doubling_fibonacci_biguint(fi: u64) -> Arc<BigUint> {
     let mut a = BigUint::zero();
     let mut b = BigUint::one();
     let mut m = BigUint::zero();
@@ -267,10 +267,10 @@ pub fn fast_doubling_fibonacci_bigint(fi: u64) -> Arc<BigUint> {
 /// fibonacci(x) is equal to 0 if x is 0; 1 if x is 1; else return fibonacci(x - 1) + fibonacci(x - 2)
 /// fi stands for Fibonacci Index
 ///
-/// This function is faster than slow_fibonacci_bigint_iterative by using a method called Fast Doubling,
+/// This function is faster than slow_fibonacci_biguint_iterative by using a method called Fast Doubling,
 /// an optimization of the Matrix Exponentiation method. See https://www.nayuki.io/page/fast-fibonacci-algorithms for more details.
 ///
-/// This function includes memoization using a sparse HashMap cache (FAST_DOUBLING_FIBONACCI_BIGINT_CACHE)
+/// This function includes memoization using a sparse HashMap cache (FAST_DOUBLING_FIBONACCI_BIGUINT_CACHE)
 /// to cache results. The implementation uses a HashMap instead of a Vec to allow sparse caching of only
 /// the computed values, which is more memory-efficient for large, non-contiguous Fibonacci index ranges.
 ///
@@ -292,28 +292,28 @@ pub fn fast_doubling_fibonacci_bigint(fi: u64) -> Arc<BigUint> {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::memoized_fast_doubling_fibonacci_bigint;
+/// # use zeckendorf_rs::memoized_fast_doubling_fibonacci_biguint;
 /// # use num_bigint::BigUint;
 /// # use num_traits::{One, Zero};
 /// // Base cases
-/// assert_eq!(*memoized_fast_doubling_fibonacci_bigint(0u64), BigUint::zero());
-/// assert_eq!(*memoized_fast_doubling_fibonacci_bigint(1u64), BigUint::one());
+/// assert_eq!(*memoized_fast_doubling_fibonacci_biguint(0u64), BigUint::zero());
+/// assert_eq!(*memoized_fast_doubling_fibonacci_biguint(1u64), BigUint::one());
 ///
 /// // Small Fibonacci numbers
-/// assert_eq!(*memoized_fast_doubling_fibonacci_bigint(2u64), BigUint::from(1u64));
-/// assert_eq!(*memoized_fast_doubling_fibonacci_bigint(3u64), BigUint::from(2u64));
-/// assert_eq!(*memoized_fast_doubling_fibonacci_bigint(4u64), BigUint::from(3u64));
-/// assert_eq!(*memoized_fast_doubling_fibonacci_bigint(5u64), BigUint::from(5u64));
-/// assert_eq!(*memoized_fast_doubling_fibonacci_bigint(6u64), BigUint::from(8u64));
-/// assert_eq!(*memoized_fast_doubling_fibonacci_bigint(7u64), BigUint::from(13u64));
-/// assert_eq!(*memoized_fast_doubling_fibonacci_bigint(8u64), BigUint::from(21u64));
-/// assert_eq!(*memoized_fast_doubling_fibonacci_bigint(9u64), BigUint::from(34u64));
-/// assert_eq!(*memoized_fast_doubling_fibonacci_bigint(10u64), BigUint::from(55u64));
+/// assert_eq!(*memoized_fast_doubling_fibonacci_biguint(2u64), BigUint::from(1u64));
+/// assert_eq!(*memoized_fast_doubling_fibonacci_biguint(3u64), BigUint::from(2u64));
+/// assert_eq!(*memoized_fast_doubling_fibonacci_biguint(4u64), BigUint::from(3u64));
+/// assert_eq!(*memoized_fast_doubling_fibonacci_biguint(5u64), BigUint::from(5u64));
+/// assert_eq!(*memoized_fast_doubling_fibonacci_biguint(6u64), BigUint::from(8u64));
+/// assert_eq!(*memoized_fast_doubling_fibonacci_biguint(7u64), BigUint::from(13u64));
+/// assert_eq!(*memoized_fast_doubling_fibonacci_biguint(8u64), BigUint::from(21u64));
+/// assert_eq!(*memoized_fast_doubling_fibonacci_biguint(9u64), BigUint::from(34u64));
+/// assert_eq!(*memoized_fast_doubling_fibonacci_biguint(10u64), BigUint::from(55u64));
 /// ```
-pub fn memoized_fast_doubling_fibonacci_bigint(fi: u64) -> Arc<BigUint> {
+pub fn memoized_fast_doubling_fibonacci_biguint(fi: u64) -> Arc<BigUint> {
     // Try to get the value with a read lock first
     {
-        let cache = FAST_DOUBLING_FIBONACCI_BIGINT_CACHE
+        let cache = FAST_DOUBLING_FIBONACCI_BIGUINT_CACHE
             .read()
             .expect("Failed to read fast doubling Fibonacci cache");
         if let Some(cached_value) = cache.get(&fi) {
@@ -365,7 +365,7 @@ pub fn memoized_fast_doubling_fibonacci_bigint(fi: u64) -> Arc<BigUint> {
     let result = Arc::new(a);
     values_to_cache.push((fi, Arc::clone(&result)));
 
-    let mut cache = FAST_DOUBLING_FIBONACCI_BIGINT_CACHE
+    let mut cache = FAST_DOUBLING_FIBONACCI_BIGUINT_CACHE
         .write()
         .expect("Failed to write fast doubling Fibonacci cache");
 
@@ -513,25 +513,25 @@ pub fn memoized_zeckendorf_list_descending_for_integer(n: u64) -> Vec<u64> {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::memoized_zeckendorf_list_descending_for_bigint;
+/// # use zeckendorf_rs::memoized_zeckendorf_list_descending_for_biguint;
 /// # use num_bigint::BigUint;
 /// # use num_traits::{One, Zero};
 /// // Base cases
-/// assert_eq!(memoized_zeckendorf_list_descending_for_bigint(&BigUint::zero()), vec![]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_bigint(&BigUint::one()), vec![2]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_bigint(&BigUint::from(2u64)), vec![3]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::zero()), vec![]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::one()), vec![2]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(2u64)), vec![3]);
 ///
 /// // Small Zeckendorf numbers
-/// assert_eq!(memoized_zeckendorf_list_descending_for_bigint(&BigUint::from(3u64)), vec![4]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_bigint(&BigUint::from(4u64)), vec![4, 2]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_bigint(&BigUint::from(5u64)), vec![5]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_bigint(&BigUint::from(6u64)), vec![5, 2]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_bigint(&BigUint::from(7u64)), vec![5, 3]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_bigint(&BigUint::from(8u64)), vec![6]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_bigint(&BigUint::from(9u64)), vec![6, 2]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_bigint(&BigUint::from(10u64)), vec![6, 3]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(3u64)), vec![4]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(4u64)), vec![4, 2]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(5u64)), vec![5]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(6u64)), vec![5, 2]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(7u64)), vec![5, 3]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(8u64)), vec![6]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(9u64)), vec![6, 2]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(10u64)), vec![6, 3]);
 /// ```
-pub fn memoized_zeckendorf_list_descending_for_bigint(n: &BigUint) -> Vec<u64> {
+pub fn memoized_zeckendorf_list_descending_for_biguint(n: &BigUint) -> Vec<u64> {
     if n == &BigUint::zero() {
         return vec![];
     }
@@ -544,10 +544,10 @@ pub fn memoized_zeckendorf_list_descending_for_bigint(n: &BigUint) -> Vec<u64> {
 
     // Try a read lock first
     {
-        let zeckendorf_bigint_map = ZECKENDORF_BIGINT_MAP
+        let zeckendorf_biguint_map = ZECKENDORF_BIGUINT_MAP
             .read()
-            .expect("Failed to read Zeckendorf BigInt map");
-        if let Some(cached) = zeckendorf_bigint_map.get(n) {
+            .expect("Failed to read Zeckendorf BigUint map");
+        if let Some(cached) = zeckendorf_biguint_map.get(n) {
             return cached.clone();
         }
     }
@@ -558,7 +558,7 @@ pub fn memoized_zeckendorf_list_descending_for_bigint(n: &BigUint) -> Vec<u64> {
     let mut high = 1u64;
 
     // Exponential search for upper bound
-    while *memoized_slow_fibonacci_bigint_iterative(high) < current_n {
+    while *memoized_slow_fibonacci_biguint_iterative(high) < current_n {
         low = high;
         high *= 2;
     }
@@ -570,7 +570,7 @@ pub fn memoized_zeckendorf_list_descending_for_bigint(n: &BigUint) -> Vec<u64> {
             low = 1;
             break;
         }
-        if *memoized_slow_fibonacci_bigint_iterative(mid) < current_n {
+        if *memoized_slow_fibonacci_biguint_iterative(mid) < current_n {
             low = mid + 1;
         } else {
             high = mid - 1;
@@ -581,7 +581,7 @@ pub fn memoized_zeckendorf_list_descending_for_bigint(n: &BigUint) -> Vec<u64> {
     let mut zeckendorf_list: Vec<u64> = Vec::new();
     while current_n > BigUint::zero() {
         let current_fibonacci_value =
-            memoized_slow_fibonacci_bigint_iterative(max_fibonacci_index_smaller_than_n);
+            memoized_slow_fibonacci_biguint_iterative(max_fibonacci_index_smaller_than_n);
         if *current_fibonacci_value > current_n {
             max_fibonacci_index_smaller_than_n -= 1;
             continue;
@@ -592,10 +592,10 @@ pub fn memoized_zeckendorf_list_descending_for_bigint(n: &BigUint) -> Vec<u64> {
         max_fibonacci_index_smaller_than_n -= 2;
     }
 
-    let mut zeckendorf_bigint_map = ZECKENDORF_BIGINT_MAP
+    let mut zeckendorf_biguint_map = ZECKENDORF_BIGUINT_MAP
         .write()
-        .expect("Failed to write Zeckendorf BigInt map");
-    zeckendorf_bigint_map.insert(original_n, zeckendorf_list.clone());
+        .expect("Failed to write Zeckendorf BigUint map");
+    zeckendorf_biguint_map.insert(original_n, zeckendorf_list.clone());
     zeckendorf_list
 }
 
@@ -667,14 +667,14 @@ pub fn efi_to_fi_ref(efi: &u64) -> u64 {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::efi_to_fi_bigint;
+/// # use zeckendorf_rs::efi_to_fi_biguint;
 /// # use num_bigint::BigUint;
 /// # use num_traits::{One, Zero};
-/// assert_eq!(efi_to_fi_bigint(BigUint::zero()), BigUint::from(2u64));
-/// assert_eq!(efi_to_fi_bigint(BigUint::one()), BigUint::from(3u64));
-/// assert_eq!(efi_to_fi_bigint(BigUint::from(2u64)), BigUint::from(4u64));
+/// assert_eq!(efi_to_fi_biguint(BigUint::zero()), BigUint::from(2u64));
+/// assert_eq!(efi_to_fi_biguint(BigUint::one()), BigUint::from(3u64));
+/// assert_eq!(efi_to_fi_biguint(BigUint::from(2u64)), BigUint::from(4u64));
 /// ```
-pub fn efi_to_fi_bigint(efi: BigUint) -> BigUint {
+pub fn efi_to_fi_biguint(efi: BigUint) -> BigUint {
     return efi + BigUint::from(2u64);
 }
 
@@ -713,14 +713,14 @@ pub fn fi_to_efi_ref(fi: &u64) -> u64 {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::fi_to_efi_bigint;
+/// # use zeckendorf_rs::fi_to_efi_biguint;
 /// # use num_bigint::BigUint;
 /// # use num_traits::{One, Zero};
-/// assert_eq!(fi_to_efi_bigint(BigUint::from(2u64)), BigUint::zero());
-/// assert_eq!(fi_to_efi_bigint(BigUint::from(3u64)), BigUint::one());
-/// assert_eq!(fi_to_efi_bigint(BigUint::from(4u64)), BigUint::from(2u64));
+/// assert_eq!(fi_to_efi_biguint(BigUint::from(2u64)), BigUint::zero());
+/// assert_eq!(fi_to_efi_biguint(BigUint::from(3u64)), BigUint::one());
+/// assert_eq!(fi_to_efi_biguint(BigUint::from(4u64)), BigUint::from(2u64));
 /// ```
-pub fn fi_to_efi_bigint(fi: BigUint) -> BigUint {
+pub fn fi_to_efi_biguint(fi: BigUint) -> BigUint {
     return fi - BigUint::from(2u64);
 }
 
@@ -891,11 +891,11 @@ pub fn pack_ezba_bits_to_bytes(ezba: &[u8]) -> Vec<u8> {
 /// ```
 pub fn zeckendorf_compress_be(data: &[u8]) -> Vec<u8> {
     let compressed_data: Vec<u8>;
-    // Turn data into a bigint
-    let data_as_bigint = BigUint::from_bytes_be(data);
-    // println!("Data as bigint: {:?}", data_as_bigint);
+    // Turn data into a biguint
+    let data_as_biguint = BigUint::from_bytes_be(data);
+    // println!("Data as biguint: {:?}", data_as_biguint);
     // Get the effective zeckendorf list descending
-    let data_as_zld = memoized_zeckendorf_list_descending_for_bigint(&data_as_bigint);
+    let data_as_zld = memoized_zeckendorf_list_descending_for_biguint(&data_as_biguint);
     // println!("Data as zld: {:?}", data_as_zld);
     let data_as_ezld = zl_to_ezl(&data_as_zld);
     // println!("Data as ezld: {:?}", data_as_ezld);
@@ -926,11 +926,11 @@ pub fn zeckendorf_compress_be(data: &[u8]) -> Vec<u8> {
 /// ```
 pub fn zeckendorf_compress_le(data: &[u8]) -> Vec<u8> {
     let compressed_data: Vec<u8>;
-    // Turn data into a bigint
-    let data_as_bigint = BigUint::from_bytes_le(data);
-    // println!("Data as bigint: {:?}", data_as_bigint);
+    // Turn data into a biguint
+    let data_as_biguint = BigUint::from_bytes_le(data);
+    // println!("Data as biguint: {:?}", data_as_biguint);
     // Get the effective zeckendorf list descending
-    let data_as_zld = memoized_zeckendorf_list_descending_for_bigint(&data_as_bigint);
+    let data_as_zld = memoized_zeckendorf_list_descending_for_biguint(&data_as_biguint);
     // println!("Data as zld: {:?}", data_as_zld);
     let data_as_ezld = zl_to_ezl(&data_as_zld);
     // println!("Data as ezld: {:?}", data_as_ezld);
@@ -989,34 +989,34 @@ pub fn ezba_to_ezla(ezba_bits: &[u8]) -> Vec<u64> {
     return ezla;
 }
 
-/// Converts a Zeckendorf List to a BigInt.
+/// Converts a Zeckendorf List to a BigUint.
 /// The Zeckendorf List is a list of Fibonacci indices that sum to the given number.
 /// It does not matter if the ZL is ascending or descending. The sum operation is commutative.
 ///
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::zl_to_bigint;
+/// # use zeckendorf_rs::zl_to_biguint;
 /// # use num_bigint::BigUint;
 /// # use num_traits::{One, Zero};
-/// assert_eq!(zl_to_bigint(&[]), BigUint::zero());
-/// assert_eq!(zl_to_bigint(&[0]), BigUint::zero());
-/// assert_eq!(zl_to_bigint(&[1]), BigUint::one());
-/// assert_eq!(zl_to_bigint(&[2]), BigUint::one());
-/// assert_eq!(zl_to_bigint(&[3]), BigUint::from(2u64));
-/// assert_eq!(zl_to_bigint(&[4]), BigUint::from(3u64));
-/// assert_eq!(zl_to_bigint(&[5]), BigUint::from(5u64));
-/// assert_eq!(zl_to_bigint(&[6]), BigUint::from(8u64));
-/// assert_eq!(zl_to_bigint(&[6, 2]), BigUint::from(9u64));
-/// assert_eq!(zl_to_bigint(&[6, 3]), BigUint::from(10u64));
-/// assert_eq!(zl_to_bigint(&[6, 4]), BigUint::from(11u64));
-/// assert_eq!(zl_to_bigint(&[6, 4, 2]), BigUint::from(12u64));
+/// assert_eq!(zl_to_biguint(&[]), BigUint::zero());
+/// assert_eq!(zl_to_biguint(&[0]), BigUint::zero());
+/// assert_eq!(zl_to_biguint(&[1]), BigUint::one());
+/// assert_eq!(zl_to_biguint(&[2]), BigUint::one());
+/// assert_eq!(zl_to_biguint(&[3]), BigUint::from(2u64));
+/// assert_eq!(zl_to_biguint(&[4]), BigUint::from(3u64));
+/// assert_eq!(zl_to_biguint(&[5]), BigUint::from(5u64));
+/// assert_eq!(zl_to_biguint(&[6]), BigUint::from(8u64));
+/// assert_eq!(zl_to_biguint(&[6, 2]), BigUint::from(9u64));
+/// assert_eq!(zl_to_biguint(&[6, 3]), BigUint::from(10u64));
+/// assert_eq!(zl_to_biguint(&[6, 4]), BigUint::from(11u64));
+/// assert_eq!(zl_to_biguint(&[6, 4, 2]), BigUint::from(12u64));
 /// ```
-pub fn zl_to_bigint(zl: &[u64]) -> BigUint {
+pub fn zl_to_biguint(zl: &[u64]) -> BigUint {
     zl.iter().fold(BigUint::zero(), |acc, fi| {
-        acc + &*memoized_slow_fibonacci_bigint_iterative(*fi)
+        acc + &*memoized_slow_fibonacci_biguint_iterative(*fi)
         // TODO: investigate ways we can get the lower memory usage of the cached fast doubling Fibonacci algorithm but the speed of the cached slow Fibonacci algorithm. As of now, the cached fast doubling Fibonacci algorithm is slower at decompression than the cached slow Fibonacci algorithm at large data inputs, on the order of > 10kB. See the comments in scripts/poll_rss.sh for more information.
-        // acc + &*fast_doubling_fibonacci_bigint(*fi)
+        // acc + &*fast_doubling_fibonacci_biguint(*fi)
     })
 }
 
@@ -1056,7 +1056,7 @@ pub fn all_ones_zeckendorf_to_biguint(n: usize) -> BigUint {
     let ezba = vec![1u8; n];
     let ezla = ezba_to_ezla(&ezba);
     let zla = ezl_to_zl(&ezla);
-    zl_to_bigint(&zla)
+    zl_to_biguint(&zla)
 }
 
 /// Decompresses a slice of bytes compressed using the Zeckendorf algorithm, assuming the original data was compressed using the big endian bytes interpretation.
@@ -1083,10 +1083,10 @@ pub fn zeckendorf_decompress_be(compressed_data: &[u8]) -> Vec<u8> {
     // Convert the ezla to a zla (Zeckendorf List Ascending)
     let compressed_data_as_zla = ezl_to_zl(&compressed_data_as_ezla);
     // println!("Compressed data as zla: {:?}", compressed_data_as_zla);
-    // Convert the zla to a bigint
-    let compressed_data_as_bigint = zl_to_bigint(&compressed_data_as_zla);
-    // println!("Compressed data as bigint: {:?}", compressed_data_as_bigint);
-    return compressed_data_as_bigint.to_bytes_be();
+    // Convert the zla to a biguint
+    let compressed_data_as_biguint = zl_to_biguint(&compressed_data_as_zla);
+    // println!("Compressed data as biguint: {:?}", compressed_data_as_biguint);
+    return compressed_data_as_biguint.to_bytes_be();
 }
 
 /// Decompresses a slice of bytes compressed using the Zeckendorf algorithm, assuming the original data was compressed using the little endian bytes interpretation.
@@ -1111,10 +1111,10 @@ pub fn zeckendorf_decompress_le(compressed_data: &[u8]) -> Vec<u8> {
     // Convert the ezla to a zla (Zeckendorf List Ascending)
     let compressed_data_as_zla = ezl_to_zl(&compressed_data_as_ezla);
     // println!("Compressed data as zla: {:?}", compressed_data_as_zla);
-    // Convert the zla to a bigint
-    let compressed_data_as_bigint = zl_to_bigint(&compressed_data_as_zla);
-    // println!("Compressed data as bigint: {:?}", compressed_data_as_bigint);
-    return compressed_data_as_bigint.to_bytes_le();
+    // Convert the zla to a biguint
+    let compressed_data_as_biguint = zl_to_biguint(&compressed_data_as_zla);
+    // println!("Compressed data as biguint: {:?}", compressed_data_as_biguint);
+    return compressed_data_as_biguint.to_bytes_le();
 }
 
 /// Attempts to compress the input data using both big endian and little endian interpretations,
