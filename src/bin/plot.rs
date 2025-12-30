@@ -9,6 +9,9 @@ use std::sync::Arc;
 use std::time::Instant;
 use zeckendorf_rs::*;
 
+const PHI: f64 = 1.618033988749895;
+const PHI_SQUARED: f64 = 2.618033988749895;
+
 const AXIS_FONT_SIZE: u32 = 100;
 const AXIS_TICK_FONT_SIZE: u32 = 64;
 const CAPTION_FONT_SIZE: u32 = 160;
@@ -43,6 +46,13 @@ fn main() {
         0..31,
     )
     .expect("Failed to plot Fibonacci, binary, all-ones Zeckendorf, and 3^n numbers");
+
+    // Example: Plot Fibonacci, binary, all-ones Zeckendorf, 3^n, φⁿ, and φ²ⁿ numbers
+    plot_fibonacci_binary_all_ones_power3_phi_phi_squared(
+        "plots/fibonacci_binary_all_ones_power3_phi_phi_squared_0_to_30.png",
+        0..31,
+    )
+    .expect("Failed to plot Fibonacci, binary, all-ones Zeckendorf, 3^n, φⁿ, and φ²ⁿ numbers");
 
     // Example: Plot compression ratios
     plot_compression_ratios("plots/compression_ratios_0_to_100.png", 0..100)
@@ -678,6 +688,347 @@ fn plot_fibonacci_binary_all_ones_power3(
     root.present()?;
     println!(
         "Fibonacci, binary, all-ones Zeckendorf, and 3^n plot saved to {}",
+        filename
+    );
+    let end_time = Instant::now();
+    println!(
+        "Time taken to plot for range {:?}: {:?}",
+        range,
+        end_time.duration_since(start_time)
+    );
+    Ok(())
+}
+
+/// Plots six number sequences on a log scale: Fibonacci numbers, binary numbers (2^n), all-ones Zeckendorf numbers, powers of 3 (3^n), phi to the n (φⁿ), and phi squared to the n (φ²ⁿ).
+///
+/// This function creates a comparison plot showing how these six different number sequences grow:
+/// - **Fibonacci numbers**: F(n) where n is the Fibonacci index
+/// - **Binary numbers**: 2^n where n is the exponent
+/// - **All-ones Zeckendorf numbers**: Numbers with n ones in their Zeckendorf representation
+/// - **Powers of 3**: 3^n where n is the exponent
+/// - **Phi to the n**: φⁿ where φ is the golden ratio (approximately 1.618)
+/// - **Phi squared to the n**: φ²ⁿ where φ is the golden ratio (approximately 1.618) and φ² ≈ 2.618
+///
+/// The "all-ones" Zeckendorf numbers are created by generating a Zeckendorf representation with n consecutive
+/// ones (in the Effective Zeckendorf Bits Ascending format), then converting that representation back to
+/// the actual number value. This is useful for understanding how Zeckendorf representations behave
+/// when they contain many ones.
+///
+/// I discovered that the ratio of the all ones Zeckendorf numbers to the previous all ones Zeckendorf numbers converges to the golden ratio squared, so this plot is useful for seeing how close these numbers are by comparison.
+///
+/// The plot uses a logarithmic scale on the y-axis to better visualize the growth patterns of these sequences.
+/// Each series is displayed with a different color and includes both lines and dots at each data point.
+///
+/// # Arguments
+///
+/// * `filename` - The path where the plot image will be saved (e.g., "plots/comparison.png")
+/// * `range` - The range of input values n to plot (e.g., 0..31)
+///
+/// # Returns
+///
+/// Returns `Ok(())` if the plot was successfully created, or an error if plotting failed.
+///
+/// # Examples
+///
+/// ```
+/// plot_fibonacci_binary_all_ones_power3_phi_phi_squared("plots/comparison_0_to_30.png", 0..31)?;
+/// ```
+fn plot_fibonacci_binary_all_ones_power3_phi_phi_squared(
+    filename: &str,
+    range: std::ops::Range<u64>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let start_time = Instant::now();
+    println!(
+        "Plotting Fibonacci, binary, all-ones Zeckendorf, 3^n, φⁿ, and φ²ⁿ numbers for range {:?}",
+        range
+    );
+
+    // Prepare Fibonacci data
+    let fibonacci_data: Vec<(f64, f64)> = range
+        .clone()
+        .filter_map(|i| {
+            let fib = memoized_fast_doubling_fibonacci_biguint(i);
+            let fib_f64 = biguint_to_approximate_f64(&*fib);
+            if fib_f64 > 0.0 && fib_f64.is_finite() {
+                Some((i as f64, fib_f64))
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    // Prepare binary data (2^n)
+    let binary_data: Vec<(f64, f64)> = range
+        .clone()
+        .map(|i| {
+            let binary_value = 2_f64.powi(i as i32);
+            (i as f64, binary_value)
+        })
+        .filter(|(_, y)| *y > 0.0 && y.is_finite())
+        .collect();
+
+    // Prepare all-ones Zeckendorf data
+    let all_ones_data: Vec<(f64, f64)> = range
+        .clone()
+        .filter_map(|i| {
+            if i == 0 {
+                return None; // Skip 0 as it would result in an empty Zeckendorf representation
+            }
+            let all_ones_biguint = all_ones_zeckendorf_to_biguint(i as usize);
+            let all_ones_f64 = biguint_to_approximate_f64(&all_ones_biguint);
+            if all_ones_f64 > 0.0 && all_ones_f64.is_finite() {
+                Some((i as f64, all_ones_f64))
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    // Prepare power of 3 data (3^n)
+    let power3_data: Vec<(f64, f64)> = range
+        .clone()
+        .map(|i| {
+            let power3_value = 3_f64.powi(i as i32);
+            (i as f64, power3_value)
+        })
+        .filter(|(_, y)| *y > 0.0 && y.is_finite())
+        .collect();
+
+    // Prepare phi to the n data (φⁿ)
+    let phi_data: Vec<(f64, f64)> = range
+        .clone()
+        .map(|i| {
+            let phi_value = PHI.powi(i as i32);
+            (i as f64, phi_value)
+        })
+        .filter(|(_, y)| *y > 0.0 && y.is_finite())
+        .collect();
+
+    // Prepare phi squared to the n data (φ²ⁿ)
+    let phi_squared_data: Vec<(f64, f64)> = range
+        .clone()
+        .map(|i| {
+            let phi_squared_value = PHI_SQUARED.powi(i as i32);
+            (i as f64, phi_squared_value)
+        })
+        .filter(|(_, y)| *y > 0.0 && y.is_finite())
+        .collect();
+
+    // Find the maximum value from all six series for y-axis range
+    let max_value = fibonacci_data
+        .iter()
+        .chain(binary_data.iter())
+        .chain(all_ones_data.iter())
+        .chain(power3_data.iter())
+        .chain(phi_data.iter())
+        .chain(phi_squared_data.iter())
+        .map(|(_, y)| *y)
+        .fold(1.0f64, |acc, y| acc.max(y));
+
+    let root = BitMapBackend::new(filename, (PLOT_WIDTH, PLOT_HEIGHT)).into_drawing_area();
+    root.fill(&WHITE)?;
+
+    let mut chart = ChartBuilder::on(&root)
+        .caption(
+            "Various Number Sequences (Log Scale)",
+            ("sans-serif", CAPTION_FONT_SIZE).into_font(),
+        )
+        .margin(CHART_MARGIN)
+        .x_label_area_size(260)
+        .y_label_area_size(300)
+        .build_cartesian_2d(
+            range.start as f64..range.end as f64,
+            (1f64..max_value).log_scale(),
+        )?;
+
+    let axis_label_style =
+        TextStyle::from(("sans-serif", AXIS_FONT_SIZE).into_font()).color(&BLACK);
+    let axis_tick_style =
+        TextStyle::from(("sans-serif", AXIS_TICK_FONT_SIZE).into_font()).color(&BLACK);
+
+    // Custom formatter for y-axis labels in scientific notation
+    // Example: 1000000 -> 1e6
+    let y_label_formatter = |y: &f64| {
+        if *y == 0.0 {
+            "0".to_string()
+        } else {
+            let exponent = y.log10().floor() as i32;
+            let mantissa = y / 10_f64.powi(exponent);
+            // Round mantissa to 1 decimal place if needed, otherwise show as integer
+            let rounded_mantissa = mantissa.round();
+            if (mantissa - rounded_mantissa).abs() < 1e-10 {
+                format!("{}e{}", rounded_mantissa as i64, exponent)
+            } else {
+                format!("{:.1}e{}", mantissa, exponent)
+            }
+        }
+    };
+
+    chart
+        .configure_mesh()
+        .x_desc("Input n")
+        .y_desc("Number Value (Log Scale)")
+        .y_label_formatter(&y_label_formatter)
+        .label_style(axis_tick_style)
+        .axis_desc_style(axis_label_style)
+        .draw()?;
+
+    // Draw power of 3 series
+    chart
+        .draw_series(LineSeries::new(
+            power3_data.iter().copied(),
+            MAGENTA.stroke_width(SERIES_LINE_STROKE_WIDTH),
+        ))?
+        .label("Powers of 3 (3^n)")
+        .legend(|(x, y)| {
+            PathElement::new(
+                vec![
+                    (x - LEGEND_PATH_LEFT_OFFSET, y),
+                    (x + LEGEND_PATH_RIGHT_OFFSET, y),
+                ],
+                MAGENTA.stroke_width(SERIES_LINE_STROKE_WIDTH),
+            )
+        });
+
+    // Draw phi squared to the n series
+    chart
+        .draw_series(LineSeries::new(
+            phi_squared_data.iter().copied(),
+            CYAN.stroke_width(SERIES_LINE_STROKE_WIDTH),
+        ))?
+        .label("Phi Squared to the n (φ²ⁿ)")
+        .legend(|(x, y)| {
+            PathElement::new(
+                vec![
+                    (x - LEGEND_PATH_LEFT_OFFSET, y),
+                    (x + LEGEND_PATH_RIGHT_OFFSET, y),
+                ],
+                CYAN.stroke_width(SERIES_LINE_STROKE_WIDTH),
+            )
+        });
+
+    // Draw all-ones Zeckendorf series
+    chart
+        .draw_series(LineSeries::new(
+            all_ones_data.iter().copied(),
+            GREEN.stroke_width(SERIES_LINE_STROKE_WIDTH),
+        ))?
+        .label("All-Ones Zeckendorf (n ones)")
+        .legend(|(x, y)| {
+            PathElement::new(
+                vec![
+                    (x - LEGEND_PATH_LEFT_OFFSET, y),
+                    (x + LEGEND_PATH_RIGHT_OFFSET, y),
+                ],
+                GREEN.stroke_width(SERIES_LINE_STROKE_WIDTH),
+            )
+        });
+
+    // Draw binary series
+    chart
+        .draw_series(LineSeries::new(
+            binary_data.iter().copied(),
+            BLUE.stroke_width(SERIES_LINE_STROKE_WIDTH),
+        ))?
+        .label("Binary Numbers 2^n")
+        .legend(|(x, y)| {
+            PathElement::new(
+                vec![
+                    (x - LEGEND_PATH_LEFT_OFFSET, y),
+                    (x + LEGEND_PATH_RIGHT_OFFSET, y),
+                ],
+                BLUE.stroke_width(SERIES_LINE_STROKE_WIDTH),
+            )
+        });
+
+    // Draw phi to the n series
+    chart
+        .draw_series(LineSeries::new(
+            phi_data.iter().copied(),
+            BLACK.stroke_width(SERIES_LINE_STROKE_WIDTH),
+        ))?
+        .label("Phi to the n (φⁿ)")
+        .legend(|(x, y)| {
+            PathElement::new(
+                vec![
+                    (x - LEGEND_PATH_LEFT_OFFSET, y),
+                    (x + LEGEND_PATH_RIGHT_OFFSET, y),
+                ],
+                BLACK.stroke_width(SERIES_LINE_STROKE_WIDTH),
+            )
+        });
+
+    // Draw Fibonacci series
+    chart
+        .draw_series(LineSeries::new(
+            fibonacci_data.iter().copied(),
+            RED.stroke_width(SERIES_LINE_STROKE_WIDTH),
+        ))?
+        .label("Fibonacci Numbers F(n)")
+        .legend(|(x, y)| {
+            PathElement::new(
+                vec![
+                    (x - LEGEND_PATH_LEFT_OFFSET, y),
+                    (x + LEGEND_PATH_RIGHT_OFFSET, y),
+                ],
+                RED.stroke_width(SERIES_LINE_STROKE_WIDTH),
+            )
+        });
+
+    // Draw dots at each point for Fibonacci
+    chart.draw_series(
+        fibonacci_data
+            .iter()
+            .map(|point| Circle::new(*point, SERIES_LINE_DOT_SIZE, RED.filled())),
+    )?;
+
+    // Draw dots at each point for binary
+    chart.draw_series(
+        binary_data
+            .iter()
+            .map(|point| Circle::new(*point, SERIES_LINE_DOT_SIZE, BLUE.filled())),
+    )?;
+
+    // Draw dots at each point for all-ones
+    chart.draw_series(
+        all_ones_data
+            .iter()
+            .map(|point| Circle::new(*point, SERIES_LINE_DOT_SIZE, GREEN.filled())),
+    )?;
+
+    // Draw dots at each point for power of 3
+    chart.draw_series(
+        power3_data
+            .iter()
+            .map(|point| Circle::new(*point, SERIES_LINE_DOT_SIZE, MAGENTA.filled())),
+    )?;
+
+    // Draw dots at each point for phi
+    chart.draw_series(
+        phi_data
+            .iter()
+            .map(|point| Circle::new(*point, SERIES_LINE_DOT_SIZE, BLACK.filled())),
+    )?;
+
+    // Draw dots at each point for phi squared
+    chart.draw_series(
+        phi_squared_data
+            .iter()
+            .map(|point| Circle::new(*point, SERIES_LINE_DOT_SIZE, CYAN.filled())),
+    )?;
+
+    chart
+        .configure_series_labels()
+        .position(SeriesLabelPosition::UpperLeft)
+        .margin(LEGEND_MARGIN)
+        .label_font(("sans-serif", LEGEND_FONT_SIZE).into_font())
+        .background_style(&WHITE.mix(0.8))
+        .border_style(&BLACK)
+        .draw()?;
+
+    root.present()?;
+    println!(
+        "Fibonacci, binary, all-ones Zeckendorf, 3^n, φⁿ, and φ²ⁿ plot saved to {}",
         filename
     );
     let end_time = Instant::now();

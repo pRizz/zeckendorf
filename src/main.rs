@@ -8,6 +8,14 @@ use num_format::ToFormattedString;
 use std::time::Instant;
 use zeckendorf_rs::*;
 
+/// Golden ratio constant.
+/// This constant is in the rust standard library as f64::consts::PHI, but only available on nightly.
+const _PHI: f64 = 1.618033988749894848204586834365638118_f64;
+
+/// Phi squared constant.
+/// This also equals the golden ratio plus one.
+const PHI_SQUARED: f64 = 2.618033988749894848204586834365638118_f64;
+
 fn main() {
     let start_time = Instant::now();
 
@@ -99,6 +107,8 @@ fn main() {
     all_ones_decompressions();
 
     test_all_ones_zeckendorf_ratios();
+
+    test_phi_squared_and_all_ones_zeckendorf_ratios();
 
     let end_time = Instant::now();
     println!("Time taken: {:?}", end_time.duration_since(start_time));
@@ -320,16 +330,11 @@ fn all_ones_decompressions() {
 
 /// Tests the ratios of all ones Zeckendorf numbers to the previous all ones Zeckendorf numbers.
 ///
-/// It turns out that this ratio seems to converge to the golden ratio plus one, which also apparently equals the square of the golden ratio.
+/// It turns out that this ratio seems to converge to the golden ratio plus one, which also apparently equals the square of the golden ratio, or phi squared.
 fn test_all_ones_zeckendorf_ratios() {
     let start_time = Instant::now();
     let mut prev = all_ones_zeckendorf_to_biguint(1);
-    // Golden ratio is the ratio of the Fibonacci sequence to the previous Fibonacci number.
-    // This constant is in the rust standard library as f64::consts::PHI, but only available on nightly.
-    let golden_ratio = (1.0 + 5_f64.sqrt()) / 2.0;
-    println!("Golden ratio: {golden_ratio}");
-    let golden_ratio_plus_one = golden_ratio + 1.0;
-    println!("Golden ratio plus one: {golden_ratio_plus_one}");
+
     // We stop at 46 because the 47th all ones Zeckendorf number is too large to fit in a u64, which causes the f64 approximation to be inaccurate.
     for i in 2..=46 {
         let curr = all_ones_zeckendorf_to_biguint(i);
@@ -339,8 +344,8 @@ fn test_all_ones_zeckendorf_ratios() {
             "The {i}th all ones Zeckendorf number is {ratio} times larger than the {}th all ones Zeckendorf number",
             i - 1
         );
-        let delta = ratio - golden_ratio_plus_one;
-        println!("The delta between the ratio and the golden ratio plus one is {delta}");
+        let delta = ratio - PHI_SQUARED;
+        println!("The delta between the ratio and phi squared is {delta}");
         prev = curr;
     }
     let end_time = Instant::now();
@@ -368,4 +373,42 @@ fn biguint_to_approximate_f64(value: &BigUint) -> f64 {
         let capped_bits = bits.min(1023.0);
         2_f64.powf(capped_bits)
     }
+}
+
+/// Since phi squared to the n seems to be parallel to the all ones Zeckendorf numbers on the plot, I wanted to figure out by how much phi squared is greater than the all ones Zeckendorf numbers. After testing, it seems to converge on the ratio of ~1.3819660112501047.
+///
+/// This just means that for large n, phi squared to the n is ~1.3819660112501047 times larger than n all-ones Zeckendorf bits.
+///
+/// This could potentially be used to get a fast approximation of the all ones Zeckendorf number for large n, by using the formula:
+/// `all_ones_zeckendorf_number(n) = phi^(2n) / 1.3819660112501047`
+///
+/// See this plot to get a better intuition about the ratios: `plots/fibonacci_binary_all_ones_power3_phi_squared_0_to_30.png`
+fn test_phi_squared_and_all_ones_zeckendorf_ratios() {
+    let start_time = Instant::now();
+
+    let mut prev_ratio =
+        PHI_SQUARED / biguint_to_approximate_f64(&all_ones_zeckendorf_to_biguint(1));
+
+    // We stop at 46 because the 47th all ones Zeckendorf number is too large to fit in a u64, which causes the f64 approximation to be inaccurate.
+    for i in 2..=46 {
+        let phi_squared_i = PHI_SQUARED.powi(i as i32);
+        println!("The {i}th phi squared is: {phi_squared_i}");
+        let curr = all_ones_zeckendorf_to_biguint(i);
+        println!("The {i}th all ones Zeckendorf number is: {}", curr);
+        let ratio = phi_squared_i / biguint_to_approximate_f64(&curr);
+        println!(
+            "The {i}th phi squared is {ratio} times larger than {i}th all ones Zeckendorf number"
+        );
+        let ratio_delta = ratio - prev_ratio;
+        println!("The delta between the ratio and the previous ratio is {ratio_delta}");
+        let ratio_growth_rate = ratio_delta / prev_ratio;
+        println!("The growth rate of the ratio is {ratio_growth_rate}");
+        prev_ratio = ratio;
+    }
+
+    let end_time = Instant::now();
+    println!(
+        "Time taken to test phi squared and all ones Zeckendorf ratio: {:?}",
+        end_time.duration_since(start_time)
+    );
 }
