@@ -9,9 +9,6 @@ use std::sync::Arc;
 use std::time::Instant;
 use zeckendorf_rs::*;
 
-const PHI: f64 = 1.618033988749895;
-const PHI_SQUARED: f64 = 2.618033988749895;
-
 const AXIS_FONT_SIZE: u32 = 100;
 const AXIS_TICK_FONT_SIZE: u32 = 64;
 const CAPTION_FONT_SIZE: u32 = 160;

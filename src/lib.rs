@@ -11,6 +11,14 @@ use num_traits::{One, Zero};
 use std::collections::HashMap;
 use std::sync::{Arc, LazyLock, RwLock};
 
+/// Golden ratio constant.
+/// This constant is in the rust standard library as f64::consts::PHI, but only available on nightly.
+pub const PHI: f64 = 1.618033988749894848204586834365638118_f64;
+
+/// Phi squared constant.
+/// This also equals the golden ratio plus one.
+pub const PHI_SQUARED: f64 = 2.618033988749894848204586834365638118_f64;
+
 /// Returns the number of bits required to represent the given number. Returns 0 if the number is less than or equal to 0.
 ///
 /// # Examples

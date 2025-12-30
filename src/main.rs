@@ -8,14 +8,6 @@ use num_format::ToFormattedString;
 use std::time::Instant;
 use zeckendorf_rs::*;
 
-/// Golden ratio constant.
-/// This constant is in the rust standard library as f64::consts::PHI, but only available on nightly.
-const _PHI: f64 = 1.618033988749894848204586834365638118_f64;
-
-/// Phi squared constant.
-/// This also equals the golden ratio plus one.
-const PHI_SQUARED: f64 = 2.618033988749894848204586834365638118_f64;
-
 fn main() {
     let start_time = Instant::now();
 
