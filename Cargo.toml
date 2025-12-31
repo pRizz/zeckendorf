@@ -13,6 +13,7 @@ repository = "https://github.com/pRizz/zeckendorf"
 [lib]
 name = "zeckendorf_rs"
 path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
 
 [features]
 default = []
