@@ -10,6 +10,7 @@ use num_bigint::BigUint;
 use num_traits::{One, Zero};
 use std::collections::HashMap;
 use std::sync::{Arc, LazyLock, RwLock};
+use wasm_bindgen::prelude::*;
 
 /// Golden ratio constant.
 /// This constant is in the rust standard library as f64::consts::PHI, but only available on nightly.
@@ -31,6 +32,7 @@ pub const PHI_SQUARED: f64 = 2.618033988749894848204586834365638118_f64;
 /// assert_eq!(bit_count_for_number(3), 2);  // 0b11
 /// assert_eq!(bit_count_for_number(4), 3);  // 0b100
 /// ```
+#[wasm_bindgen]
 pub fn bit_count_for_number(n: i32) -> u32 {
     if n <= 0 {
         return 0;
@@ -89,6 +91,7 @@ pub static FAST_DOUBLING_FIBONACCI_BIGUINT_CACHE: LazyLock<RwLock<HashMap<u64, A
 /// assert_eq!(memoized_slow_fibonacci_recursive(9), 34);
 /// assert_eq!(memoized_slow_fibonacci_recursive(10), 55);
 /// ```
+#[wasm_bindgen]
 pub fn memoized_slow_fibonacci_recursive(fi: u64) -> u64 {
     let fi = fi as usize;
 
@@ -412,6 +415,7 @@ pub fn memoized_fast_doubling_fibonacci_biguint(fi: u64) -> Arc<BigUint> {
 /// assert_eq!(highest_one_bit(13), 8);
 /// assert_eq!(highest_one_bit(14), 8);
 /// ```
+#[wasm_bindgen]
 pub fn highest_one_bit(n: u64) -> u64 {
     if n == 0 {
         return 0;
@@ -443,6 +447,7 @@ pub fn highest_one_bit(n: u64) -> u64 {
 /// assert_eq!(memoized_zeckendorf_list_descending_for_integer(9), vec![6, 2]);
 /// assert_eq!(memoized_zeckendorf_list_descending_for_integer(10), vec![6, 3]);
 /// ```
+#[wasm_bindgen]
 pub fn memoized_zeckendorf_list_descending_for_integer(n: u64) -> Vec<u64> {
     if n == 0 {
         return vec![];
@@ -652,6 +657,7 @@ pub enum CompressionResult {
 /// assert_eq!(efi_to_fi(1), 3);
 /// assert_eq!(efi_to_fi(2), 4);
 /// ```
+#[wasm_bindgen]
 pub fn efi_to_fi(efi: u64) -> u64 {
     return efi + 2;
 }
@@ -698,6 +704,7 @@ pub fn efi_to_fi_biguint(efi: BigUint) -> BigUint {
 /// assert_eq!(fi_to_efi(3), 1);
 /// assert_eq!(fi_to_efi(4), 2);
 /// ```
+#[wasm_bindgen]
 pub fn fi_to_efi(fi: u64) -> u64 {
     return fi - 2;
 }
@@ -752,6 +759,7 @@ pub fn fi_to_efi_biguint(fi: BigUint) -> BigUint {
 /// assert_eq!(memoized_effective_fibonacci(9), 89);
 /// assert_eq!(memoized_effective_fibonacci(10), 144);
 /// ```
+#[wasm_bindgen]
 pub fn memoized_effective_fibonacci(efi: u64) -> u64 {
     return memoized_slow_fibonacci_recursive(efi_to_fi(efi));
 }
@@ -771,6 +779,7 @@ pub fn memoized_effective_fibonacci(efi: u64) -> u64 {
 /// assert_eq!(zl_to_ezl(&[3]), vec![1]);
 /// assert_eq!(zl_to_ezl(&[4]), vec![2]);
 /// ```
+#[wasm_bindgen]
 pub fn zl_to_ezl(zl: &[u64]) -> Vec<u64> {
     return zl.into_iter().map(fi_to_efi_ref).collect();
 }
@@ -786,6 +795,7 @@ pub fn zl_to_ezl(zl: &[u64]) -> Vec<u64> {
 /// assert_eq!(ezl_to_zl(&[1]), vec![3]);
 /// assert_eq!(ezl_to_zl(&[2]), vec![4]);
 /// ```
+#[wasm_bindgen]
 pub fn ezl_to_zl(ezl: &[u64]) -> Vec<u64> {
     return ezl.into_iter().map(efi_to_fi_ref).collect();
 }
@@ -809,6 +819,7 @@ pub fn ezl_to_zl(ezl: &[u64]) -> Vec<u64> {
 /// assert_eq!(ezba_from_ezld(&[2, 0]), vec![1, 1]); // 2nd EFI is 4th FI, which is 3 and 0th EFI is 2nd FI, which is 1, which sums to 4
 /// assert_eq!(ezba_from_ezld(&[3]), vec![0, 0, 0, 1]); // 3rd EFI is 5th FI, which is 5
 /// ```
+#[wasm_bindgen]
 pub fn ezba_from_ezld(effective_zeckendorf_list_descending: &[u64]) -> Vec<u8> {
     if effective_zeckendorf_list_descending.is_empty() {
         return vec![SKIP_BIT];
@@ -861,6 +872,7 @@ pub fn ezba_from_ezld(effective_zeckendorf_list_descending: &[u64]) -> Vec<u8> {
 /// assert_eq!(pack_ezba_bits_to_bytes(&[0, 0, 1]), vec![0b100]);
 /// assert_eq!(pack_ezba_bits_to_bytes(&[1, 1]), vec![0b11]);
 /// ```
+#[wasm_bindgen]
 pub fn pack_ezba_bits_to_bytes(ezba: &[u8]) -> Vec<u8> {
     let mut out = Vec::with_capacity((ezba.len() + 7) / 8);
 
@@ -897,6 +909,7 @@ pub fn pack_ezba_bits_to_bytes(ezba: &[u8]) -> Vec<u8> {
 /// assert_eq!(zeckendorf_compress_be(&[255]), vec![33, 2]);
 /// assert_eq!(zeckendorf_compress_be(&[1, 0]), vec![34, 2]);
 /// ```
+#[wasm_bindgen]
 pub fn zeckendorf_compress_be(data: &[u8]) -> Vec<u8> {
     let compressed_data: Vec<u8>;
     // Turn data into a biguint
@@ -932,6 +945,7 @@ pub fn zeckendorf_compress_be(data: &[u8]) -> Vec<u8> {
 /// assert_eq!(zeckendorf_compress_le(&[255]), vec![33, 2]);
 /// assert_eq!(zeckendorf_compress_le(&[0, 1]), vec![34, 2]);
 /// ```
+#[wasm_bindgen]
 pub fn zeckendorf_compress_le(data: &[u8]) -> Vec<u8> {
     let compressed_data: Vec<u8>;
     // Turn data into a biguint
@@ -962,6 +976,7 @@ pub fn zeckendorf_compress_le(data: &[u8]) -> Vec<u8> {
 /// assert_eq!(unpack_bytes_to_ezba_bits(&[0b111]), vec![1, 1, 1, 0, 0, 0, 0, 0]);
 /// assert_eq!(unpack_bytes_to_ezba_bits(&[1, 1]), vec![1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]);
 /// ```
+#[wasm_bindgen]
 pub fn unpack_bytes_to_ezba_bits(bytes: &[u8]) -> Vec<u8> {
     let mut ezba_bits = Vec::with_capacity(bytes.len() * 8);
     for byte in bytes {
@@ -983,6 +998,7 @@ pub fn unpack_bytes_to_ezba_bits(bytes: &[u8]) -> Vec<u8> {
 /// assert_eq!(ezba_to_ezla(&[1, 0, 0, 0, 0, 0, 0, 0]), vec![0]);
 /// assert_eq!(ezba_to_ezla(&[1, 1, 1, 0, 0, 0, 0, 0]), vec![0, 2, 4]);
 /// ```
+#[wasm_bindgen]
 pub fn ezba_to_ezla(ezba_bits: &[u8]) -> Vec<u64> {
     let mut ezla = Vec::new();
     let mut current_efi = 0;
@@ -1081,6 +1097,7 @@ pub fn all_ones_zeckendorf_to_biguint(n: usize) -> BigUint {
 /// assert_eq!(zeckendorf_decompress_be(&[33, 2]), vec![255]);
 /// assert_eq!(zeckendorf_decompress_be(&[34, 2]), vec![1, 0]);
 /// ```
+#[wasm_bindgen]
 pub fn zeckendorf_decompress_be(compressed_data: &[u8]) -> Vec<u8> {
     // Unpack the compressed data into bits
     let compressed_data_as_bits = unpack_bytes_to_ezba_bits(compressed_data);
@@ -1109,6 +1126,7 @@ pub fn zeckendorf_decompress_be(compressed_data: &[u8]) -> Vec<u8> {
 /// assert_eq!(zeckendorf_decompress_le(&[33, 2]), vec![255]);
 /// assert_eq!(zeckendorf_decompress_le(&[34, 2]), vec![0, 1]);
 /// ```
+#[wasm_bindgen]
 pub fn zeckendorf_decompress_le(compressed_data: &[u8]) -> Vec<u8> {
     // Unpack the compressed data into bits
     let compressed_data_as_bits = unpack_bytes_to_ezba_bits(compressed_data);
