@@ -19,6 +19,13 @@ The Zeckendorf algorithm represents numbers as a sum of non-consecutive Fibonacc
 - **Memoization**: Thread-safe caching for improved performance
 - **Statistics & Visualization**: Generate compression statistics and plots
 - **Benchmarking**: Comprehensive performance benchmarks
+- **WebAssembly Support**: Available as a WebAssembly module for use in web browsers
+
+## WebAssembly
+
+This library is also available as a WebAssembly module for use in web browsers. Available functions are marked with the `#[wasm_bindgen]` attribute. The WebAssembly module can be built using the convenience script at `scripts/build_wasm_bundle.sh` that builds the WebAssembly module with the `wasm-pack` tool.
+
+You can see a live demo of the WebAssembly module in action at <https://prizz.github.io/zeckendorf-webapp/>. The source code for the demo is available at <https://github.com/pRizz/zeckendorf-webapp>.
 
 ## Installation
 
@@ -143,8 +150,7 @@ use zeckendorf_rs::memoized_zeckendorf_list_descending_for_integer;
 
 // Get Zeckendorf representation as a list of Fibonacci indices
 let zld = memoized_zeckendorf_list_descending_for_integer(12);
-// Returns [6, 2] meaning F(6) + F(2) = 8 + 1 = 9
-// Note: The actual representation may differ based on the algorithm
+// Returns [6, 4, 2] meaning F(6) + F(4) + F(2) = 8 + 3 + 1 = 12
 ```
 
 ## Binaries
@@ -230,7 +236,7 @@ cargo bench --bench zeckendorf_bench -- --baseline <name>
 ## Performance Characteristics
 
 - **Fast Doubling Fibonacci**: ~160x faster than iterative method for the 100,000th Fibonacci number
-- **Memoization**: Thread-safe caching significantly improves repeated calculations
+- **Memoization**: Thread-safe caching significantly improves repeated calculations. The trade-off is that the cache takes up memory.
 - **Compression Effectiveness**: Varies by input; compression ratios oscillate and become less favorable as input size increases
 
 ## Algorithm Details
@@ -263,6 +269,7 @@ This avoids redundant Fibonacci numbers (F(0)=0 and F(1)=F(2)=1).
 - Compression is not guaranteed—some inputs may result in larger output
 - Compression effectiveness decreases as input size increases
 - The library supports both big-endian and little-endian interpretations, but other byte orderings or word boundaries are not currently explored
+- Compression of large amounts of data causes memory issues. It is currently not recommended to compress files larger than 100,000 bytes.
 
 ## License
 

@@ -8,7 +8,7 @@
 //! Learn more about the Zeckendorf Theorem in the [Zeckendorf's Theorem](https://en.wikipedia.org/wiki/Zeckendorf%27s_theorem) Wikipedia article.
 //!
 //! This library is also available as a WebAssembly module for use in web browsers. Available functions are marked with the `#[wasm_bindgen]` attribute. The WebAssembly module can be built using the convenience script at `scripts/build_wasm_bundle.sh` that builds the WebAssembly module with the `wasm-pack` tool.
-//! 
+//!
 //! You can see a live demo of the WebAssembly module in action at <https://prizz.github.io/zeckendorf-webapp/>. The source code for the demo is available at <https://github.com/pRizz/zeckendorf-webapp>.
 
 use num_bigint::BigUint;
@@ -136,7 +136,7 @@ pub fn memoized_slow_fibonacci_recursive(fi: u64) -> u64 {
 
 /// fibonacci(x) is equal to 0 if x is 0; 1 if x is 1; else return fibonacci(x - 1) + fibonacci(x - 2)
 /// fi stands for Fibonacci Index
-/// 
+///
 /// This function is slow and should not be used for large numbers. If you are ok with a [`BigUint`] result, use the [`fast_doubling_fibonacci_biguint`] function instead.
 ///
 /// # Examples
@@ -460,6 +460,8 @@ pub fn highest_one_bit(n: u64) -> u64 {
 /// assert_eq!(memoized_zeckendorf_list_descending_for_integer(8), vec![6]);
 /// assert_eq!(memoized_zeckendorf_list_descending_for_integer(9), vec![6, 2]);
 /// assert_eq!(memoized_zeckendorf_list_descending_for_integer(10), vec![6, 3]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(11), vec![6, 4]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(12), vec![6, 4, 2]);
 /// ```
 #[wasm_bindgen]
 pub fn memoized_zeckendorf_list_descending_for_integer(n: u64) -> Vec<u64> {
@@ -832,7 +834,7 @@ pub fn ezl_to_zl(ezl: &[u64]) -> Vec<u64> {
 /// If we use a bit, we then skip the next bit, because it is impossible to use two consecutive bits, or Fibonacci numbers, due to the Zeckendorf principle.
 /// The first bit in the ezba represents whether the first effective Fibonacci index is used.
 /// The first effective Fibonacci index is always 0 and represents the Fibonacci index 2 which has a value of 1. We use effective Fibonacci indices because the first Fibonacci number, 0, is not useful for sums, and the second Fibonacci number, 1, is redundant because it is the same as the third Fibonacci number.
-/// 
+///
 /// TODO: Optimize the size of the output by using a bit vector instead of a vector of [`u8`]s. I made an initial attempt at this in the `use-bitvec` branch, but the benchmarks were slower.
 ///
 /// # Examples
