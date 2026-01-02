@@ -1,13 +1,13 @@
 //! This binary is basically a playground/scratchpad used to test the library and its functions.
 //!
 //! Example usages:
-//! `cargo run --release --bin zeckendorf`
+//! `cargo run --release --bin zeck`
 
 use num_bigint::BigUint;
 use num_format::ToFormattedString;
 use rand::RngCore;
 use std::time::Instant;
-use zeckendorf_rs::*;
+use zeck::*;
 
 fn main() {
     let start_time = Instant::now();
@@ -257,7 +257,7 @@ fn test_fast_doubling_fibonacci_bigint() {
     println!("Testing fast doubling Fibonacci bigint function");
     let fibonacci = memoized_fast_doubling_fibonacci_biguint(100);
     println!("The 100th Fibonacci number is: {}", fibonacci);
-    let cache = zeckendorf_rs::FAST_DOUBLING_FIBONACCI_BIGUINT_CACHE
+    let cache = zeck::FAST_DOUBLING_FIBONACCI_BIGUINT_CACHE
         .read()
         .expect("Failed to read fast doubling Fibonacci cache");
     println!(

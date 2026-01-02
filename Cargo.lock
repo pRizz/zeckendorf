@@ -1271,7 +1271,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "zeckendorf"
+name = "zeck"
 version = "0.1.0"
 dependencies = [
  "criterion",

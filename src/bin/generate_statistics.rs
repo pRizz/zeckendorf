@@ -16,7 +16,7 @@ use plotters::prelude::*;
 use num_bigint::BigUint;
 use rand::{Rng, SeedableRng, rngs::StdRng};
 use std::{cmp::Ordering, fs, path::Path, time::Instant};
-use zeckendorf_rs::zeckendorf_compress_be;
+use zeck::zeckendorf_compress_be;
 
 const AXIS_FONT_SIZE: u32 = 100;
 const AXIS_TICK_FONT_SIZE: u32 = 64;

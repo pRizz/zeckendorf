@@ -21,7 +21,7 @@
 
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use std::hint::black_box;
-use zeckendorf_rs::{zeckendorf_compress_be, zeckendorf_decompress_be};
+use zeck::{zeckendorf_compress_be, zeckendorf_decompress_be};
 
 /// The byte sizes to benchmark.
 ///

@@ -30,7 +30,7 @@ pub const PHI_SQUARED: f64 = 2.618033988749894848204586834365638118_f64;
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::bit_count_for_number;
+/// # use zeck::bit_count_for_number;
 /// assert_eq!(bit_count_for_number(0), 0);
 /// assert_eq!(bit_count_for_number(1), 1);  // 0b1
 /// assert_eq!(bit_count_for_number(2), 2);  // 0b10
@@ -84,7 +84,7 @@ pub static FAST_DOUBLING_FIBONACCI_BIGUINT_CACHE: LazyLock<RwLock<HashMap<u64, A
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::memoized_slow_fibonacci_recursive;
+/// # use zeck::memoized_slow_fibonacci_recursive;
 /// // Base cases
 /// assert_eq!(memoized_slow_fibonacci_recursive(0), 0);
 /// assert_eq!(memoized_slow_fibonacci_recursive(1), 1);
@@ -142,7 +142,7 @@ pub fn memoized_slow_fibonacci_recursive(fi: u64) -> u64 {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::memoized_slow_fibonacci_biguint_iterative;
+/// # use zeck::memoized_slow_fibonacci_biguint_iterative;
 /// # use num_bigint::BigUint;
 /// # use num_traits::{One, Zero};
 /// // Base cases
@@ -200,7 +200,7 @@ pub fn memoized_slow_fibonacci_biguint_iterative(fi: u64) -> Arc<BigUint> {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::slow_fibonacci_biguint_iterative;
+/// # use zeck::slow_fibonacci_biguint_iterative;
 /// # use num_bigint::BigUint;
 /// # use num_traits::{One, Zero};
 /// // Base cases
@@ -245,7 +245,7 @@ pub fn slow_fibonacci_biguint_iterative(fi: u64) -> Arc<BigUint> {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::fast_doubling_fibonacci_biguint;
+/// # use zeck::fast_doubling_fibonacci_biguint;
 /// # use num_bigint::BigUint;
 /// # use num_traits::{One, Zero};
 /// // Base cases
@@ -316,7 +316,7 @@ pub fn fast_doubling_fibonacci_biguint(fi: u64) -> Arc<BigUint> {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::memoized_fast_doubling_fibonacci_biguint;
+/// # use zeck::memoized_fast_doubling_fibonacci_biguint;
 /// # use num_bigint::BigUint;
 /// # use num_traits::{One, Zero};
 /// // Base cases
@@ -411,7 +411,7 @@ pub fn memoized_fast_doubling_fibonacci_biguint(fi: u64) -> Arc<BigUint> {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::highest_one_bit;
+/// # use zeck::highest_one_bit;
 /// assert_eq!(highest_one_bit(0), 0);
 /// assert_eq!(highest_one_bit(1), 1);
 /// assert_eq!(highest_one_bit(2), 2);
@@ -445,7 +445,7 @@ pub fn highest_one_bit(n: u64) -> u64 {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::memoized_zeckendorf_list_descending_for_integer;
+/// # use zeck::memoized_zeckendorf_list_descending_for_integer;
 /// // Base cases
 /// assert_eq!(memoized_zeckendorf_list_descending_for_integer(0), vec![]);
 /// assert_eq!(memoized_zeckendorf_list_descending_for_integer(1), vec![2]);
@@ -543,7 +543,7 @@ pub fn memoized_zeckendorf_list_descending_for_integer(n: u64) -> Vec<u64> {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::memoized_zeckendorf_list_descending_for_biguint;
+/// # use zeck::memoized_zeckendorf_list_descending_for_biguint;
 /// # use num_bigint::BigUint;
 /// # use num_traits::{One, Zero};
 /// // Base cases
@@ -679,7 +679,7 @@ pub enum CompressionResult {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::efi_to_fi;
+/// # use zeck::efi_to_fi;
 /// assert_eq!(efi_to_fi(0), 2);
 /// assert_eq!(efi_to_fi(1), 3);
 /// assert_eq!(efi_to_fi(2), 4);
@@ -694,7 +694,7 @@ pub fn efi_to_fi(efi: u64) -> u64 {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::efi_to_fi_ref;
+/// # use zeck::efi_to_fi_ref;
 /// assert_eq!(efi_to_fi_ref(&0), 2);
 /// assert_eq!(efi_to_fi_ref(&1), 3);
 /// assert_eq!(efi_to_fi_ref(&2), 4);
@@ -708,7 +708,7 @@ pub fn efi_to_fi_ref(efi: &u64) -> u64 {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::efi_to_fi_biguint;
+/// # use zeck::efi_to_fi_biguint;
 /// # use num_bigint::BigUint;
 /// # use num_traits::{One, Zero};
 /// assert_eq!(efi_to_fi_biguint(BigUint::zero()), BigUint::from(2u64));
@@ -724,7 +724,7 @@ pub fn efi_to_fi_biguint(efi: BigUint) -> BigUint {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::fi_to_efi;
+/// # use zeck::fi_to_efi;
 /// # use num_bigint::BigUint;
 /// # use num_traits::{One, Zero};
 /// assert_eq!(fi_to_efi(2), 0);
@@ -741,7 +741,7 @@ pub fn fi_to_efi(fi: u64) -> u64 {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::fi_to_efi_ref;
+/// # use zeck::fi_to_efi_ref;
 /// assert_eq!(fi_to_efi_ref(&2), 0);
 /// assert_eq!(fi_to_efi_ref(&3), 1);
 /// assert_eq!(fi_to_efi_ref(&4), 2);
@@ -755,7 +755,7 @@ pub fn fi_to_efi_ref(fi: &u64) -> u64 {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::fi_to_efi_biguint;
+/// # use zeck::fi_to_efi_biguint;
 /// # use num_bigint::BigUint;
 /// # use num_traits::{One, Zero};
 /// assert_eq!(fi_to_efi_biguint(BigUint::from(2u64)), BigUint::zero());
@@ -771,7 +771,7 @@ pub fn fi_to_efi_biguint(fi: BigUint) -> BigUint {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::memoized_effective_fibonacci;
+/// # use zeck::memoized_effective_fibonacci;
 /// # use num_bigint::BigUint;
 /// # use num_traits::{One, Zero};
 /// assert_eq!(memoized_effective_fibonacci(0), 1);
@@ -801,7 +801,7 @@ pub fn memoized_effective_fibonacci(efi: u64) -> u64 {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::zl_to_ezl;
+/// # use zeck::zl_to_ezl;
 /// assert_eq!(zl_to_ezl(&[2]), vec![0]);
 /// assert_eq!(zl_to_ezl(&[3]), vec![1]);
 /// assert_eq!(zl_to_ezl(&[4]), vec![2]);
@@ -817,7 +817,7 @@ pub fn zl_to_ezl(zl: &[u64]) -> Vec<u64> {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::ezl_to_zl;
+/// # use zeck::ezl_to_zl;
 /// assert_eq!(ezl_to_zl(&[0]), vec![2]);
 /// assert_eq!(ezl_to_zl(&[1]), vec![3]);
 /// assert_eq!(ezl_to_zl(&[2]), vec![4]);
@@ -840,7 +840,7 @@ pub fn ezl_to_zl(ezl: &[u64]) -> Vec<u64> {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::ezba_from_ezld;
+/// # use zeck::ezba_from_ezld;
 /// assert_eq!(ezba_from_ezld(&[]), vec![0]);
 /// assert_eq!(ezba_from_ezld(&[0]), vec![1]); // 0th EFI is 2nd FI, which is 1
 /// assert_eq!(ezba_from_ezld(&[1]), vec![0, 1]); // 1st EFI is 3rd FI, which is 2
@@ -894,7 +894,7 @@ pub fn ezba_from_ezld(effective_zeckendorf_list_descending: &[u64]) -> Vec<u8> {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::pack_ezba_bits_to_bytes;
+/// # use zeck::pack_ezba_bits_to_bytes;
 /// assert_eq!(pack_ezba_bits_to_bytes(&[0]), vec![0]);
 /// assert_eq!(pack_ezba_bits_to_bytes(&[1]), vec![1]);
 /// assert_eq!(pack_ezba_bits_to_bytes(&[0, 1]), vec![0b10]);
@@ -929,7 +929,7 @@ pub fn pack_ezba_bits_to_bytes(ezba: &[u8]) -> Vec<u8> {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::zeckendorf_compress_be;
+/// # use zeck::zeckendorf_compress_be;
 /// assert_eq!(zeckendorf_compress_be(&[0]), vec![0]);
 /// assert_eq!(zeckendorf_compress_be(&[1]), vec![1]);
 /// assert_eq!(zeckendorf_compress_be(&[12]), vec![0b111]);
@@ -965,7 +965,7 @@ pub fn zeckendorf_compress_be(data: &[u8]) -> Vec<u8> {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::zeckendorf_compress_le;
+/// # use zeck::zeckendorf_compress_le;
 /// assert_eq!(zeckendorf_compress_le(&[0]), vec![0]);
 /// assert_eq!(zeckendorf_compress_le(&[1]), vec![1]);
 /// assert_eq!(zeckendorf_compress_le(&[12]), vec![0b111]);
@@ -999,7 +999,7 @@ pub fn zeckendorf_compress_le(data: &[u8]) -> Vec<u8> {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::unpack_bytes_to_ezba_bits;
+/// # use zeck::unpack_bytes_to_ezba_bits;
 /// assert_eq!(unpack_bytes_to_ezba_bits(&[0]), vec![0, 0, 0, 0, 0, 0, 0, 0]);
 /// assert_eq!(unpack_bytes_to_ezba_bits(&[1]), vec![1, 0, 0, 0, 0, 0, 0, 0]);
 /// assert_eq!(unpack_bytes_to_ezba_bits(&[0b111]), vec![1, 1, 1, 0, 0, 0, 0, 0]);
@@ -1022,7 +1022,7 @@ pub fn unpack_bytes_to_ezba_bits(bytes: &[u8]) -> Vec<u8> {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::ezba_to_ezla;
+/// # use zeck::ezba_to_ezla;
 /// assert_eq!(ezba_to_ezla(&[0, 0, 0, 0, 0, 0, 0, 0]), vec![]);
 /// assert_eq!(ezba_to_ezla(&[1, 0, 0, 0, 0, 0, 0, 0]), vec![0]);
 /// assert_eq!(ezba_to_ezla(&[1, 1, 1, 0, 0, 0, 0, 0]), vec![0, 2, 4]);
@@ -1050,7 +1050,7 @@ pub fn ezba_to_ezla(ezba_bits: &[u8]) -> Vec<u64> {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::zl_to_biguint;
+/// # use zeck::zl_to_biguint;
 /// # use num_bigint::BigUint;
 /// # use num_traits::{One, Zero};
 /// assert_eq!(zl_to_biguint(&[]), BigUint::zero());
@@ -1094,7 +1094,7 @@ pub fn zl_to_biguint(zl: &[u64]) -> BigUint {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::all_ones_zeckendorf_to_biguint;
+/// # use zeck::all_ones_zeckendorf_to_biguint;
 /// # use num_bigint::BigUint;
 /// # use num_traits::Zero;
 /// assert_eq!(all_ones_zeckendorf_to_biguint(0), BigUint::zero());
@@ -1120,7 +1120,7 @@ pub fn all_ones_zeckendorf_to_biguint(n: usize) -> BigUint {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::zeckendorf_decompress_be;
+/// # use zeck::zeckendorf_decompress_be;
 /// assert_eq!(zeckendorf_decompress_be(&[0]), vec![0]);
 /// assert_eq!(zeckendorf_decompress_be(&[1]), vec![1]);
 /// assert_eq!(zeckendorf_decompress_be(&[0b111]), vec![12]);
@@ -1149,7 +1149,7 @@ pub fn zeckendorf_decompress_be(compressed_data: &[u8]) -> Vec<u8> {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::zeckendorf_decompress_le;
+/// # use zeck::zeckendorf_decompress_le;
 /// assert_eq!(zeckendorf_decompress_le(&[0]), vec![0]);
 /// assert_eq!(zeckendorf_decompress_le(&[1]), vec![1]);
 /// assert_eq!(zeckendorf_decompress_le(&[0b111]), vec![12]);
@@ -1182,8 +1182,8 @@ pub fn zeckendorf_decompress_le(compressed_data: &[u8]) -> Vec<u8> {
 /// # Examples
 ///
 /// ```
-/// # use zeckendorf_rs::zeckendorf_compress_best;
-/// # use zeckendorf_rs::CompressionResult;
+/// # use zeck::zeckendorf_compress_best;
+/// # use zeck::CompressionResult;
 /// let data = vec![1, 0];
 /// let result = zeckendorf_compress_best(&data);
 /// match result {

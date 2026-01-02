@@ -4,7 +4,7 @@
 
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use std::hint::black_box;
-use zeckendorf_rs::{fast_doubling_fibonacci_biguint, slow_fibonacci_biguint_iterative};
+use zeck::{fast_doubling_fibonacci_biguint, slow_fibonacci_biguint_iterative};
 
 /// Fibonacci indices to benchmark.
 const FIBONACCI_INDICES: [u64; 4] = [10_000, 20_000, 50_000, 100_000];

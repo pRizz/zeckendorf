@@ -7,7 +7,7 @@ use num_bigint::BigUint;
 use plotters::prelude::*;
 use std::sync::Arc;
 use std::time::Instant;
-use zeckendorf_rs::*;
+use zeck::*;
 
 const AXIS_FONT_SIZE: u32 = 100;
 const AXIS_TICK_FONT_SIZE: u32 = 64;

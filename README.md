@@ -33,42 +33,59 @@ You can see a live demo of the WebAssembly module in action at <https://prizz.gi
 
 Run:
 ```bash
-cargo add zeckendorf
+cargo add zeck
 ```
 
 Or add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-zeckendorf = "0.1.0"
+zeck = "0.1.0"
 ```
 
 For plotting features:
 
 ```toml
 [dependencies]
-zeckendorf = { version = "0.1.0", features = ["plotting"] }
+zeck = { version = "0.1.0", features = ["plotting"] }
 ```
 
 ### Install from GitHub (development version)
 
 Run:
 ```bash
-cargo add zeckendorf --git https://github.com/pRizz/zeckendorf
+cargo add zeck --git https://github.com/pRizz/zeckendorf
 ```
 
 Or add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-zeckendorf = { git = "https://github.com/pRizz/zeckendorf" }
+zeck = { git = "https://github.com/pRizz/zeckendorf" }
 ```
 
 For plotting features:
 
 ```toml
 [dependencies]
-zeckendorf = { git = "https://github.com/pRizz/zeckendorf", features = ["plotting"] }
+zeck = { git = "https://github.com/pRizz/zeckendorf", features = ["plotting"] }
+```
+
+### Install from npm
+
+Run:
+```bash
+npm install zeck
+```
+
+Or add this to your `package.json`:
+
+```json
+{
+  "dependencies": {
+    "zeck": "^0.1.0"
+  }
+}
 ```
 
 ## Usage
@@ -78,7 +95,7 @@ zeckendorf = { git = "https://github.com/pRizz/zeckendorf", features = ["plottin
 #### Big-Endian Interpretation
 
 ```rust
-use zeckendorf_rs::{zeckendorf_compress_be, zeckendorf_decompress_be};
+use zeck::{zeckendorf_compress_be, zeckendorf_decompress_be};
 
 // Compress data (interpreted as big-endian integer)
 let data = vec![12u8];
@@ -92,7 +109,7 @@ assert_eq!(data, decompressed);
 #### Little-Endian Interpretation
 
 ```rust
-use zeckendorf_rs::{zeckendorf_compress_le, zeckendorf_decompress_le};
+use zeck::{zeckendorf_compress_le, zeckendorf_decompress_le};
 
 // Compress data (interpreted as little-endian integer)
 let data = vec![12u8];
@@ -106,7 +123,7 @@ assert_eq!(data, decompressed);
 #### Automatic Best Compression
 
 ```rust
-use zeckendorf_rs::{zeckendorf_compress_best, zeckendorf_decompress_be, zeckendorf_decompress_le, CompressionResult};
+use zeck::{zeckendorf_compress_best, zeckendorf_decompress_be, zeckendorf_decompress_le, CompressionResult};
 
 // Try both endian interpretations and get the best result
 let data = vec![1, 0];
@@ -133,20 +150,20 @@ match result {
 ### Fibonacci Numbers
 
 ```rust
-use zeckendorf_rs::memoized_slow_fibonacci_recursive;
+use zeck::memoized_slow_fibonacci_recursive;
 
 // Calculate Fibonacci numbers (for indices up to 93)
 let fib_10 = memoized_slow_fibonacci_recursive(10); // Returns 55
 
 // For larger numbers, use BigInt versions
-use zeckendorf_rs::fast_doubling_fibonacci_bigint;
+use zeck::fast_doubling_fibonacci_bigint;
 let fib_100 = fast_doubling_fibonacci_bigint(100);
 ```
 
 ### Zeckendorf Representation
 
 ```rust
-use zeckendorf_rs::memoized_zeckendorf_list_descending_for_integer;
+use zeck::memoized_zeckendorf_list_descending_for_integer;
 
 // Get Zeckendorf representation as a list of Fibonacci indices
 let zld = memoized_zeckendorf_list_descending_for_integer(12);
@@ -160,7 +177,7 @@ The project includes several utility binaries:
 ### Main Playground
 
 ```bash
-cargo run --release --bin zeckendorf
+cargo run --release --bin zeck
 ```
 
 A playground/scratchpad for testing library functions.

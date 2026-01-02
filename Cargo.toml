@@ -1,5 +1,5 @@
 [package]
-name = "zeckendorf"
+name = "zeck"
 version = "0.1.0"
 edition = "2024"
 authors = ["Peter Ryszkiewicz"]
@@ -22,7 +22,7 @@ exclude = [
 ]
 
 [lib]
-name = "zeckendorf_rs"
+name = "zeck"
 path = "src/lib.rs"
 crate-type = ["cdylib", "rlib"]
 
