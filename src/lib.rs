@@ -5,6 +5,11 @@
 //! The Zeckendorf algorithm is a way to represent numbers as a sum of non-consecutive Fibonacci numbers.
 //! If we first interpret the input data as a big integer, we can then represent the integer as a sum of non-consecutive Fibonacci numbers.
 //! Sometimes this results in a more compact representation of the data, but it is not guaranteed.
+//! Learn more about the Zeckendorf Theorem in the [Zeckendorf's Theorem](https://en.wikipedia.org/wiki/Zeckendorf%27s_theorem) Wikipedia article.
+//!
+//! This library is also available as a WebAssembly module for use in web browsers. Available functions are marked with the `#[wasm_bindgen]` attribute. The WebAssembly module can be built using the convenience script at `scripts/build_wasm_bundle.sh` that builds the WebAssembly module with the `wasm-pack` tool.
+//! 
+//! You can see a live demo of the WebAssembly module in action at <https://prizz.github.io/zeckendorf-webapp/>. The source code for the demo is available at <https://github.com/pRizz/zeckendorf-webapp>.
 
 use num_bigint::BigUint;
 use num_traits::{One, Zero};
@@ -13,7 +18,7 @@ use std::sync::{Arc, LazyLock, RwLock};
 use wasm_bindgen::prelude::*;
 
 /// Golden ratio constant.
-/// This constant is in the rust standard library as f64::consts::PHI, but only available on nightly.
+/// This constant is in the rust standard library as [`std::f64::consts::PHI`], but only available on nightly.
 pub const PHI: f64 = 1.618033988749894848204586834365638118_f64;
 
 /// Phi squared constant.
@@ -49,11 +54,11 @@ static FIBONACCI_BIGUINT_CACHE: LazyLock<RwLock<Vec<Arc<BigUint>>>> =
 /// Memoization maps for Zeckendorf representations
 static ZECKENDORF_MAP: LazyLock<RwLock<HashMap<u64, Vec<u64>>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
-/// We will store the Zeckendorf list descending as u64s because the Fibonacci indices are small enough to fit in a u64.
+/// We will store the Zeckendorf list descending as [`u64`]s because the Fibonacci indices are small enough to fit in a [`u64`].
 /// It takes up to 694,241 bits, or ~694kbits, to represent the 1,000,000th Fibonacci number.
-/// The max u64 is 18,446,744,073,709,551,615 which is ~18 quintillion.
-/// So a u64 can represent Fibonacci indices 18 trillion times larger than the 1,000,000th,
-/// so a u64 can represent Fibonacci values up to
+/// The max [`u64`] is 18,446,744,073,709,551,615 which is ~18 quintillion.
+/// So a [`u64`] can represent Fibonacci indices 18 trillion times larger than the 1,000,000th,
+/// so a [`u64`] can represent Fibonacci values up to
 /// roughly 18 trillion times 694,241 bits which is 1.249*10^19 bits which or 1.56 exabytes.
 /// We will consider larger numbers in the future :-)
 static ZECKENDORF_BIGUINT_MAP: LazyLock<RwLock<HashMap<BigUint, Vec<u64>>>> =
@@ -69,8 +74,12 @@ pub static FAST_DOUBLING_FIBONACCI_BIGUINT_CACHE: LazyLock<RwLock<HashMap<u64, A
     });
 
 /// fibonacci(x) is equal to 0 if x is 0; 1 if x is 1; else return fibonacci(x - 1) + fibonacci(x - 2)
-/// fi stands for Fibonacci Index
-/// This function fails for large numbers (e.g. 100_000) with stack overflow.
+///
+/// This function is slow and should not be used for large numbers. If you want a [`u64`] result, use the faster [`memoized_slow_fibonacci_biguint_iterative`] function instead. If you want a [`BigUint`] result, use the [`fast_doubling_fibonacci_biguint`] function instead.
+///
+/// This function fails for large numbers (e.g. 100_000) with a stack overflow error.
+///
+/// `fi` stands for Fibonacci Index.
 ///
 /// # Examples
 ///
@@ -127,6 +136,8 @@ pub fn memoized_slow_fibonacci_recursive(fi: u64) -> u64 {
 
 /// fibonacci(x) is equal to 0 if x is 0; 1 if x is 1; else return fibonacci(x - 1) + fibonacci(x - 2)
 /// fi stands for Fibonacci Index
+/// 
+/// This function is slow and should not be used for large numbers. If you are ok with a [`BigUint`] result, use the [`fast_doubling_fibonacci_biguint`] function instead.
 ///
 /// # Examples
 ///
@@ -184,6 +195,8 @@ pub fn memoized_slow_fibonacci_biguint_iterative(fi: u64) -> Arc<BigUint> {
 /// fibonacci(x) is equal to 0 if x is 0; 1 if x is 1; else return fibonacci(x - 1) + fibonacci(x - 2)
 /// fi stands for Fibonacci Index
 ///
+/// This function is slow and should not be used for large numbers. If you are ok with a [`BigUint`] result, use the [`fast_doubling_fibonacci_biguint`] function instead.
+///
 /// # Examples
 ///
 /// ```
@@ -220,14 +233,14 @@ pub fn slow_fibonacci_biguint_iterative(fi: u64) -> Arc<BigUint> {
 /// fibonacci(x) is equal to 0 if x is 0; 1 if x is 1; else return fibonacci(x - 1) + fibonacci(x - 2)
 /// fi stands for Fibonacci Index
 ///
-/// This function is faster than slow_fibonacci_biguint_iterative by using a method called Fast Doubling,
-/// an optimization of the Matrix Exponentiation method. See https://www.nayuki.io/page/fast-fibonacci-algorithms for more details.
+/// This function is faster than [`slow_fibonacci_biguint_iterative`] by using a method called Fast Doubling,
+/// an optimization of the Matrix Exponentiation method. See <https://www.nayuki.io/page/fast-fibonacci-algorithms> for more details.
 ///
 /// Running the Fibonacci benchmarks (`cargo bench --bench fibonacci_bench`),
-/// this function is ~160x faster than slow_fibonacci_biguint_iterative at calculating the 100,000th Fibonacci number.
+/// this function is ~160x faster than [`slow_fibonacci_biguint_iterative`] at calculating the 100,000th Fibonacci number.
 /// On my computer, the fast function took around 330µs while the slow function took around 53ms.
 ///
-/// TODO: use Karatsuba multiplication to speed up the multiplication of BigUint.
+/// TODO: use Karatsuba multiplication to speed up the multiplication of [`BigUint`].
 ///
 /// # Examples
 ///
@@ -278,11 +291,11 @@ pub fn fast_doubling_fibonacci_biguint(fi: u64) -> Arc<BigUint> {
 /// fibonacci(x) is equal to 0 if x is 0; 1 if x is 1; else return fibonacci(x - 1) + fibonacci(x - 2)
 /// fi stands for Fibonacci Index
 ///
-/// This function is faster than slow_fibonacci_biguint_iterative by using a method called Fast Doubling,
-/// an optimization of the Matrix Exponentiation method. See https://www.nayuki.io/page/fast-fibonacci-algorithms for more details.
+/// This function is faster than [`slow_fibonacci_biguint_iterative`] by using a method called Fast Doubling,
+/// an optimization of the Matrix Exponentiation method. See <https://www.nayuki.io/page/fast-fibonacci-algorithms> for more details.
 ///
-/// This function includes memoization using a sparse HashMap cache (FAST_DOUBLING_FIBONACCI_BIGUINT_CACHE)
-/// to cache results. The implementation uses a HashMap instead of a Vec to allow sparse caching of only
+/// This function includes memoization using a sparse [`HashMap`] cache ([`FAST_DOUBLING_FIBONACCI_BIGUINT_CACHE`])
+/// to cache results. The implementation uses a [`HashMap`] instead of a [`Vec`] to allow sparse caching of only
 /// the computed values, which is more memory-efficient for large, non-contiguous Fibonacci index ranges.
 ///
 /// The algorithm tracks the Fibonacci index `m` during the fast doubling loop. According to the
@@ -294,7 +307,7 @@ pub fn fast_doubling_fibonacci_biguint(fi: u64) -> Arc<BigUint> {
 /// the cache at the end to reduce lock contention. This approach allows caching intermediate values
 /// on the fly while maintaining good performance.
 ///
-/// TODO: use Karatsuba multiplication to speed up the multiplication of BigUint.
+/// TODO: use Karatsuba multiplication to speed up the multiplication of [`BigUint`].
 ///
 /// TODO: if we have a cache miss, we could try intelligently walking backwards from the target index to find the nearest cached values and continue the fast doubling algorithm from there.
 ///
@@ -393,7 +406,7 @@ pub fn memoized_fast_doubling_fibonacci_biguint(fi: u64) -> Arc<BigUint> {
     result
 }
 
-/// Returns a u64 value with only the most significant set bit of n preserved.
+/// Returns a [`u64`] value with only the most significant set bit of n preserved.
 ///
 /// # Examples
 ///
@@ -425,6 +438,7 @@ pub fn highest_one_bit(n: u64) -> u64 {
 }
 
 /// A descending Zeckendorf list is a sorted list of unique Fibonacci indices, in descending order, that sum to the given number.
+///
 /// A Fibonacci index is the index of the Fibonacci number in the Fibonacci sequence.
 /// fibonacci(fibonacci_index) = fibonacci_number
 ///
@@ -520,6 +534,7 @@ pub fn memoized_zeckendorf_list_descending_for_integer(n: u64) -> Vec<u64> {
 }
 
 /// A descending Zeckendorf list is a sorted list of unique Fibonacci indices, in descending order, that sum to the given number.
+///
 /// A Fibonacci index is the index of the Fibonacci number in the Fibonacci sequence.
 /// fibonacci(fibonacci_index) = fibonacci_number
 ///
@@ -612,7 +627,17 @@ pub fn memoized_zeckendorf_list_descending_for_biguint(n: &BigUint) -> Vec<u64> 
     zeckendorf_list
 }
 
+/// Bit flag indicating that an effective Fibonacci index (EFI) should be used in the Zeckendorf representation.
+///
+/// When this bit is set in an Effective Zeckendorf Bits Ascending (EZBA) sequence, it means the corresponding
+/// Fibonacci number should be included in the sum. Due to the Zeckendorf theorem, consecutive Fibonacci numbers
+/// cannot be used, so when a [`USE_BIT`] is encountered, the next EFI is skipped (incremented by 2).
 pub const USE_BIT: u8 = 1;
+
+/// Bit flag indicating that an effective Fibonacci index (EFI) should be skipped in the Zeckendorf representation.
+///
+/// When this bit is set in an Effective Zeckendorf Bits Ascending (EZBA) sequence, it means the corresponding
+/// Fibonacci number should not be included in the sum. The EFI counter advances by 1 when this [`SKIP_BIT`] is encountered.
 pub const SKIP_BIT: u8 = 0;
 
 /// Result of attempting compression by interpreting the input data as both big endian and little endian big integers.
@@ -806,7 +831,9 @@ pub fn ezl_to_zl(ezl: &[u64]) -> Vec<u64> {
 ///
 /// If we use a bit, we then skip the next bit, because it is impossible to use two consecutive bits, or Fibonacci numbers, due to the Zeckendorf principle.
 /// The first bit in the ezba represents whether the first effective Fibonacci index is used.
-/// The first effective fibonacci index is always 0 and represents the fibonacci index 2 which has a value of 1. We use effective Fibonacci indices because the first Fibonacci number, 0, is not useful for sums, and the second Fibonacci number, 1, is redundant because it is the same as the third Fibonacci number.
+/// The first effective Fibonacci index is always 0 and represents the Fibonacci index 2 which has a value of 1. We use effective Fibonacci indices because the first Fibonacci number, 0, is not useful for sums, and the second Fibonacci number, 1, is redundant because it is the same as the third Fibonacci number.
+/// 
+/// TODO: Optimize the size of the output by using a bit vector instead of a vector of [`u8`]s. I made an initial attempt at this in the `use-bitvec` branch, but the benchmarks were slower.
 ///
 /// # Examples
 ///
@@ -859,7 +886,7 @@ pub fn ezba_from_ezld(effective_zeckendorf_list_descending: &[u64]) -> Vec<u8> {
 /// The output bytes are in little endian order, so the first byte is the least significant byte and the last byte is the most significant byte.
 ///
 /// Input bits and output bits are in ascending significance: bits\[0\] = LSB, bits\[7\] = MSB.
-/// Every 8 bits become a u8 in the output.
+/// Every 8 bits become a [`u8`] in the output.
 /// The last byte is padded with 0s if the number of bits is not a multiple of 8.
 ///
 /// # Examples
@@ -987,7 +1014,7 @@ pub fn unpack_bytes_to_ezba_bits(bytes: &[u8]) -> Vec<u8> {
     return ezba_bits;
 }
 
-/// Converts a vector of bits (0s and 1s) from an ezba (Effective Zeckendorf Bits Ascending) into a vector of effective fibonacci indices,
+/// Converts a vector of bits (0s and 1s) from an ezba (Effective Zeckendorf Bits Ascending) into a vector of effective Fibonacci indices,
 /// the Effective Zeckendorf List Ascending.
 ///
 /// # Examples
@@ -1013,7 +1040,8 @@ pub fn ezba_to_ezla(ezba_bits: &[u8]) -> Vec<u64> {
     return ezla;
 }
 
-/// Converts a Zeckendorf List to a BigUint.
+/// Converts a Zeckendorf List to a [`BigUint`].
+///
 /// The Zeckendorf List is a list of Fibonacci indices that sum to the given number.
 /// It does not matter if the ZL is ascending or descending. The sum operation is commutative.
 ///
@@ -1044,10 +1072,10 @@ pub fn zl_to_biguint(zl: &[u64]) -> BigUint {
     })
 }
 
-/// Creates an "all ones" Zeckendorf number by creating an Effective Zeckendorf Bits Ascending (EZBA)
-/// with `n` consecutive ones, then converting it to a BigUint.
+/// Creates an "all ones Zeckendorf number", or AOZN, by creating an Effective Zeckendorf Bits Ascending (EZBA)
+/// with `n` consecutive ones, then converting it to a [`BigUint`].
 ///
-/// An "all ones" Zeckendorf number is created by generating a Zeckendorf representation with `n`
+/// An AOZN is created by generating a Zeckendorf representation with `n`
 /// consecutive ones (in the Effective Zeckendorf Bits Ascending format), then converting that
 /// representation back to the actual number value. This is useful for understanding how Zeckendorf
 /// representations behave when they contain many ones.
@@ -1058,7 +1086,7 @@ pub fn zl_to_biguint(zl: &[u64]) -> BigUint {
 ///
 /// # Returns
 ///
-/// Returns `BigUint::zero()` if `n` is 0, otherwise returns the BigUint value of the all-ones
+/// Returns [`BigUint::zero()`] if `n` is 0, otherwise returns the [`BigUint`] value of the all-ones
 /// Zeckendorf representation.
 ///
 /// # Examples
@@ -1085,7 +1113,7 @@ pub fn all_ones_zeckendorf_to_biguint(n: usize) -> BigUint {
 
 /// Decompresses a slice of bytes compressed using the Zeckendorf algorithm, assuming the original data was compressed using the big endian bytes interpretation.
 ///
-/// Assume the original input data was interpreted as a big endian integer, for now. See the TODO in the zeckendorf_compress_be function for more information.
+/// Assume the original input data was interpreted as a big endian integer, for now. See the TODO in the [`zeckendorf_compress_be`] function for more information.
 ///
 /// # Examples
 ///
@@ -1147,7 +1175,7 @@ pub fn zeckendorf_decompress_le(compressed_data: &[u8]) -> Vec<u8> {
 /// and returns the best result.
 ///
 /// This function tries compressing the input data with both endian interpretations and returns
-/// an enum indicating which method produced the smallest output, or if neither produced compression.
+/// a [`CompressionResult`] enum indicating which method produced the smallest output, or if neither produced compression.
 ///
 /// # Examples
 ///
@@ -1158,10 +1186,10 @@ pub fn zeckendorf_decompress_le(compressed_data: &[u8]) -> Vec<u8> {
 /// let result = zeckendorf_compress_best(&data);
 /// match result {
 ///     CompressionResult::BigEndianBest { compressed_data, le_size } => {
-///         // Use compressed_data for decompression with zeckendorf_decompress_be
+///         // Use compressed_data for decompression with [`zeckendorf_decompress_be`]
 ///     }
 ///     CompressionResult::LittleEndianBest { compressed_data, be_size } => {
-///         // Use compressed_data for decompression with zeckendorf_decompress_le
+///         // Use compressed_data for decompression with [`zeckendorf_decompress_le`]
 ///     }
 ///     CompressionResult::Neither { be_size, le_size } => {
 ///         // Neither method compressed the data

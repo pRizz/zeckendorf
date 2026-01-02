@@ -57,7 +57,7 @@ fn main() {
     // }
 
     let limit = 10u64;
-    // Get stack overflow at recursive fibonacci at 100_000u64;
+    // Get stack overflow at recursive Fibonacci at 100_000u64;
     // Time taken: ~674.49ms for iterative
     // let limit = 100_000u64;
     // Time taken: ~65.6s for iterative
