@@ -5,6 +5,7 @@
 
 use num_bigint::BigUint;
 use num_format::ToFormattedString;
+use rand::RngCore;
 use std::time::Instant;
 use zeckendorf_rs::*;
 
@@ -101,6 +102,12 @@ fn main() {
     test_all_ones_zeckendorf_ratios();
 
     test_phi_squared_and_all_ones_zeckendorf_ratios();
+
+    test_all_ones_zeckendorf_bits_to_binary_bits_ratios();
+
+    test_decompressing_large_random_data();
+
+    print_aozns_as_binary_bits();
 
     let end_time = Instant::now();
     println!("Time taken: {:?}", end_time.duration_since(start_time));
@@ -403,4 +410,181 @@ fn test_phi_squared_and_all_ones_zeckendorf_ratios() {
         "Time taken to test phi squared and all ones Zeckendorf ratio: {:?}",
         end_time.duration_since(start_time)
     );
+}
+
+#[derive(Debug)]
+struct AllOnesZeckendorfBitsToBinaryBitsRatio {
+    all_ones_zeckendorf_bit_count: usize,
+    ratio: f64,
+}
+
+impl PartialEq for AllOnesZeckendorfBitsToBinaryBitsRatio {
+    fn eq(&self, other: &Self) -> bool {
+        self.ratio == other.ratio
+    }
+}
+
+impl PartialOrd for AllOnesZeckendorfBitsToBinaryBitsRatio {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.ratio.partial_cmp(&other.ratio)
+    }
+}
+
+impl Eq for AllOnesZeckendorfBitsToBinaryBitsRatio {}
+
+impl Ord for AllOnesZeckendorfBitsToBinaryBitsRatio {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        if self.ratio < other.ratio {
+            std::cmp::Ordering::Less
+        } else if self.ratio > other.ratio {
+            std::cmp::Ordering::Greater
+        } else {
+            // Technically could be wrong if one of the ratios is NaN or +-Infinity, but that "should never happen" in our usage.
+            std::cmp::Ordering::Equal
+        }
+    }
+}
+
+/// Compares the compression ratios of all ones Zeckendorf numbers to their representation in binary.
+///
+/// Example expected compression ratio:
+/// - the second all ones Zeckendorf number has 2 bits and is 0b11 and represents the number 4 (1 + 3); in binary the number 4 is represented as 0b100 which is 3 bits, so the compression ratio is 2/3 = 0.6666..
+/// - the third all ones Zeckendorf number has 3 bits and is 0b111 and represents the number 12 (1 + 3 + 8); in binary the number 12 is represented as 0b1100 which is 4 bits, so the compression ratio is 3/4 = 0.75
+/// - the fourth all ones Zeckendorf number has 4 bits and is 0b1111 and represents the number 33 (1 + 3 + 8 + 21); in binary the number 33 is represented as 0b100001 which is 6 bits, so the compression ratio is 4/6 = 0.6666..
+fn test_all_ones_zeckendorf_bits_to_binary_bits_ratios() {
+    let start_time = Instant::now();
+    let mut all_ratios: Vec<AllOnesZeckendorfBitsToBinaryBitsRatio> = Vec::new();
+
+    // Max of 5,000 should take less than a second; max of 10,000 takes about 3 seconds; max of 50,000 takes about a minute.
+    for i in 0..5_000 {
+        let all_ones_zeckendorf_bit_count = i;
+        let all_ones_zeckendorf = all_ones_zeckendorf_to_biguint(all_ones_zeckendorf_bit_count);
+        // println!("The {i}th all ones Zeckendorf number is: {} bits, which represents the number {} which is {} bits in binary", all_ones_zeckendorf_bit_count, all_ones_zeckendorf, all_ones_zeckendorf.bits());
+        let compression_ratio =
+            all_ones_zeckendorf_bit_count as f64 / all_ones_zeckendorf.bits() as f64;
+        // println!("The zeckendorf bits to binary bits ratio for the {i}th all ones Zeckendorf number is: {compression_ratio}");
+        all_ratios.push(AllOnesZeckendorfBitsToBinaryBitsRatio {
+            all_ones_zeckendorf_bit_count: i,
+            ratio: compression_ratio,
+        });
+    }
+    all_ratios.sort();
+    // Print the x smallest ratios
+    for (index, ratio) in all_ratios.iter().take(20).enumerate() {
+        let all_ones_zeckendorf_value =
+            all_ones_zeckendorf_to_biguint(ratio.all_ones_zeckendorf_bit_count);
+        let binary_value_bit_count = all_ones_zeckendorf_value.bits();
+        println!(
+            "The {index}th best all ones Zeckendorf to binary bits ratio is {ratio:.10} with AOZN bit count: {all_ones_zeckendorf_bit_count}, compared to binary value: {all_ones_zeckendorf_value} which needs {binary_value_bit_count} bits",
+            index = index + 1,
+            ratio = ratio.ratio,
+            all_ones_zeckendorf_bit_count = ratio.all_ones_zeckendorf_bit_count
+        );
+    }
+    let end_time = Instant::now();
+    println!(
+        "Time taken to test all ones Zeckendorf bits to binary bits ratios: {:?}",
+        end_time.duration_since(start_time)
+    );
+}
+
+/// The purpose of this is to see if decompressing large random data can produce smaller data than the original data.
+/// After testing, it seems that the decompressed data tends to be larger than the original data by around 3-4% on average.
+/// This matches earlier data showing the likelihood of compressing data at large sizes (greater than ~1,000 bits) to be extremely unlikely.
+/// We are able to find cases pretty easily when the size is less than around 100 bytes.
+fn test_decompressing_large_random_data() {
+    let start_time = Instant::now();
+    let num_bytes = 1_000;
+    // 10,000 tests takes about 2 seconds.
+    let num_tests = 10_000;
+    println!(
+        "Searching for a case where the decompressed data is smaller than the original data of size {num_bytes} bytes..."
+    );
+    for i in 0..num_tests {
+        let mut data = vec![0u8; num_bytes];
+        let mut rng = rand::rng();
+        rng.fill_bytes(&mut data);
+        // println!("First 10 bytes of random data: {:X?}", &data[..10]);
+        // println!("Data size: {:?}", data.len());
+        let decompressed_data = zeckendorf_decompress_be(&data);
+        // println!("Decompressed data size: {:?}", decompressed_data.len());
+        let decompressed_data_raw_bit_size = decompressed_data.len() * 8;
+        // println!("Decompressed data raw bit size: {:?}", decompressed_data_raw_bit_size);
+        let original_data_raw_bit_size = data.len() * 8;
+        // println!("Original data raw bit size: {:?}", original_data_raw_bit_size);
+        let decompressed_data_raw_bit_size_ratio =
+            decompressed_data_raw_bit_size as f64 / original_data_raw_bit_size as f64;
+        // println!("Decompressed data raw bit size ratio to original data raw bit size: {:?}", decompressed_data_raw_bit_size_ratio);
+        // println!("Decompressed data raw bit size ratio to original data raw bit size percentage: {:?}%", decompressed_data_raw_bit_size_ratio * 100.0);
+        if decompressed_data_raw_bit_size < original_data_raw_bit_size {
+            println!(
+                "Found a case where the decompressed data is smaller than the original data, on test {i} of {num_tests}!"
+            );
+            println!("Original data size: {:?} bytes", data.len());
+            println!(
+                "Decompressed data size: {:?} bytes",
+                decompressed_data.len()
+            );
+            println!(
+                "Original data raw bit size: {:?} bits",
+                original_data_raw_bit_size
+            );
+            println!(
+                "Decompressed data raw bit size: {:?} bits",
+                decompressed_data_raw_bit_size
+            );
+            println!(
+                "Decompressed data raw bit size ratio to original data raw bit size: {:?}",
+                decompressed_data_raw_bit_size_ratio
+            );
+            println!(
+                "Decompressed data raw bit size ratio to original data raw bit size percentage: {:?}%",
+                decompressed_data_raw_bit_size_ratio * 100.0
+            );
+            println!(
+                "The difference is {:?} bits",
+                original_data_raw_bit_size - decompressed_data_raw_bit_size
+            );
+            println!(
+                "The difference percentage is {:?}%",
+                (original_data_raw_bit_size - decompressed_data_raw_bit_size) as f64
+                    / original_data_raw_bit_size as f64
+                    * 100.0
+            );
+            println!("Original data: {:X?}", data);
+            println!("Decompressed data: {:X?}", decompressed_data);
+            println!(
+                "Found after {i} tests, and time: {:?}",
+                Instant::now().duration_since(start_time)
+            );
+            return;
+        }
+    }
+    println!(
+        "Ran {num_tests} tests, and in none of them did the decompressed data end up being smaller than the original data"
+    );
+    let end_time = Instant::now();
+    println!(
+        "Time taken to test decompressing {num_tests} pieces of large random data of size {num_bytes} bytes: {:?}",
+        end_time.duration_since(start_time)
+    );
+}
+
+fn print_aozns_as_binary_bits() {
+    let max_bits = 20;
+    println!("Printing the first {max_bits} all ones Zeckendorf numbers as binary bits:");
+    for i in 0..max_bits {
+        let all_ones_zeckendorf = all_ones_zeckendorf_to_biguint(i);
+        let binary_bit_count = all_ones_zeckendorf.bits();
+        let binary_bits = all_ones_zeckendorf.to_bytes_be();
+        let binary_bits_str = binary_bits
+            .iter()
+            .map(|byte| format!("{:08b}", byte))
+            .collect::<Vec<_>>()
+            .join(" ");
+        println!(
+            "The all ones Zeckendorf number with {i} bits represents the number {all_ones_zeckendorf} which is {binary_bit_count} bits in binary: {binary_bits_str}"
+        );
+    }
+    println!("Finished printing the first {max_bits} all ones Zeckendorf numbers as binary bits");
 }

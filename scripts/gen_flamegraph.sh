@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Requires the flamegraph crate to be installed:
 # `cargo install flamegraph`

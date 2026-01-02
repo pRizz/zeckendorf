@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Requires the samply crate to be installed:
 # `cargo install samply`
