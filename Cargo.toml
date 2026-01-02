@@ -9,6 +9,16 @@ readme = "README.md"
 keywords = ["compression", "zeckendorf", "fibonacci", "algorithm", "data-compression"]
 categories = ["compression", "algorithms", "mathematics"]
 repository = "https://github.com/pRizz/zeckendorf"
+exclude = [
+    "generated_data/",
+    "plots/",
+    "pkg/",
+    "scripts/",
+    "statistics_history/",
+    "flamegraph.svg",
+    "profile.json.gz",
+    "target/",
+]
 
 [lib]
 name = "zeckendorf_rs"
