@@ -37,7 +37,6 @@ fn main() {
         println!("cargo:rustc-env=GIT_COMMIT_SHA=");
     }
 
-    // Re-run if git information might change
-    println!("cargo:rerun-if-changed=.git/HEAD");
-    println!("cargo:rerun-if-changed=.git/refs/heads");
+    // No rerun directives - this forces build.rs to always run
+    // This ensures git commit SHA and dirty status are always up-to-date
 }
