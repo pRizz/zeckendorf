@@ -6,9 +6,9 @@ use std::path::Path;
 
 // Example usages:
 // Generate a file with default name:
-// `cargo run --release --bin generate_data 1024`
+// `cargo run --release --bin zeck-generate-data --features development_tools -- 1024`
 // Generate a file with custom name:
-// `cargo run --release --bin generate_data 1024 my_file.bin`
+// `cargo run --release --bin zeck-generate-data --features development_tools -- 1024 my_file.bin`
 
 fn main() {
     let args: Vec<String> = env::args().collect();

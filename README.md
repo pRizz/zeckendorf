@@ -6,6 +6,8 @@ A Rust library for compressing and decompressing data using the Zeckendorf repre
 
 The Zeckendorf algorithm represents numbers as a sum of non-consecutive Fibonacci numbers. This library interprets input data as a big integer (either big-endian or little-endian), converts it to its Zeckendorf representation, and sometimes achieves compression. However, compression is not guaranteed; the algorithm may result in a larger representation depending on the input data. The library can automatically try both endian interpretations and select the one that produces the best compression.
 
+**⚠️ Warning:** Compressing or decompressing files larger than 10KB (10,000 bytes) is unstable due to time and memory pressure. The library may experience performance issues, excessive memory usage, or failures when processing files exceeding this size.
+
 **Command-line tools** (`zeck-compress` and `zeck-decompress`) are available and can be installed via `cargo install zeck`. See the [Binaries](#binaries) section for usage details.
 
 ## Features
@@ -192,6 +194,8 @@ After installation, you can use `zeck-compress` and `zeck-decompress` directly f
 
 ### Compression/Decompression Tools
 
+**⚠️ Warning:** Compressing or decompressing files larger than 10KB (10,000 bytes) is unstable due to time and memory pressure. The library may experience performance issues, excessive memory usage, or failures when processing files exceeding this size.
+
 #### zeck-compress
 
 Compresses data using the Zeckendorf representation algorithm. Automatically adds `.zbe` extension for big-endian compression and `.zle` extension for little-endian compression.
@@ -301,20 +305,20 @@ A playground/scratchpad for testing library functions.
 ### Generate Test Data
 
 ```bash
-cargo run --release --bin generate_data <size_in_bytes> [filename]
+cargo run --release --bin zeck-generate-data --features development_tools -- <size_in_bytes> [filename]
 ```
 
 Generates random test data files in the `generated_data/` directory.
 
 Example:
 ```bash
-cargo run --release --bin generate_data 1024 my_file.bin
+cargo run --release --bin zeck-generate-data --features development_tools -- 1024 my_file.bin
 ```
 
 ### Generate Statistics
 
 ```bash
-cargo run --release --bin generate_statistics --features plotting
+cargo run --release --bin zeck-generate-statistics --features plotting,development_tools
 ```
 
 Generates comprehensive compression statistics and plots:
@@ -327,7 +331,7 @@ Generates comprehensive compression statistics and plots:
 ### Plot Compression Ratios
 
 ```bash
-cargo run --release --bin plot --features plotting
+cargo run --release --bin zeck-plot --features plotting,development_tools
 ```
 
 Generates visualization plots of:
@@ -402,7 +406,7 @@ This avoids redundant Fibonacci numbers (F(0)=0 and F(1)=F(2)=1).
 - Compression is not guaranteed—some inputs may result in larger output
 - Compression effectiveness decreases as input size increases
 - The library supports both big-endian and little-endian interpretations, but other byte orderings or word boundaries are not currently explored
-- Compression of large amounts of data causes memory issues. It is currently not recommended to compress files larger than 100,000 bytes.
+- **⚠️ Warning:** Compressing or decompressing files larger than 10KB (10,000 bytes) is unstable due to time and memory pressure. The library may experience performance issues, excessive memory usage, or failures when processing files exceeding this size.
 
 ## License
 

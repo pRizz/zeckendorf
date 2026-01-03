@@ -7,6 +7,11 @@
 //! Sometimes this results in a more compact representation of the data, but it is not guaranteed.
 //! Learn more about the Zeckendorf Theorem in the [Zeckendorf's Theorem](https://en.wikipedia.org/wiki/Zeckendorf%27s_theorem) Wikipedia article.
 //!
+//! # ⚠️ Warning
+//!
+//! **Compressing or decompressing files larger than 10KB (10,000 bytes) is unstable due to time and memory pressure.**
+//! The library may experience performance issues, excessive memory usage, or failures when processing files exceeding this size.
+//!
 //! This library is also available as a WebAssembly module for use in web browsers. Available functions are marked with the `#[wasm_bindgen]` attribute. The WebAssembly module can be built using the convenience script at `scripts/build_wasm_bundle.sh` that builds the WebAssembly module with the `wasm-pack` tool.
 //!
 //! You can see a live demo of the WebAssembly module in action at <https://prizz.github.io/zeckendorf-webapp/>. The source code for the demo is available at <https://github.com/pRizz/zeckendorf-webapp>.
@@ -981,6 +986,11 @@ pub fn pack_ezba_bits_to_bytes(ezba: &[u8]) -> Vec<u8> {
 ///
 /// Assumes the input data is interpreted as a big endian integer. The output data is in little endian order, so the first bit and byte is the least significant bit and byte and the last bit and byte is the most significant bit and byte.
 ///
+/// # ⚠️ Warning
+///
+/// **Compressing or decompressing data larger than 10KB (10,000 bytes) is unstable due to time and memory pressure.**
+/// The library may experience performance issues, excessive memory usage, or failures when processing data exceeding this size.
+///
 /// TODO: Technically, the way the input data is interpreted is arbitrary; we could interpret it as little endian which could result in a more compact representation. We could go even further and interpret the data at different byte or word boundaries to see if it results in a more compact representation, and signify to the caller which interpretation was used. We probably need a better understanding of random distributions of data to determine what is the optimal interpretation. More investigation is needed here.
 ///
 /// # Examples
@@ -1018,6 +1028,11 @@ pub fn zeckendorf_compress_be(data: &[u8]) -> Vec<u8> {
 /// Compresses a slice of bytes using the Zeckendorf algorithm.
 ///
 /// Assumes the input data is interpreted as a little endian integer. The output data is in little endian order, so the first bit and byte is the least significant bit and byte and the last bit and byte is the most significant bit and byte.
+///
+/// # ⚠️ Warning
+///
+/// **Compressing or decompressing data larger than 10KB (10,000 bytes) is unstable due to time and memory pressure.**
+/// The library may experience performance issues, excessive memory usage, or failures when processing data exceeding this size.
 ///
 /// # Examples
 ///
@@ -1174,6 +1189,11 @@ pub fn all_ones_zeckendorf_to_biguint(n: usize) -> BigUint {
 ///
 /// Assume the original input data was interpreted as a big endian integer, for now. See the TODO in the [`zeckendorf_compress_be`] function for more information.
 ///
+/// # ⚠️ Warning
+///
+/// **Compressing or decompressing data larger than 10KB (10,000 bytes) is unstable due to time and memory pressure.**
+/// The library may experience performance issues, excessive memory usage, or failures when processing data exceeding this size.
+///
 /// # Examples
 ///
 /// ```
@@ -1202,6 +1222,11 @@ pub fn zeckendorf_decompress_be(compressed_data: &[u8]) -> Vec<u8> {
 }
 
 /// Decompresses a slice of bytes compressed using the Zeckendorf algorithm, assuming the original data was compressed using the little endian bytes interpretation.
+///
+/// # ⚠️ Warning
+///
+/// **Compressing or decompressing data larger than 10KB (10,000 bytes) is unstable due to time and memory pressure.**
+/// The library may experience performance issues, excessive memory usage, or failures when processing data exceeding this size.
 ///
 /// # Examples
 ///
@@ -1235,6 +1260,11 @@ pub fn zeckendorf_decompress_le(compressed_data: &[u8]) -> Vec<u8> {
 ///
 /// This function tries compressing the input data with both endian interpretations and returns
 /// a [`CompressionResult`] enum indicating which method produced the smallest output, or if neither produced compression.
+///
+/// # ⚠️ Warning
+///
+/// **Compressing or decompressing data larger than 10KB (10,000 bytes) is unstable due to time and memory pressure.**
+/// The library may experience performance issues, excessive memory usage, or failures when processing data exceeding this size.
 ///
 /// # Examples
 ///

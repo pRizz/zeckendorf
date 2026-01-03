@@ -1,7 +1,7 @@
 //! Binary for generating plots using plotters
 //!
-//! This binary requires the `plotting` feature to be enabled.
-//! Run with: `cargo run --release --bin plot --features plotting`
+//! This binary requires the `plotting` and `development_tools` features to be enabled.
+//! Run with: `cargo run --release --bin zeck-plot --features plotting,development_tools`
 
 use num_bigint::BigUint;
 use plotters::prelude::*;
