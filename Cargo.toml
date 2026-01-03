@@ -31,6 +31,7 @@ default = []
 plotting = ["dep:plotters"]
 
 [dependencies]
+clap = { version = "4.5.54", features = ["derive"] }
 getrandom = { version = "0.3.4", features = ["wasm_js"] }
 num-bigint = "0.4.6"
 num-format = { version = "0.4.4", features = ["num-bigint"] }
@@ -52,6 +53,14 @@ required-features = ["plotting"]
 name = "generate_statistics"
 path = "src/bin/generate_statistics.rs"
 required-features = ["plotting"]
+
+[[bin]]
+name = "zeck-compress"
+path = "src/bin/zeck-compress.rs"
+
+[[bin]]
+name = "zeck-decompress"
+path = "src/bin/zeck-decompress.rs"
 
 [[bench]]
 name = "zeckendorf_bench"

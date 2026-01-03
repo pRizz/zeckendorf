@@ -4,3 +4,7 @@ generated_data/
 flamegraph.svg
 cargo-flamegraph.trace
 profile.json.gz
+
+*.zbe
+*.zle
+*.bin

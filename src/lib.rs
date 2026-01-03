@@ -10,6 +10,63 @@
 //! This library is also available as a WebAssembly module for use in web browsers. Available functions are marked with the `#[wasm_bindgen]` attribute. The WebAssembly module can be built using the convenience script at `scripts/build_wasm_bundle.sh` that builds the WebAssembly module with the `wasm-pack` tool.
 //!
 //! You can see a live demo of the WebAssembly module in action at <https://prizz.github.io/zeckendorf-webapp/>. The source code for the demo is available at <https://github.com/pRizz/zeckendorf-webapp>.
+//!
+//! ## Command-Line Tools
+//!
+//! This library includes two command-line tools for compressing and decompressing data.
+//! They can be installed globally via:
+//! - `cargo install zeck` (from crates.io)
+//! - `cargo install --git https://github.com/pRizz/zeckendorf zeck` (from GitHub)
+//!
+//! After installation, `zeck-compress` and `zeck-decompress` will be available in your PATH.
+//!
+//! The compression tool automatically uses `.zbe` extension for big-endian compression and `.zle`
+//! extension for little-endian compression. The decompression tool automatically detects endianness
+//! from these file extensions.
+//!
+//! ### zeck-compress
+//!
+//! Compresses data using the Zeckendorf representation algorithm. Supports reading from files or stdin,
+//! writing to files or stdout, and choosing between big-endian, little-endian, or automatic best compression.
+//! Automatically adds the appropriate file extension (`.zbe` or `.zle`) based on the endianness used.
+//!
+//! When using `--endian best`, if neither compression method produces a smaller output, the tool will
+//! exit with an error showing compression statistics. When writing to a file, the output filename is
+//! printed to stdout. Verbose statistics are shown by default and include descriptive compression ratio messages.
+//!
+//! ```bash
+//! # Compress a file (output filename automatically created from input with extension)
+//! zeck-compress input.bin
+//! # Creates input.bin.zbe or input.bin.zle depending on which endianness was used
+//!
+//! # Compress with best endianness (statistics shown by default)
+//! zeck-compress input.bin --endian best
+//!
+//! # Compress from stdin to stdout
+//! cat input.bin | zeck-compress
+//! ```
+//!
+//! ### zeck-decompress
+//!
+//! Decompresses data that was compressed using the Zeckendorf representation algorithm. Supports reading
+//! from files or stdin, writing to files or stdout. Automatically detects endianness from file extension
+//! (`.zbe` for big-endian, `.zle` for little-endian), but allows manual override with the `--endian` flag.
+//!
+//! ```bash
+//! # Decompress a file (endianness detected from .zbe extension, output filename automatically created)
+//! zeck-decompress input.zbe
+//! # Automatically uses big-endian decompression, creates output file "input"
+//!
+//! # Decompress to a specific output file
+//! zeck-decompress input.zbe -o output.bin
+//! # Automatically uses big-endian decompression
+//!
+//! # Override automatic detection
+//! zeck-decompress input.zbe --endian little -o output.bin
+//!
+//! # Decompress from stdin to stdout (--endian is required)
+//! cat input.zbe | zeck-decompress --endian big
+//! ```
 
 use num_bigint::BigUint;
 use num_traits::{One, Zero};

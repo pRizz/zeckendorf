@@ -6,6 +6,8 @@ A Rust library for compressing and decompressing data using the Zeckendorf repre
 
 The Zeckendorf algorithm represents numbers as a sum of non-consecutive Fibonacci numbers. This library interprets input data as a big integer (either big-endian or little-endian), converts it to its Zeckendorf representation, and sometimes achieves compression. However, compression is not guaranteed; the algorithm may result in a larger representation depending on the input data. The library can automatically try both endian interpretations and select the one that produces the best compression.
 
+**Command-line tools** (`zeck-compress` and `zeck-decompress`) are available and can be installed via `cargo install zeck`. See the [Binaries](#binaries) section for usage details.
+
 ## Features
 
 - **Compression & Decompression**: Convert data to/from Zeckendorf representation
@@ -172,7 +174,121 @@ let zld = memoized_zeckendorf_list_descending_for_integer(12);
 
 ## Binaries
 
-The project includes several utility binaries:
+The project includes several utility binaries. The command-line compression tools (`zeck-compress` and `zeck-decompress`) can be installed globally via:
+
+### Install from crates.io
+
+```bash
+cargo install zeck
+```
+
+### Install from GitHub (development version)
+
+```bash
+cargo install --git https://github.com/pRizz/zeckendorf zeck
+```
+
+After installation, you can use `zeck-compress` and `zeck-decompress` directly from your command line.
+
+### Compression/Decompression Tools
+
+#### zeck-compress
+
+Compresses data using the Zeckendorf representation algorithm. Automatically adds `.zbe` extension for big-endian compression and `.zle` extension for little-endian compression.
+
+```bash
+zeck-compress [INPUT] [-o OUTPUT] [--endian ENDIAN] [-v]
+```
+
+**Options:**
+- `INPUT`: Input file path (optional, reads from stdin if not specified)
+  - Shows a warning if reading from stdin and no data was piped in
+- `-o, --output FILE`: Output file path (optional)
+  - If not specified and input is a file, uses the input filename with the appropriate extension (`.zbe` or `.zle`) appended
+  - If not specified and reading from stdin, writes to stdout
+  - The appropriate extension (`.zbe` for big-endian, `.zle` for little-endian) is automatically added unless the file already ends with `.zbe` or `.zle`
+- `--endian ENDIAN`: Endianness to use (`big`, `little`, or `best`). Default: `best`
+  - `big`: Use big-endian interpretation (output will have `.zbe` extension)
+  - `little`: Use little-endian interpretation (output will have `.zle` extension)
+  - `best`: Try both and use the best result (default, extension added based on which was used)
+  - **Note:** When using `best`, if neither method produces compression (both result in larger or equal output), the tool will exit with an error showing compression statistics
+- `-v, --verbose`: Show compression statistics (default: true, use `--no-verbose` to disable)
+
+**Examples:**
+```bash
+# Compress a file (output filename automatically created from input with extension)
+zeck-compress input.bin
+# Creates input.bin.zbe or input.bin.zle depending on which endianness was used
+
+# Compress with best endianness (statistics shown by default)
+zeck-compress input.bin --endian best
+
+# Compress with specific endianness (creates input.bin.zbe)
+zeck-compress input.bin --endian big
+
+# Compress to a specific output file
+zeck-compress input.bin -o output
+# Creates output.zbe or output.zle depending on which endianness was used
+
+# Compress from stdin to stdout
+cat input.bin | zeck-compress
+```
+
+**Note:** When writing to a file, the output filename is printed to stdout (e.g., "Compressed to: input.bin.zbe"). Verbose statistics are shown by default and include descriptive messages about compression ratios (e.g., "File was compressed by X.XX% (Y bytes -> Z bytes)"). A warning is shown when reading from stdin if no data was piped in.
+
+#### zeck-decompress
+
+Decompresses data that was compressed using the Zeckendorf representation algorithm. Automatically detects endianness from file extension (`.zbe` for big-endian, `.zle` for little-endian).
+
+```bash
+zeck-decompress [INPUT] [-o OUTPUT] [--endian ENDIAN] [-v]
+```
+
+**Options:**
+- `INPUT`: Input file path (optional, reads from stdin if not specified)
+  - When reading from a file, endianness is automatically detected from file extension (`.zbe` for big-endian, `.zle` for little-endian)
+  - **If extension is not recognized, `--endian` is REQUIRED** (exits with error if not specified)
+  - **When reading from stdin, `--endian` is REQUIRED**
+  - Shows a warning if reading from stdin and no data was piped in
+- `-o, --output FILE`: Output file path (optional)
+  - If not specified and input is a file, uses the input filename with `.zbe` or `.zle` extension removed
+  - If not specified and reading from stdin, writes to stdout
+- `--endian ENDIAN`: Endianness used during compression (`big` or `little`)
+  - `big`: Decompress as big-endian
+  - `little`: Decompress as little-endian
+  - **REQUIRED when reading from stdin** (no input file specified)
+  - When reading from a file, this option overrides automatic detection from file extension
+- `-v, --verbose`: Show decompression statistics (default: true, use `--no-verbose` to disable)
+
+**Examples:**
+```bash
+# Decompress a file (endianness detected from .zbe extension, output filename automatically created)
+zeck-decompress input.zbe
+# Automatically uses big-endian decompression, creates output file "input"
+
+# Decompress with little-endian file
+zeck-decompress input.zle
+# Automatically uses little-endian decompression, creates output file "input"
+
+# Decompress to a specific output file
+zeck-decompress input.zbe -o output.bin
+# Automatically uses big-endian decompression
+
+# Override automatic detection
+zeck-decompress input.zbe --endian little -o output.bin
+# Overrides the .zbe extension and uses little-endian
+
+# Decompress from stdin to stdout (--endian is required)
+cat input.zbe | zeck-decompress --endian big
+```
+
+**Note:** The endianness used for decompression must match the endianness used during compression. The file extension (`.zbe` or `.zle`) indicates which endianness was used, so decompression will automatically use the correct endianness when reading from a file. **If the input file doesn't have a recognized extension, `--endian` must be explicitly specified** (the tool will exit with an error if not provided). You can override automatic detection with the `--endian` flag if needed. **When reading from stdin, `--endian` must be explicitly specified** since there's no file extension to detect from.
+
+**Additional features:**
+- When writing to a file, the output filename is printed to stdout (e.g., "Compressed to: input.bin.zbe" or "Decompressed to: output.bin")
+- Verbose statistics are shown by default (use `--no-verbose` to disable) and include descriptive messages about compression/decompression ratios
+- Compression will exit with an error if the data cannot be compressed (when using `--endian best` and neither method produces compression)
+- A warning is shown when reading from stdin if no data was piped in
 
 ### Main Playground
 
