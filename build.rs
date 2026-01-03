@@ -53,6 +53,7 @@ fn get_git_commit_sha_with_fallback() -> String {
     // Try to get git commit SHA from git first (for local development)
     if let Some(mut git_commit) = maybe_get_git_commit_sha() {
         // We're in a git repo, use current commit
+        // FIXME: this will show dirty if this was cargo installed from GitHub source code repository.
         if is_workspace_dirty() {
             git_commit.push_str("-dirty");
         }
