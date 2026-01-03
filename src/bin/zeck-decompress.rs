@@ -26,6 +26,9 @@
 //! # Overrides the .zbe extension and uses little-endian
 //! ```
 
+// Include the generated version string from the build.rs script
+include!(concat!(env!("OUT_DIR"), "/version_string.rs"));
+
 use clap::Parser;
 use std::fs;
 use std::io::{self, IsTerminal, Read, Write};
@@ -34,12 +37,7 @@ use zeck::{zeckendorf_decompress_be, zeckendorf_decompress_le};
 #[derive(Parser, Debug)]
 #[command(
     name = "zeck-decompress",
-    version = concat!(
-        env!("CARGO_PKG_VERSION"),
-        " (",
-        env!("GIT_COMMIT_SHA"),
-        ")"
-    ),
+    version = VERSION_STRING,
     about = "Decompress data that was compressed using the Zeckendorf representation algorithm",
     long_about = None
 )]

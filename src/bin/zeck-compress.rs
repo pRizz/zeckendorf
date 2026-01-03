@@ -26,6 +26,9 @@
 //! # Creates input.bin.zbe
 //! ```
 
+// Include the generated version string from the build.rs script
+include!(concat!(env!("OUT_DIR"), "/version_string.rs"));
+
 use clap::Parser;
 use std::fs;
 use std::io::{self, IsTerminal, Read, Write};
@@ -58,12 +61,7 @@ impl EndianUsed {
 #[derive(Parser, Debug)]
 #[command(
     name = "zeck-compress",
-    version = concat!(
-        env!("CARGO_PKG_VERSION"),
-        " (",
-        env!("GIT_COMMIT_SHA"),
-        ")"
-    ),
+    version = VERSION_STRING,
     about = "Compress data using the Zeckendorf representation algorithm",
     long_about = None
 )]
