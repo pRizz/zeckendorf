@@ -56,8 +56,17 @@ impl EndianUsed {
 }
 
 #[derive(Parser, Debug)]
-#[command(name = "zeck-compress")]
-#[command(about = "Compress data using the Zeckendorf representation algorithm", long_about = None)]
+#[command(
+    name = "zeck-compress",
+    version = concat!(
+        env!("CARGO_PKG_VERSION"),
+        " (",
+        env!("GIT_COMMIT_SHA"),
+        ")"
+    ),
+    about = "Compress data using the Zeckendorf representation algorithm",
+    long_about = None
+)]
 struct Args {
     /// Input file path. If not specified, reads from stdin.
     #[arg(value_name = "INPUT")]

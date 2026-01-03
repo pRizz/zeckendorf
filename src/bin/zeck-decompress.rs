@@ -32,8 +32,17 @@ use std::io::{self, IsTerminal, Read, Write};
 use zeck::{zeckendorf_decompress_be, zeckendorf_decompress_le};
 
 #[derive(Parser, Debug)]
-#[command(name = "zeck-decompress")]
-#[command(about = "Decompress data that was compressed using the Zeckendorf representation algorithm", long_about = None)]
+#[command(
+    name = "zeck-decompress",
+    version = concat!(
+        env!("CARGO_PKG_VERSION"),
+        " (",
+        env!("GIT_COMMIT_SHA"),
+        ")"
+    ),
+    about = "Decompress data that was compressed using the Zeckendorf representation algorithm",
+    long_about = None
+)]
 struct Args {
     /// Input file path. If not specified, reads from stdin.
     /// When reading from a file, endianness is automatically detected from file extension (.zbe for big endian, .zle for little endian).
