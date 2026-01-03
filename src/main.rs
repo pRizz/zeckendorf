@@ -5,6 +5,7 @@
 
 use num_bigint::BigUint;
 use num_format::ToFormattedString;
+use num_traits::One;
 use rand::RngCore;
 use std::time::Instant;
 use zeck::*;
@@ -73,47 +74,49 @@ fn main() {
         big_fibonacci.bits()
     );
 
-    test_zeckendorf_compress_and_decompress_number(12_u64);
-    // 255 is 0b11111111 which is 8 bits
-    test_zeckendorf_compress_and_decompress_number(255_u64);
-    // Test two byte boundary
-    // 256 is 0b100000000 which is 9 bits
-    test_zeckendorf_compress_and_decompress_number(256_u64);
+    // _test_zeckendorf_compress_and_decompress_number(12_u64);
+    // // 255 is 0b11111111 which is 8 bits
+    // _test_zeckendorf_compress_and_decompress_number(255_u64);
+    // // Test two byte boundary
+    // // 256 is 0b100000000 which is 9 bits
+    // _test_zeckendorf_compress_and_decompress_number(256_u64);
 
-    test_zeckendorf_compress_and_decompress_file("generated_data/random_data_1025_bytes.bin");
+    // _test_zeckendorf_compress_and_decompress_file("generated_data/random_data_1025_bytes.bin");
 
-    flamegraph_zeckendorf_decompress_be();
+    // _flamegraph_zeckendorf_decompress_be();
 
-    test_bit_count_for_all_ones_effective_zeckendorf_bits_ascending();
+    // _test_bit_count_for_all_ones_effective_zeckendorf_bits_ascending();
 
-    test_find_fibonacci_by_bit_count();
+    // _test_find_fibonacci_by_bit_count();
 
-    test_slow_fibonacci_bigint_iterative();
+    // _test_slow_fibonacci_bigint_iterative();
 
     // _test_slow_fibonacci_bigint_iterative_large(100_000);
     // _test_slow_fibonacci_bigint_iterative_large(200_000);
     // _test_slow_fibonacci_bigint_iterative_large(500_000);
     // _test_slow_fibonacci_bigint_iterative_large(1_000_000);
 
-    test_fast_doubling_fibonacci_bigint();
+    // _test_fast_doubling_fibonacci_bigint();
 
-    all_ones_decompressions();
+    // _all_ones_decompressions();
 
-    test_all_ones_zeckendorf_ratios();
+    // _test_all_ones_zeckendorf_ratios();
 
     test_phi_squared_and_all_ones_zeckendorf_ratios();
 
     test_all_ones_zeckendorf_bits_to_binary_bits_ratios();
 
-    test_decompressing_large_random_data();
+    // _test_decompressing_large_random_data();
 
     print_aozns_as_binary_bits();
+
+    compare_aozn_binary_bit_interpretations();
 
     let end_time = Instant::now();
     println!("Time taken: {:?}", end_time.duration_since(start_time));
 }
 
-fn test_zeckendorf_compress_and_decompress_number(number: u64) {
+fn _test_zeckendorf_compress_and_decompress_number(number: u64) {
     println!("Number to compress: {:?}", number);
     let data = BigUint::from(number).to_bytes_be();
     println!("Number as big endian bytes: {:?}", data);
@@ -125,7 +128,7 @@ fn test_zeckendorf_compress_and_decompress_number(number: u64) {
     println!("Decompressed number: {:?}", decompressed_number);
 }
 
-fn test_zeckendorf_compress_and_decompress_file(filename: &str) {
+fn _test_zeckendorf_compress_and_decompress_file(filename: &str) {
     println!(
         "Testing compression and decompression of file: {:?}",
         filename
@@ -167,7 +170,7 @@ fn test_zeckendorf_compress_and_decompress_file(filename: &str) {
 
 /// Runs the zeckendorf_decompress_be function many times to generate a flamegraph showing the hot spots.
 /// See the scripts/gen_flamegraph.sh script for more information.
-fn flamegraph_zeckendorf_decompress_be() {
+fn _flamegraph_zeckendorf_decompress_be() {
     for i in 0..1000000 {
         let data = BigUint::from(i as u64).to_bytes_be();
         let compressed_data = data;
@@ -177,7 +180,7 @@ fn flamegraph_zeckendorf_decompress_be() {
     return;
 }
 
-fn test_bit_count_for_all_ones_effective_zeckendorf_bits_ascending() {
+fn _test_bit_count_for_all_ones_effective_zeckendorf_bits_ascending() {
     let bigint = all_ones_zeckendorf_to_biguint(100000);
     // println!("Bigint: {:?}", bigint);
     println!("Bit count: {:?}", bigint.bits());
@@ -195,7 +198,7 @@ fn test_bit_count_for_all_ones_effective_zeckendorf_bits_ascending() {
 /// A tuple `(u64, BigUint)` where:
 /// - The first element is the Fibonacci index
 /// - The second element is the Fibonacci number value
-fn find_fibonacci_by_bit_count(target_bits: u64) -> (u64, BigUint) {
+fn _find_fibonacci_by_bit_count(target_bits: u64) -> (u64, BigUint) {
     let mut index = 0u64;
     loop {
         let fibonacci = memoized_slow_fibonacci_biguint_iterative(index);
@@ -207,10 +210,10 @@ fn find_fibonacci_by_bit_count(target_bits: u64) -> (u64, BigUint) {
     }
 }
 
-fn test_find_fibonacci_by_bit_count() {
+fn _test_find_fibonacci_by_bit_count() {
     let start_time = Instant::now();
     for i in (500..=1500).step_by(100) {
-        let (index, fibonacci) = find_fibonacci_by_bit_count(i);
+        let (index, fibonacci) = _find_fibonacci_by_bit_count(i);
         println!(
             "The index of the Fibonacci number that has at least {i} bits is: {:?}, at bit count: {:?}",
             index,
@@ -228,7 +231,7 @@ fn test_find_fibonacci_by_bit_count() {
     );
 }
 
-fn test_slow_fibonacci_bigint_iterative() {
+fn _test_slow_fibonacci_bigint_iterative() {
     println!("Testing slow Fibonacci bigint iterative function");
     for i in 0..20 {
         let fibonacci = slow_fibonacci_biguint_iterative(i);
@@ -253,7 +256,7 @@ fn _test_slow_fibonacci_bigint_iterative_large(fi: u64) {
     );
 }
 
-fn test_fast_doubling_fibonacci_bigint() {
+fn _test_fast_doubling_fibonacci_bigint() {
     println!("Testing fast doubling Fibonacci bigint function");
     let fibonacci = memoized_fast_doubling_fibonacci_biguint(100);
     println!("The 100th Fibonacci number is: {}", fibonacci);
@@ -280,7 +283,7 @@ fn test_fast_doubling_fibonacci_bigint() {
 /// After testing larger byte sizes, it seems like the decompressed data converges around being ~38.85% larger that the original all ones bits.
 /// More testing is needed to verify larger byte sizes.
 /// Larger byte sizes (like 100,000 bytes) take an extreme amount of memory to test, on the order of 60 GB, and can cause the process to be killed by the OS (exit code 137).
-fn all_ones_decompressions() {
+fn _all_ones_decompressions() {
     let mut all_ones_byte_size = 10;
     let size_multipier = 10;
     let max_byte_size = 10_000;
@@ -330,7 +333,7 @@ fn all_ones_decompressions() {
 /// Tests the ratios of all ones Zeckendorf numbers to the previous all ones Zeckendorf numbers.
 ///
 /// It turns out that this ratio seems to converge to the golden ratio plus one, which also apparently equals the square of the golden ratio, or phi squared.
-fn test_all_ones_zeckendorf_ratios() {
+fn _test_all_ones_zeckendorf_ratios() {
     let start_time = Instant::now();
     let mut prev = all_ones_zeckendorf_to_biguint(1);
 
@@ -492,7 +495,7 @@ fn test_all_ones_zeckendorf_bits_to_binary_bits_ratios() {
 /// After testing, it seems that the decompressed data tends to be larger than the original data by around 3-4% on average.
 /// This matches earlier data showing the likelihood of compressing data at large sizes (greater than ~1,000 bits) to be extremely unlikely.
 /// We are able to find cases pretty easily when the size is less than around 100 bytes.
-fn test_decompressing_large_random_data() {
+fn _test_decompressing_large_random_data() {
     let start_time = Instant::now();
     let num_bytes = 1_000;
     // 10,000 tests takes about 2 seconds.
@@ -587,4 +590,37 @@ fn print_aozns_as_binary_bits() {
         );
     }
     println!("Finished printing the first {max_bits} all ones Zeckendorf numbers as binary bits");
+}
+
+/// Helper function to convert a number of binary ones to a BigUint.
+///
+/// This is just 2^n - 1.
+///
+/// Example:
+/// - 1 binary one is 0b1 which is 1 in binary
+/// - 2 binary ones is 0b11 which is 3 in binary
+/// - 3 binary ones is 0b111 which is 7 in binary
+/// - 4 binary ones is 0b1111 which is 15 in binary
+/// - 5 binary ones is 0b11111 which is 31 in binary
+/// - etc.
+fn binary_ones_to_bigint(n: usize) -> BigUint {
+    (BigUint::one() << (n as u64)) - BigUint::one()
+}
+
+fn compare_aozn_binary_bit_interpretations() {
+    let max_bits = 20;
+    let start_time = Instant::now();
+    println!("Comparing the bits of all ones Zeckendorf numbers to their binary representation:");
+    for i in 0..=max_bits {
+        let all_ones_zeckendorf = all_ones_zeckendorf_to_biguint(i);
+        let n_binary_ones = binary_ones_to_bigint(i);
+        println!(
+            "{i} ones ({n_binary_ones:20b}) as binary is {n_binary_ones}; as Zeckendorf bits, it is {all_ones_zeckendorf}"
+        );
+    }
+    let end_time = Instant::now();
+    println!(
+        "Finished comparing the bits of all ones Zeckendorf numbers to their binary representation in {:?}",
+        end_time.duration_since(start_time)
+    );
 }
