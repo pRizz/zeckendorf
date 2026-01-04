@@ -253,11 +253,11 @@ fn main() {
         eprintln!("Total file size (with header): {} bytes", total_size);
         if compression_ratio < 1.0 {
             eprintln!(
-                "File content was compressed by {compression_percentage:.2}% (original content size: {original_size} bytes -> compressed content size: {compressed_data_size} bytes); total file size with header: {total_size} bytes",
+                "File content was compressed by {compression_percentage:.2}% (original content size: {original_size} bytes -> compressed content size: {compressed_data_size} bytes)\nTotal file size with header: {total_size} bytes",
             );
         } else {
             eprintln!(
-                "File content was expanded by {compression_percentage:.2}% (original content size: {original_size} bytes -> expanded content size: {compressed_data_size} bytes); total file size with header: {total_size} bytes",
+                "File content was expanded by {compression_percentage:.2}% (original content size: {original_size} bytes -> expanded content size: {compressed_data_size} bytes)\nTotal file size with header: {total_size} bytes",
             );
         }
     }

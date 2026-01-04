@@ -170,12 +170,12 @@ fn main() {
             // File got smaller during decompression
             let shrink_percentage = (1.0 - expansion_ratio) * 100.0;
             eprintln!(
-                "File was decompressed but shrunk (original content size: {compressed_size} bytes -> decompressed content size: {decompressed_size} bytes, shrunk by {shrink_percentage:.2}%); total file size with header: {total_size} bytes",
+                "File was decompressed but shrunk (original content size: {compressed_size} bytes -> decompressed content size: {decompressed_size} bytes, shrunk by {shrink_percentage:.2}%)\nTotal file size with header: {total_size} bytes",
             );
         } else {
             // File got larger or stayed the same
             eprintln!(
-                "File was decompressed (original content size: {compressed_size} bytes -> decompressed content size: {decompressed_size} bytes, expanded by {expansion_percentage:.2}%); total file size with header: {total_size} bytes",
+                "File was decompressed (original content size: {compressed_size} bytes -> decompressed content size: {decompressed_size} bytes, expanded by {expansion_percentage:.2}%)\nTotal file size with header: {total_size} bytes",
             );
         }
     }
