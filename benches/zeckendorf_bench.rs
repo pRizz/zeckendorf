@@ -21,7 +21,6 @@
 
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use std::hint::black_box;
-use zeck::{zeckendorf_compress_be_broken_do_not_use, zeckendorf_decompress_be_broken_do_not_use};
 
 /// The byte sizes to benchmark.
 ///
@@ -49,7 +48,10 @@ fn bench_compress(c: &mut Criterion) {
     for size in BYTE_SIZES_TO_BENCH {
         let data = generate_test_data(size);
         group.bench_with_input(BenchmarkId::from_parameter(size), &data, |b, data| {
-            b.iter(|| zeckendorf_compress_be_broken_do_not_use(black_box(data)));
+            b.iter(|| {
+                let compressed = zeck::padless_zeckendorf_compress_be_dangerous(black_box(data));
+                black_box(compressed);
+            });
         });
     }
 
@@ -61,12 +63,17 @@ fn bench_decompress(c: &mut Criterion) {
 
     for size in BYTE_SIZES_TO_BENCH {
         let data = generate_test_data(size);
-        let compressed = zeckendorf_compress_be_broken_do_not_use(&data);
+        let compressed = zeck::padless_zeckendorf_compress_be_dangerous(&data);
+
         group.bench_with_input(
             BenchmarkId::from_parameter(size),
             &compressed,
             |b, compressed| {
-                b.iter(|| zeckendorf_decompress_be_broken_do_not_use(black_box(compressed)));
+                b.iter(|| {
+                    let decompressed =
+                        zeck::padless_zeckendorf_decompress_be_dangerous(black_box(compressed));
+                    black_box(decompressed);
+                });
             },
         );
     }
@@ -81,8 +88,10 @@ fn bench_round_trip(c: &mut Criterion) {
         let data = generate_test_data(size);
         group.bench_with_input(BenchmarkId::from_parameter(size), &data, |b, data| {
             b.iter(|| {
-                let compressed = zeckendorf_compress_be_broken_do_not_use(black_box(data));
-                let decompressed = zeckendorf_decompress_be_broken_do_not_use(&compressed);
+                let compressed_data =
+                    zeck::padless_zeckendorf_compress_be_dangerous(black_box(data));
+                let decompressed =
+                    zeck::padless_zeckendorf_decompress_be_dangerous(&compressed_data);
                 black_box(decompressed);
             });
         });

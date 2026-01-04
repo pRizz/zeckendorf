@@ -125,9 +125,9 @@ fn _test_zeckendorf_compress_and_decompress_number(number: u64) {
     println!("Number to compress: {:?}", number);
     let data = BigUint::from(number).to_bytes_be();
     println!("Number as big endian bytes: {:?}", data);
-    let compressed_data = zeckendorf_compress_be_broken_do_not_use(&data);
+    let compressed_data = padless_zeckendorf_compress_be_dangerous(&data);
     println!("Compressed data: {:?}", compressed_data);
-    let decompressed_data = zeckendorf_decompress_be_broken_do_not_use(&compressed_data);
+    let decompressed_data = padless_zeckendorf_decompress_be_dangerous(&compressed_data);
     println!("Decompressed data: {:?}", decompressed_data);
     let decompressed_number = BigUint::from_bytes_be(&decompressed_data);
     println!("Decompressed number: {:?}", decompressed_number);
@@ -143,12 +143,12 @@ fn _test_zeckendorf_compress_and_decompress_file(filename: &str) {
     // Data size
     let data_size = data.len();
     println!("Data bytes size: {:?}", data_size);
-    let compressed_data = zeckendorf_compress_be_broken_do_not_use(&data);
+    let compressed_data = padless_zeckendorf_compress_be_dangerous(&data);
     // println!("Compressed data: {:?}", compressed_data);
     // Compressed data size
     let compressed_data_size = compressed_data.len();
     println!("Compressed data size: {:?}", compressed_data_size);
-    let decompressed_data = zeckendorf_decompress_be_broken_do_not_use(&compressed_data);
+    let decompressed_data = padless_zeckendorf_decompress_be_dangerous(&compressed_data);
     // println!("Decompressed data: {:?}", decompressed_data);
     // Decompressed data size
     let decompressed_data_size = decompressed_data.len();
@@ -173,13 +173,13 @@ fn _test_zeckendorf_compress_and_decompress_file(filename: &str) {
     }
 }
 
-/// Runs the zeckendorf_decompress_be function many times to generate a flamegraph showing the hot spots.
-/// See the scripts/gen_flamegraph.sh script for more information.
+/// Runs the [`padless_zeckendorf_decompress_be_dangerous`] function many times to generate a flamegraph showing the hot spots.
+/// See the `scripts/gen_flamegraph.sh` script for more information.
 fn _flamegraph_zeckendorf_decompress_be() {
     for i in 0..1000000 {
         let data = BigUint::from(i as u64).to_bytes_be();
         let compressed_data = data;
-        let decompressed_data = zeckendorf_decompress_be_broken_do_not_use(&compressed_data);
+        let decompressed_data = padless_zeckendorf_decompress_be_dangerous(&compressed_data);
         std::hint::black_box(decompressed_data);
     }
     return;
@@ -299,7 +299,7 @@ fn _all_ones_decompressions() {
         // println!("Mock compressed data byte size: {:?}", mock_compressed_data.len());
         // println!("Mock compressed data raw bit size: {:?}", mock_compressed_data.len() * 8);
         let mock_decompressed_data =
-            zeckendorf_decompress_be_broken_do_not_use(&mock_compressed_all_ones_data);
+            padless_zeckendorf_decompress_be_dangerous(&mock_compressed_all_ones_data);
         println!(
             "Mock decompressed data byte size: {:?}",
             mock_decompressed_data.len()
@@ -515,7 +515,7 @@ fn _test_decompressing_large_random_data() {
         rng.fill_bytes(&mut data);
         // println!("First 10 bytes of random data: {:X?}", &data[..10]);
         // println!("Data size: {:?}", data.len());
-        let decompressed_data = zeckendorf_decompress_be_broken_do_not_use(&data);
+        let decompressed_data = padless_zeckendorf_decompress_be_dangerous(&data);
         // println!("Decompressed data size: {:?}", decompressed_data.len());
         let decompressed_data_raw_bit_size = decompressed_data.len() * 8;
         // println!("Decompressed data raw bit size: {:?}", decompressed_data_raw_bit_size);
@@ -631,8 +631,8 @@ fn compare_aozn_binary_bit_interpretations() {
     );
 }
 
-/// This demonstrates that random data with leading zeroes bytes gets clobbered when decompressed.
-/// We probably need to return the size of the original data, and store it somewhere, when compressing, and then use it when decompressing.
+/// This demonstrates that random data with leading zeroes bytes gets clobbered when decompressed, when using the [`padless_zeckendorf_decompress_be_dangerous`] function.
+/// Use the functions in the [`zeck_file_format`] module instead, for automatic padding handling.
 fn test_random_data_with_lots_of_leading_zeros() {
     let leading_zero_byte_count = 5;
     let random_byte_count = 10;
@@ -644,9 +644,10 @@ fn test_random_data_with_lots_of_leading_zeros() {
     let random_bytes = (0..random_byte_count)
         .map(|_| rng.random_range(0..=255))
         .collect::<Vec<u8>>();
-    let mut random_data_with_leading_zeroes = [leading_zero_bytes, random_bytes].concat();
-    let compressed_data = zeckendorf_compress_be_broken_do_not_use(&random_data_with_leading_zeroes);
-    let decompressed_data = zeckendorf_decompress_be_broken_do_not_use(&compressed_data);
+    let random_data_with_leading_zeroes = [leading_zero_bytes, random_bytes].concat();
+    let compressed_data =
+        padless_zeckendorf_compress_be_dangerous(&random_data_with_leading_zeroes);
+    let decompressed_data = padless_zeckendorf_decompress_be_dangerous(&compressed_data);
     // Fails assertion
     // assert_eq!(data, decompressed_data);
     println!(

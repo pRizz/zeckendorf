@@ -32,9 +32,9 @@ include!(concat!(env!("OUT_DIR"), "/version_string.rs"));
 use clap::Parser;
 use std::fs;
 use std::io::{self, IsTerminal, Read, Write};
-use zeck::{
-    CompressionResult, zeckendorf_compress_be_broken_do_not_use, zeckendorf_compress_best_broken_do_not_use,
-    zeckendorf_compress_le_broken_do_not_use,
+use zeck::zeck_file_format::compress::BestCompressionResult;
+use zeck::zeck_file_format::{
+    compress::compress_zeck_be, compress::compress_zeck_best, compress::compress_zeck_le,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -44,13 +44,6 @@ enum EndianUsed {
 }
 
 impl EndianUsed {
-    fn extension(&self) -> &'static str {
-        match self {
-            EndianUsed::Big => ".zbe",
-            EndianUsed::Little => ".zle",
-        }
-    }
-
     fn display_name(&self) -> &'static str {
         match self {
             EndianUsed::Big => "big endian",
@@ -133,64 +126,89 @@ fn main() {
     let original_size = input_data.len();
 
     // Compress data based on endianness option
-    let (compressed_data, endian_used, be_size, le_size) = match args.endian.to_lowercase().as_str()
-    {
+    let (zeck_file, maybe_be_size, maybe_le_size) = match args.endian.to_lowercase().as_str() {
         "big" => {
-            let compressed = zeckendorf_compress_be_broken_do_not_use(&input_data);
-            (compressed, EndianUsed::Big, original_size, original_size)
+            let zeck_file = match compress_zeck_be(&input_data) {
+                Ok(file) => file,
+                Err(e) => {
+                    eprintln!("Error: Compression failed: {}", e);
+                    std::process::exit(1);
+                }
+            };
+            let be_size = zeck_file.compressed_data.len();
+            (zeck_file, Some(be_size), None)
         }
         "little" => {
-            let compressed = zeckendorf_compress_le_broken_do_not_use(&input_data);
-            (compressed, EndianUsed::Little, original_size, original_size)
+            let zeck_file = match compress_zeck_le(&input_data) {
+                Ok(file) => file,
+                Err(e) => {
+                    eprintln!("Error: Compression failed: {}", e);
+                    std::process::exit(1);
+                }
+            };
+            let le_size = zeck_file.compressed_data.len();
+            (zeck_file, None, Some(le_size))
         }
         "best" => {
-            let result = zeckendorf_compress_best_broken_do_not_use(&input_data);
-            match result {
-                CompressionResult::BigEndianBest {
-                    compressed_data,
-                    le_size,
-                } => (compressed_data, EndianUsed::Big, original_size, le_size),
-                CompressionResult::LittleEndianBest {
-                    compressed_data,
-                    be_size,
-                } => (compressed_data, EndianUsed::Little, be_size, original_size),
-                CompressionResult::Neither { be_size, le_size } => {
+            let best_compression_result = match compress_zeck_best(&input_data) {
+                Ok(result) => result,
+                Err(e) => {
+                    eprintln!("Error: Best compression failed: {}", e);
+                    std::process::exit(1);
+                }
+            };
+            match best_compression_result {
+                BestCompressionResult::BigEndianBest { zeck_file, le_size } => {
+                    let be_size = zeck_file.compressed_data.len();
+                    (zeck_file, Some(be_size), Some(le_size))
+                }
+                BestCompressionResult::LittleEndianBest { zeck_file, be_size } => {
+                    let le_size = zeck_file.compressed_data.len();
+                    (zeck_file, Some(be_size), Some(le_size))
+                }
+                BestCompressionResult::Neither { be_size, le_size } => {
                     eprintln!(
-                        "Error: Data could not be compressed using Zeckendorf representation."
+                        "Error: Neither compression method produced a smaller output than the original. Big endian size: {} bytes, Little endian size: {} bytes",
+                        be_size, le_size
                     );
-                    eprintln!("Original size: {} bytes", original_size);
-                    eprintln!("Big-endian compressed size: {} bytes", be_size);
-                    eprintln!("Little-endian compressed size: {} bytes", le_size);
-                    eprintln!("Both compression methods resulted in larger or equal output sizes.");
                     std::process::exit(1);
                 }
             }
         }
         _ => {
             eprintln!(
-                "Error: Invalid endianness '{}'. Must be 'big', 'little', or 'best'",
+                "Error: Invalid endianness '{}'. Must be 'big', 'little', or 'best'.",
                 args.endian
             );
             std::process::exit(1);
         }
     };
 
-    let compressed_size = compressed_data.len();
+    // Determine endianness from the zeck_file
+    let endian_used = if zeck_file.is_big_endian() {
+        EndianUsed::Big
+    } else {
+        EndianUsed::Little
+    };
 
-    // Determine which endianness was actually used (for file extension)
-    let endian_extension = endian_used.extension();
+    let zeck_file_as_data = zeck_file.to_bytes();
+    let compressed_data_size = zeck_file.compressed_data.len();
+    let total_size = zeck_file.total_size();
+
+    // Use .zeck extension for the new format
+    let file_extension = ".zeck";
 
     // Determine output path
     let final_output_path = if let Some(output_path) = &args.maybe_output {
         // If output is explicitly specified, use it (add extension if needed)
-        if output_path.ends_with(".zbe") || output_path.ends_with(".zle") {
+        if output_path.ends_with(".zeck") {
             output_path.clone()
         } else {
-            format!("{}{}", output_path, endian_extension)
+            format!("{output_path}{file_extension}")
         }
     } else if let Some(input_path) = &args.maybe_input {
         // If no output specified but input file exists, use input filename + extension
-        format!("{}{}", input_path, endian_extension)
+        format!("{input_path}{file_extension}")
     } else {
         // Reading from stdin, no output file - will write to stdout
         String::new()
@@ -199,13 +217,13 @@ fn main() {
     // Write output data
     if final_output_path.is_empty() {
         // Write to stdout
-        if let Err(err) = io::stdout().write_all(&compressed_data) {
+        if let Err(err) = io::stdout().write_all(&zeck_file_as_data) {
             eprintln!("Error: Failed to write to stdout: {}", err);
             std::process::exit(1);
         }
     } else {
         // Write to file
-        if let Err(err) = fs::write(&final_output_path, &compressed_data) {
+        if let Err(err) = fs::write(&final_output_path, &zeck_file_as_data) {
             eprintln!(
                 "Error: Failed to write output file '{}': {}",
                 final_output_path, err
@@ -218,7 +236,7 @@ fn main() {
 
     // Print statistics if verbose
     if args.verbose {
-        let compression_ratio = compressed_size as f64 / original_size as f64;
+        let compression_ratio = compressed_data_size as f64 / original_size as f64;
         let compression_percentage = if compression_ratio < 1.0 {
             (1.0 - compression_ratio) * 100.0
         } else {
@@ -226,19 +244,20 @@ fn main() {
         };
 
         eprintln!("Endianness used: {}", endian_used.display_name());
-        if args.endian == "best" {
+        if let (Some(be_size), Some(le_size)) = (maybe_be_size, maybe_le_size) {
             eprintln!("Big endian size: {} bytes", be_size);
             eprintln!("Little endian size: {} bytes", le_size);
         }
+        eprintln!("Original size: {} bytes", original_size);
+        eprintln!("Compressed data size: {} bytes", compressed_data_size);
+        eprintln!("Total file size (with header): {} bytes", total_size);
         if compression_ratio < 1.0 {
             eprintln!(
-                "File was compressed by {:.2}% ({} bytes -> {} bytes)",
-                compression_percentage, original_size, compressed_size
+                "File content was compressed by {compression_percentage:.2}% (original content size: {original_size} bytes -> compressed content size: {compressed_data_size} bytes); total file size with header: {total_size} bytes",
             );
         } else {
             eprintln!(
-                "File was expanded by {:.2}% ({} bytes -> {} bytes)",
-                compression_percentage, original_size, compressed_size
+                "File content was expanded by {compression_percentage:.2}% (original content size: {original_size} bytes -> expanded content size: {compressed_data_size} bytes); total file size with header: {total_size} bytes",
             );
         }
     }

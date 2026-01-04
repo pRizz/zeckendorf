@@ -32,9 +32,8 @@ include!(concat!(env!("OUT_DIR"), "/version_string.rs"));
 use clap::Parser;
 use std::fs;
 use std::io::{self, IsTerminal, Read, Write};
-use zeck::{
-    zeckendorf_decompress_be_broken_do_not_use, zeckendorf_decompress_le_broken_do_not_use,
-};
+use zeck::zeck_file_format::decompress::decompress_zeck_file;
+use zeck::zeck_file_format::file::deserialize_zeck_file;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -45,8 +44,7 @@ use zeck::{
 )]
 struct Args {
     /// Input file path. If not specified, reads from stdin.
-    /// When reading from a file, endianness is automatically detected from file extension (.zbe for big endian, .zle for little endian).
-    /// When reading from stdin, --endian must be specified.
+    /// The .zeck file format includes header information, so endianness is automatically detected.
     #[arg(value_name = "INPUT")]
     maybe_input: Option<String>,
 
@@ -54,15 +52,6 @@ struct Args {
     /// If not specified and reading from stdin, writes to stdout.
     #[arg(short = 'o', long = "output", value_name = "FILE")]
     maybe_output: Option<String>,
-
-    /// Endianness used for compression (must match the compression endianness).
-    /// - "big": Decompress as big endian
-    /// - "little": Decompress as little endian
-    /// If not specified when reading from a file, endianness is automatically detected from the file extension (.zbe or .zle).
-    /// This option is REQUIRED when reading from stdin (no input file specified).
-    /// This option overrides automatic detection from file extension.
-    #[arg(short = 'e', long = "endian", value_name = "ENDIAN")]
-    maybe_endian: Option<String>,
 
     /// Show decompression statistics (default: true)
     #[arg(short, long, default_value_t = true)]
@@ -72,40 +61,10 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
-    // Determine endianness: use --endian flag if provided, otherwise detect from file extension
-    // If reading from stdin, --endian is required
-    let endian_to_use = if let Some(endian) = &args.maybe_endian {
-        endian.clone()
-    } else if let Some(input_path) = &args.maybe_input {
-        // Detect from file extension
-        if input_path.ends_with(".zbe") {
-            "big".to_string()
-        } else if input_path.ends_with(".zle") {
-            "little".to_string()
-        } else {
-            // Extension not recognized - require explicit --endian flag
-            eprintln!(
-                "Error: Input file '{}' does not have a recognized extension (.zbe or .zle)",
-                input_path
-            );
-            eprintln!(
-                "Please specify --endian <big|little> to indicate the endianness used during compression."
-            );
-            eprintln!("Usage: zeck-decompress [INPUT] --endian <big|little> [OPTIONS]");
-            std::process::exit(1);
-        }
-    } else {
-        // Reading from stdin, --endian is required
-        eprintln!("Error: --endian must be specified when reading from stdin");
-        eprintln!("Usage: zeck-decompress --endian <big|little> [OPTIONS]");
-        eprintln!("Example: cat input.zbe | zeck-decompress --endian big");
-        std::process::exit(1);
-    };
-
     // Read input data
-    let compressed_data = if let Some(input_path) = &args.maybe_input {
+    let zeck_file_data = if let Some(input_path) = &args.maybe_input {
         match fs::read(input_path) {
-            Ok(data) => data,
+            Ok(zeck_file_data) => zeck_file_data,
             Err(err) => {
                 eprintln!("Error: Failed to read input file '{}': {}", input_path, err);
                 std::process::exit(1);
@@ -117,11 +76,11 @@ fn main() {
             eprintln!(
                 "Warning: Reading from stdin, but no data was piped in. Waiting for input..."
             );
-            eprintln!("Hint: Pipe data using: cat file.zbe | zeck-decompress --endian big");
+            eprintln!("Hint: Pipe data using: cat file.zeck | zeck-decompress");
         }
-        let mut data = Vec::new();
-        match io::stdin().read_to_end(&mut data) {
-            Ok(_) => data,
+        let mut zeck_file_data = Vec::new();
+        match io::stdin().read_to_end(&mut zeck_file_data) {
+            Ok(_) => zeck_file_data,
             Err(err) => {
                 eprintln!("Error: Failed to read from stdin: {}", err);
                 std::process::exit(1);
@@ -129,26 +88,29 @@ fn main() {
         }
     };
 
-    if compressed_data.is_empty() {
+    if zeck_file_data.is_empty() {
         eprintln!("Error: Input data is empty");
         std::process::exit(1);
     }
 
-    let compressed_size = compressed_data.len();
-
-    // Decompress data based on endianness
-    let decompressed_data = match endian_to_use.to_lowercase().as_str() {
-        "big" => zeckendorf_decompress_be_broken_do_not_use(&compressed_data),
-        "little" => zeckendorf_decompress_le_broken_do_not_use(&compressed_data),
-        _ => {
-            eprintln!(
-                "Error: Invalid endianness '{}'. Must be 'big' or 'little'",
-                endian_to_use
-            );
+    // Deserialize and decompress data (endianness is automatically detected from header)
+    let zeck_file = match deserialize_zeck_file(&zeck_file_data) {
+        Ok(file) => file,
+        Err(e) => {
+            eprintln!("Error: Failed to deserialize .zeck file: {}", e);
+            std::process::exit(1);
+        }
+    };
+    let decompressed_data = match decompress_zeck_file(&zeck_file) {
+        Ok(data) => data,
+        Err(e) => {
+            eprintln!("Error: Decompression failed: {}", e);
             std::process::exit(1);
         }
     };
 
+    let compressed_size = zeck_file.compressed_data.len();
+    let total_size = zeck_file.total_size();
     let decompressed_size = decompressed_data.len();
 
     // Determine output path
@@ -156,27 +118,16 @@ fn main() {
         // Use explicitly specified output path
         output_path.clone()
     } else if let Some(input_path) = &args.maybe_input {
-        // Remove .zbe or .zle extension from input filename
-        if input_path.ends_with(".zbe") {
+        // Remove .zeck extension from input filename
+        if input_path.ends_with(".zeck") {
             input_path
-                .strip_suffix(".zbe")
-                .unwrap_or(input_path)
-                .to_string()
-        } else if input_path.ends_with(".zle") {
-            input_path
-                .strip_suffix(".zle")
+                .strip_suffix(".zeck")
                 .unwrap_or(input_path)
                 .to_string()
         } else {
-            // Extension not recognized - require explicit --endian flag
             eprintln!(
-                "Error: Input file '{}' does not have a recognized extension (.zbe or .zle)",
-                input_path
+                "Error: Input file extension did not end with '.zeck'. An output file path must be specified or the input file must have a '.zeck' extension."
             );
-            eprintln!(
-                "Please specify --endian <big|little> to indicate the endianness used during compression."
-            );
-            eprintln!("Usage: zeck-decompress [INPUT] --endian <big|little> [OPTIONS]");
             std::process::exit(1);
         }
     } else {
@@ -209,19 +160,22 @@ fn main() {
         let expansion_ratio = decompressed_size as f64 / compressed_size as f64;
         let expansion_percentage = (expansion_ratio - 1.0) * 100.0;
 
-        eprintln!("Endianness used: {}", endian_to_use);
+        let endianness_used = if zeck_file.is_big_endian() {
+            "big endian"
+        } else {
+            "little endian"
+        };
+        eprintln!("Endianness used: {}", endianness_used);
         if decompressed_size < compressed_size {
             // File got smaller during decompression
             let shrink_percentage = (1.0 - expansion_ratio) * 100.0;
             eprintln!(
-                "File was decompressed but shrunk ({} bytes -> {} bytes, shrunk by {:.2}%)",
-                compressed_size, decompressed_size, shrink_percentage
+                "File was decompressed but shrunk (original content size: {compressed_size} bytes -> decompressed content size: {decompressed_size} bytes, shrunk by {shrink_percentage:.2}%); total file size with header: {total_size} bytes",
             );
         } else {
             // File got larger or stayed the same
             eprintln!(
-                "File was decompressed ({} bytes -> {} bytes, expanded by {:.2}%)",
-                compressed_size, decompressed_size, expansion_percentage
+                "File was decompressed (original content size: {compressed_size} bytes -> decompressed content size: {decompressed_size} bytes, expanded by {expansion_percentage:.2}%); total file size with header: {total_size} bytes",
             );
         }
     }

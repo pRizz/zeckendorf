@@ -16,7 +16,7 @@ use plotters::prelude::*;
 use num_bigint::BigUint;
 use rand::{Rng, SeedableRng, rngs::StdRng};
 use std::{cmp::Ordering, fs, path::Path, time::Instant};
-use zeck::zeckendorf_compress_be_broken_do_not_use;
+use zeck::padless_zeckendorf_compress_be_dangerous;
 
 const AXIS_FONT_SIZE: u32 = 100;
 const AXIS_TICK_FONT_SIZE: u32 = 64;
@@ -369,7 +369,7 @@ fn compression_amount_percent(value: u64) -> Option<f64> {
     }
 
     let data_bytes = original_number.to_bytes_be();
-    let compressed_as_zeckendorf_data = zeckendorf_compress_be_broken_do_not_use(&data_bytes);
+    let compressed_as_zeckendorf_data = padless_zeckendorf_compress_be_dangerous(&data_bytes);
     let compressed_as_bigint = BigUint::from_bytes_le(&compressed_as_zeckendorf_data);
     let compressed_bit_size = compressed_as_bigint.bits();
 
@@ -390,7 +390,7 @@ fn compression_amount_percent_bytes(data: &[u8]) -> Option<f64> {
         return None;
     }
 
-    let compressed_as_zeckendorf_data = zeckendorf_compress_be_broken_do_not_use(data);
+    let compressed_as_zeckendorf_data = padless_zeckendorf_compress_be_dangerous(data);
     let compressed_as_bigint = BigUint::from_bytes_le(&compressed_as_zeckendorf_data);
     let compressed_bit_size = compressed_as_bigint.bits();
 

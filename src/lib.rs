@@ -79,6 +79,13 @@ use std::collections::HashMap;
 use std::sync::{Arc, LazyLock, RwLock};
 use wasm_bindgen::prelude::*;
 
+pub mod zeck_file_format;
+
+pub use zeck_file_format::{
+    ZeckFile, ZeckFormatError, compress::compress_zeck_be, compress::compress_zeck_best,
+    compress::compress_zeck_le, decompress::decompress_zeck_file, file::deserialize_zeck_file,
+};
+
 /// Golden ratio constant.
 /// This constant is in the rust standard library as [`std::f64::consts::PHI`], but only available on nightly.
 pub const PHI: f64 = 1.618033988749894848204586834365638118_f64;
@@ -704,13 +711,13 @@ pub const USE_BIT: u8 = 1;
 /// Fibonacci number should not be included in the sum. The EFI counter advances by 1 when this [`SKIP_BIT`] is encountered.
 pub const SKIP_BIT: u8 = 0;
 
-/// Result of attempting compression by interpreting the input data as both big endian and little endian big integers.
+/// Result of attempting padless compression by interpreting the input data as both big endian and little endian big integers.
 ///
-/// This enum represents which interpretation produced the best compression result, or if neither
-/// produced compression (both were larger than the original).
+/// This enum represents which interpretation produced the best padless compression result, or if neither
+/// produced padless compression (both were larger than the original).
 #[derive(Debug, Clone, PartialEq)]
-pub enum CompressionResult {
-    /// Big endian compression produced the smallest output.
+pub enum PadlessCompressionResult {
+    /// Big endian padless compression produced the smallest output.
     /// Contains the compressed data and the size of the little endian attempt for comparison.
     BigEndianBest {
         /// The compressed data using big endian interpretation
@@ -718,7 +725,7 @@ pub enum CompressionResult {
         /// Compressed size using little endian interpretation (for comparison)
         le_size: usize,
     },
-    /// Little endian compression produced the smallest output.
+    /// Little endian padless compression produced the smallest output.
     /// Contains the compressed data and the size of the big endian attempt for comparison.
     LittleEndianBest {
         /// The compressed data using little endian interpretation
@@ -726,7 +733,7 @@ pub enum CompressionResult {
         /// Compressed size using big endian interpretation (for comparison)
         be_size: usize,
     },
-    /// Neither compression method produced a smaller output than the original.
+    /// Neither padless compression method produced a smaller output than the original.
     /// Contains sizes for both attempts.
     Neither {
         /// Compressed size using big endian interpretation
@@ -982,9 +989,20 @@ pub fn pack_ezba_bits_to_bytes(ezba: &[u8]) -> Vec<u8> {
     out
 }
 
-/// Compresses a slice of bytes using the Zeckendorf algorithm.
+/// Compresses a slice of bytes using the Padless Zeckendorf Compression algorithm.
 ///
 /// Assumes the input data is interpreted as a big endian integer. The output data is in little endian order, so the first bit and byte is the least significant bit and byte and the last bit and byte is the most significant bit and byte.
+///
+/// # ⚠️ Important: Original Size Preservation
+///
+/// **This function strips leading zero bytes from the input data during compression.**
+/// It is the caller's responsibility to retain the original size information (e.g., `data.len()`)
+/// before calling this function. When decompressing, the original size must be used to pad the
+/// decompressed data with leading zeros to restore the exact original data. Without the original
+/// size, information will be lost during decompression.
+///
+/// For a format that automatically handles size preservation, use [`crate::zeck_file_format::compress::compress_zeck_be`]
+/// instead, which includes a header with the original size information.
 ///
 /// # ⚠️ Warning
 ///
@@ -996,18 +1014,17 @@ pub fn pack_ezba_bits_to_bytes(ezba: &[u8]) -> Vec<u8> {
 /// # Examples
 ///
 /// ```
-/// # use zeck::zeckendorf_compress_be_broken_do_not_use;
-/// assert_eq!(zeckendorf_compress_be_broken_do_not_use(&[0]), vec![0]);
-/// assert_eq!(zeckendorf_compress_be_broken_do_not_use(&[1]), vec![1]);
-/// assert_eq!(zeckendorf_compress_be_broken_do_not_use(&[12]), vec![0b111]);
-/// assert_eq!(zeckendorf_compress_be_broken_do_not_use(&[54]), vec![30]);
-/// assert_eq!(zeckendorf_compress_be_broken_do_not_use(&[55]), vec![0, 1]); // 55 is the 10 indexed Fibonacci number, which is the 8 indexed effective Fibonacci number, and therefore is the first number needing two bytes to contain these 8 bits, because there is 1 "use bit" and 7 "skip bits" in the effective zeckendorf bits ascending.
-/// assert_eq!(zeckendorf_compress_be_broken_do_not_use(&[255]), vec![33, 2]);
-/// assert_eq!(zeckendorf_compress_be_broken_do_not_use(&[1, 0]), vec![34, 2]);
+/// # use zeck::padless_zeckendorf_compress_be_dangerous;
+/// assert_eq!(padless_zeckendorf_compress_be_dangerous(&[0]), vec![0]);
+/// assert_eq!(padless_zeckendorf_compress_be_dangerous(&[1]), vec![1]);
+/// assert_eq!(padless_zeckendorf_compress_be_dangerous(&[12]), vec![0b111]);
+/// assert_eq!(padless_zeckendorf_compress_be_dangerous(&[54]), vec![30]);
+/// assert_eq!(padless_zeckendorf_compress_be_dangerous(&[55]), vec![0, 1]); // 55 is the 10 indexed Fibonacci number, which is the 8 indexed effective Fibonacci number, and therefore is the first number needing two bytes to contain these 8 bits, because there is 1 "use bit" and 7 "skip bits" in the effective zeckendorf bits ascending.
+/// assert_eq!(padless_zeckendorf_compress_be_dangerous(&[255]), vec![33, 2]);
+/// assert_eq!(padless_zeckendorf_compress_be_dangerous(&[1, 0]), vec![34, 2]);
 /// ```
-#[deprecated(note = "This function clobbers leading zeroes from the input")]
 #[wasm_bindgen]
-pub fn zeckendorf_compress_be_broken_do_not_use(data: &[u8]) -> Vec<u8> {
+pub fn padless_zeckendorf_compress_be_dangerous(data: &[u8]) -> Vec<u8> {
     let compressed_data: Vec<u8>;
     // Turn data into a biguint
     let data_as_biguint = BigUint::from_bytes_be(data);
@@ -1026,9 +1043,20 @@ pub fn zeckendorf_compress_be_broken_do_not_use(data: &[u8]) -> Vec<u8> {
     return compressed_data;
 }
 
-/// Compresses a slice of bytes using the Zeckendorf algorithm.
+/// Compresses a slice of bytes using the Padless Zeckendorf Compression algorithm.
 ///
 /// Assumes the input data is interpreted as a little endian integer. The output data is in little endian order, so the first bit and byte is the least significant bit and byte and the last bit and byte is the most significant bit and byte.
+///
+/// # ⚠️ Important: Original Size Preservation
+///
+/// **This function strips leading zero bytes from the input data during compression.**
+/// It is the caller's responsibility to retain the original size information (e.g., `data.len()`)
+/// before calling this function. When decompressing, the original size must be used to pad the
+/// decompressed data with leading zeros to restore the exact original data. Without the original
+/// size, information will be lost during decompression.
+///
+/// For a format that automatically handles size preservation, use [`crate::zeck_file_format::compress::compress_zeck_le`]
+/// instead, which includes a header with the original size information.
 ///
 /// # ⚠️ Warning
 ///
@@ -1038,18 +1066,17 @@ pub fn zeckendorf_compress_be_broken_do_not_use(data: &[u8]) -> Vec<u8> {
 /// # Examples
 ///
 /// ```
-/// # use zeck::zeckendorf_compress_le_broken_do_not_use;
-/// assert_eq!(zeckendorf_compress_le_broken_do_not_use(&[0]), vec![0]);
-/// assert_eq!(zeckendorf_compress_le_broken_do_not_use(&[1]), vec![1]);
-/// assert_eq!(zeckendorf_compress_le_broken_do_not_use(&[12]), vec![0b111]);
-/// assert_eq!(zeckendorf_compress_le_broken_do_not_use(&[54]), vec![30]);
-/// assert_eq!(zeckendorf_compress_le_broken_do_not_use(&[55]), vec![0, 1]); // 55 is the 10 indexed Fibonacci number, which is the 8 indexed effective Fibonacci number, and therefore is the first number needing two bytes to contain these 8 bits, because there is 1 "use bit" and 7 "skip bits" in the effective zeckendorf bits ascending.
-/// assert_eq!(zeckendorf_compress_le_broken_do_not_use(&[255]), vec![33, 2]);
-/// assert_eq!(zeckendorf_compress_le_broken_do_not_use(&[0, 1]), vec![34, 2]);
+/// # use zeck::padless_zeckendorf_compress_le_dangerous;
+/// assert_eq!(padless_zeckendorf_compress_le_dangerous(&[0]), vec![0]);
+/// assert_eq!(padless_zeckendorf_compress_le_dangerous(&[1]), vec![1]);
+/// assert_eq!(padless_zeckendorf_compress_le_dangerous(&[12]), vec![0b111]);
+/// assert_eq!(padless_zeckendorf_compress_le_dangerous(&[54]), vec![30]);
+/// assert_eq!(padless_zeckendorf_compress_le_dangerous(&[55]), vec![0, 1]); // 55 is the 10 indexed Fibonacci number, which is the 8 indexed effective Fibonacci number, and therefore is the first number needing two bytes to contain these 8 bits, because there is 1 "use bit" and 7 "skip bits" in the effective zeckendorf bits ascending.
+/// assert_eq!(padless_zeckendorf_compress_le_dangerous(&[255]), vec![33, 2]);
+/// assert_eq!(padless_zeckendorf_compress_le_dangerous(&[0, 1]), vec![34, 2]);
 /// ```
-#[deprecated(note = "This function clobbers leading zeroes from the input")]
 #[wasm_bindgen]
-pub fn zeckendorf_compress_le_broken_do_not_use(data: &[u8]) -> Vec<u8> {
+pub fn padless_zeckendorf_compress_le_dangerous(data: &[u8]) -> Vec<u8> {
     let compressed_data: Vec<u8>;
     // Turn data into a biguint
     let data_as_biguint = BigUint::from_bytes_le(data);
@@ -1189,7 +1216,15 @@ pub fn all_ones_zeckendorf_to_biguint(n: usize) -> BigUint {
 
 /// Decompresses a slice of bytes compressed using the Zeckendorf algorithm, assuming the original data was compressed using the big endian bytes interpretation.
 ///
-/// Assume the original input data was interpreted as a big endian integer, for now. See the TODO in the [`zeckendorf_compress_be`] function for more information.
+/// Assume the original input data was interpreted as a big endian integer, for now. See the TODO in the [`padless_zeckendorf_compress_be_dangerous`] function for more information.
+///
+/// # ⚠️ Important: Leading Zero Padding
+///
+/// **This function does not pad leading zero bytes.** If the original data had leading zeros, they will not be restored.
+/// The decompressed output will be the minimal representation of the number (without leading zeros).
+///
+/// For a format that automatically handles size preservation and padding, use [`crate::zeck_file_format::file::deserialize_zeck_file`]
+/// and [`crate::zeck_file_format::decompress::decompress_zeck_file`] instead, which includes a header with the original size information and restores leading zeros.
 ///
 /// # ⚠️ Warning
 ///
@@ -1199,16 +1234,15 @@ pub fn all_ones_zeckendorf_to_biguint(n: usize) -> BigUint {
 /// # Examples
 ///
 /// ```
-/// # use zeck::zeckendorf_decompress_be_broken_do_not_use;
-/// assert_eq!(zeckendorf_decompress_be_broken_do_not_use(&[0]), vec![0]);
-/// assert_eq!(zeckendorf_decompress_be_broken_do_not_use(&[1]), vec![1]);
-/// assert_eq!(zeckendorf_decompress_be_broken_do_not_use(&[0b111]), vec![12]);
-/// assert_eq!(zeckendorf_decompress_be_broken_do_not_use(&[33, 2]), vec![255]);
-/// assert_eq!(zeckendorf_decompress_be_broken_do_not_use(&[34, 2]), vec![1, 0]);
+/// # use zeck::padless_zeckendorf_decompress_be_dangerous;
+/// assert_eq!(padless_zeckendorf_decompress_be_dangerous(&[0]), vec![0]);
+/// assert_eq!(padless_zeckendorf_decompress_be_dangerous(&[1]), vec![1]);
+/// assert_eq!(padless_zeckendorf_decompress_be_dangerous(&[0b111]), vec![12]);
+/// assert_eq!(padless_zeckendorf_decompress_be_dangerous(&[33, 2]), vec![255]);
+/// assert_eq!(padless_zeckendorf_decompress_be_dangerous(&[34, 2]), vec![1, 0]);
 /// ```
-#[deprecated(note = "This function clobbers leading zeroes from the input")]
 #[wasm_bindgen]
-pub fn zeckendorf_decompress_be_broken_do_not_use(compressed_data: &[u8]) -> Vec<u8> {
+pub fn padless_zeckendorf_decompress_be_dangerous(compressed_data: &[u8]) -> Vec<u8> {
     // Unpack the compressed data into bits
     let compressed_data_as_bits = unpack_bytes_to_ezba_bits(compressed_data);
     // println!("Compressed data as bits: {:?}", compressed_data_as_bits);
@@ -1226,6 +1260,14 @@ pub fn zeckendorf_decompress_be_broken_do_not_use(compressed_data: &[u8]) -> Vec
 
 /// Decompresses a slice of bytes compressed using the Zeckendorf algorithm, assuming the original data was compressed using the little endian bytes interpretation.
 ///
+/// # ⚠️ Important: Leading Zero Padding
+///
+/// **This function does not pad leading zero bytes.** If the original data had leading zeros, they will not be restored.
+/// The decompressed output will be the minimal representation of the number (without leading zeros).
+///
+/// For a format that automatically handles size preservation and padding, use [`crate::zeck_file_format::file::deserialize_zeck_file`]
+/// and [`crate::zeck_file_format::decompress::decompress_zeck_file`] instead, which includes a header with the original size information and restores leading zeros.
+///
 /// # ⚠️ Warning
 ///
 /// **Compressing or decompressing data larger than 10KB (10,000 bytes) is unstable due to time and memory pressure.**
@@ -1234,16 +1276,15 @@ pub fn zeckendorf_decompress_be_broken_do_not_use(compressed_data: &[u8]) -> Vec
 /// # Examples
 ///
 /// ```
-/// # use zeck::zeckendorf_decompress_le_broken_do_not_use;
-/// assert_eq!(zeckendorf_decompress_le_broken_do_not_use(&[0]), vec![0]);
-/// assert_eq!(zeckendorf_decompress_le_broken_do_not_use(&[1]), vec![1]);
-/// assert_eq!(zeckendorf_decompress_le_broken_do_not_use(&[0b111]), vec![12]);
-/// assert_eq!(zeckendorf_decompress_le_broken_do_not_use(&[33, 2]), vec![255]);
-/// assert_eq!(zeckendorf_decompress_le_broken_do_not_use(&[34, 2]), vec![0, 1]);
+/// # use zeck::padless_zeckendorf_decompress_le_dangerous;
+/// assert_eq!(padless_zeckendorf_decompress_le_dangerous(&[0]), vec![0]);
+/// assert_eq!(padless_zeckendorf_decompress_le_dangerous(&[1]), vec![1]);
+/// assert_eq!(padless_zeckendorf_decompress_le_dangerous(&[0b111]), vec![12]);
+/// assert_eq!(padless_zeckendorf_decompress_le_dangerous(&[33, 2]), vec![255]);
+/// assert_eq!(padless_zeckendorf_decompress_le_dangerous(&[34, 2]), vec![0, 1]);
 /// ```
-#[deprecated(note = "This function clobbers leading zeroes from the input")]
 #[wasm_bindgen]
-pub fn zeckendorf_decompress_le_broken_do_not_use(compressed_data: &[u8]) -> Vec<u8> {
+pub fn padless_zeckendorf_decompress_le_dangerous(compressed_data: &[u8]) -> Vec<u8> {
     // Unpack the compressed data into bits
     let compressed_data_as_bits = unpack_bytes_to_ezba_bits(compressed_data);
     // println!("Compressed data as bits: {:?}", compressed_data_as_bits);
@@ -1265,6 +1306,17 @@ pub fn zeckendorf_decompress_le_broken_do_not_use(compressed_data: &[u8]) -> Vec
 /// This function tries compressing the input data with both endian interpretations and returns
 /// a [`CompressionResult`] enum indicating which method produced the smallest output, or if neither produced compression.
 ///
+/// # ⚠️ Important: Original Size Preservation
+///
+/// **This function strips leading zero bytes from the input data during compression.**
+/// It is the caller's responsibility to retain the original size information (e.g., `data.len()`)
+/// before calling this function. When decompressing, the original size must be used to pad the
+/// decompressed data with leading zeros to restore the exact original data. Without the original
+/// size, information will be lost during decompression.
+///
+/// For a format that automatically handles size preservation, use [`crate::zeck_file_format::compress::compress_zeck_be`]
+/// instead, which includes a header with the original size information.
+///
 /// # ⚠️ Warning
 ///
 /// **Compressing or decompressing data larger than 10KB (10,000 bytes) is unstable due to time and memory pressure.**
@@ -1273,46 +1325,45 @@ pub fn zeckendorf_decompress_le_broken_do_not_use(compressed_data: &[u8]) -> Vec
 /// # Examples
 ///
 /// ```
-/// # use zeck::zeckendorf_compress_best_broken_do_not_use;
-/// # use zeck::CompressionResult;
+/// # use zeck::padless_zeckendorf_compress_best_dangerous;
+/// # use zeck::PadlessCompressionResult;
 /// let data = vec![1, 0];
-/// let result = zeckendorf_compress_best_broken_do_not_use(&data);
+/// let result = padless_zeckendorf_compress_best_dangerous(&data);
 /// match result {
-///     CompressionResult::BigEndianBest { compressed_data, le_size } => {
-///         // Use compressed_data for decompression with [`zeckendorf_decompress_be`]
+///     PadlessCompressionResult::BigEndianBest { compressed_data, le_size } => {
+///         // Use compressed_data for decompression with [`padless_zeckendorf_decompress_be_dangerous`]
 ///     }
-///     CompressionResult::LittleEndianBest { compressed_data, be_size } => {
-///         // Use compressed_data for decompression with [`zeckendorf_decompress_le`]
+///     PadlessCompressionResult::LittleEndianBest { compressed_data, be_size } => {
+///         // Use compressed_data for decompression with [`padless_zeckendorf_decompress_le_dangerous`]
 ///     }
-///     CompressionResult::Neither { be_size, le_size } => {
+///     PadlessCompressionResult::Neither { be_size, le_size } => {
 ///         // Neither method compressed the data
 ///     }
 /// }
 /// ```
-#[deprecated(note = "This function clobbers leading zeroes from the input")]
-pub fn zeckendorf_compress_best_broken_do_not_use(data: &[u8]) -> CompressionResult {
+pub fn padless_zeckendorf_compress_best_dangerous(data: &[u8]) -> PadlessCompressionResult {
     let input_size = data.len();
 
     // Try both compression methods
-    let be_compressed = zeckendorf_compress_be_broken_do_not_use(data);
-    let le_compressed = zeckendorf_compress_le_broken_do_not_use(data);
+    let be_compressed = padless_zeckendorf_compress_be_dangerous(data);
+    let le_compressed = padless_zeckendorf_compress_le_dangerous(data);
 
     let be_size = be_compressed.len();
     let le_size = le_compressed.len();
 
     // Determine which compression method is best
     if be_size < input_size && be_size < le_size {
-        CompressionResult::BigEndianBest {
+        PadlessCompressionResult::BigEndianBest {
             compressed_data: be_compressed,
             le_size,
         }
     } else if le_size < input_size && le_size <= be_size {
         // Less than or equal to because if they are equal, we prefer LE
-        CompressionResult::LittleEndianBest {
+        PadlessCompressionResult::LittleEndianBest {
             compressed_data: le_compressed,
             be_size,
         }
     } else {
-        CompressionResult::Neither { be_size, le_size }
+        PadlessCompressionResult::Neither { be_size, le_size }
     }
 }
