@@ -6,9 +6,12 @@
 use num_bigint::BigUint;
 use num_format::ToFormattedString;
 use num_traits::One;
-use rand::RngCore;
+use rand::{Rng, RngCore, SeedableRng, rngs::StdRng};
 use std::time::Instant;
 use zeck::*;
+
+// Seed for the random number generator to ensure reproducible results
+const RNG_SEED: u64 = 42;
 
 fn main() {
     let start_time = Instant::now();
@@ -111,6 +114,8 @@ fn main() {
     print_aozns_as_binary_bits();
 
     compare_aozn_binary_bit_interpretations();
+
+    test_random_data_with_lots_of_leading_zeros();
 
     let end_time = Instant::now();
     println!("Time taken: {:?}", end_time.duration_since(start_time));
@@ -503,9 +508,9 @@ fn _test_decompressing_large_random_data() {
     println!(
         "Searching for a case where the decompressed data is smaller than the original data of size {num_bytes} bytes..."
     );
+    let mut rng = StdRng::seed_from_u64(RNG_SEED);
     for i in 0..num_tests {
         let mut data = vec![0u8; num_bytes];
-        let mut rng = rand::rng();
         rng.fill_bytes(&mut data);
         // println!("First 10 bytes of random data: {:X?}", &data[..10]);
         // println!("Data size: {:?}", data.len());
@@ -622,5 +627,50 @@ fn compare_aozn_binary_bit_interpretations() {
     println!(
         "Finished comparing the bits of all ones Zeckendorf numbers to their binary representation in {:?}",
         end_time.duration_since(start_time)
+    );
+}
+
+/// This demonstrates that random data with leading zeroes bytes gets clobbered when decompressed.
+/// We probably need to return the size of the original data, and store it somewhere, when compressing, and then use it when decompressing.
+fn test_random_data_with_lots_of_leading_zeros() {
+    let start_time = Instant::now();
+    let leading_zero_byte_count = 5;
+    let random_byte_count = 10;
+    println!(
+        "Testing random data with {leading_zero_byte_count} leading zero bytes and {random_byte_count} random bytes..."
+    );
+    let leading_zero_bytes = vec![0; leading_zero_byte_count];
+    let mut rng = StdRng::seed_from_u64(RNG_SEED);
+    let random_bytes = (0..random_byte_count)
+        .map(|_| rng.gen_range(0..=255))
+        .collect::<Vec<u8>>();
+    let mut random_data_with_leading_zeroes = [leading_zero_bytes, random_bytes].concat();
+    let compressed_data = zeckendorf_compress_be(&random_data_with_leading_zeroes);
+    let decompressed_data = zeckendorf_decompress_be(&compressed_data);
+    // Fails assertion
+    // assert_eq!(data, decompressed_data);
+    println!(
+        "Random data with leading zeroes: {:?}",
+        random_data_with_leading_zeroes
+    );
+    println!(
+        "Random data with leading zeroes size: {:?}",
+        random_data_with_leading_zeroes.len()
+    );
+    println!(
+        "Random data with leading zeroes compressed: {:?}",
+        compressed_data
+    );
+    println!(
+        "Random data with leading zeroes compressed size: {:?}",
+        compressed_data.len()
+    );
+    println!(
+        "Random data with leading zeroes decompressed: {:?}",
+        decompressed_data
+    );
+    println!(
+        "Random data with leading zeroes decompressed size: {:?}",
+        decompressed_data.len()
     );
 }
