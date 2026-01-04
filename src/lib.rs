@@ -996,17 +996,18 @@ pub fn pack_ezba_bits_to_bytes(ezba: &[u8]) -> Vec<u8> {
 /// # Examples
 ///
 /// ```
-/// # use zeck::zeckendorf_compress_be;
-/// assert_eq!(zeckendorf_compress_be(&[0]), vec![0]);
-/// assert_eq!(zeckendorf_compress_be(&[1]), vec![1]);
-/// assert_eq!(zeckendorf_compress_be(&[12]), vec![0b111]);
-/// assert_eq!(zeckendorf_compress_be(&[54]), vec![30]);
-/// assert_eq!(zeckendorf_compress_be(&[55]), vec![0, 1]); // 55 is the 10 indexed Fibonacci number, which is the 8 indexed effective Fibonacci number, and therefore is the first number needing two bytes to contain these 8 bits, because there is 1 "use bit" and 7 "skip bits" in the effective zeckendorf bits ascending.
-/// assert_eq!(zeckendorf_compress_be(&[255]), vec![33, 2]);
-/// assert_eq!(zeckendorf_compress_be(&[1, 0]), vec![34, 2]);
+/// # use zeck::zeckendorf_compress_be_broken_do_not_use;
+/// assert_eq!(zeckendorf_compress_be_broken_do_not_use(&[0]), vec![0]);
+/// assert_eq!(zeckendorf_compress_be_broken_do_not_use(&[1]), vec![1]);
+/// assert_eq!(zeckendorf_compress_be_broken_do_not_use(&[12]), vec![0b111]);
+/// assert_eq!(zeckendorf_compress_be_broken_do_not_use(&[54]), vec![30]);
+/// assert_eq!(zeckendorf_compress_be_broken_do_not_use(&[55]), vec![0, 1]); // 55 is the 10 indexed Fibonacci number, which is the 8 indexed effective Fibonacci number, and therefore is the first number needing two bytes to contain these 8 bits, because there is 1 "use bit" and 7 "skip bits" in the effective zeckendorf bits ascending.
+/// assert_eq!(zeckendorf_compress_be_broken_do_not_use(&[255]), vec![33, 2]);
+/// assert_eq!(zeckendorf_compress_be_broken_do_not_use(&[1, 0]), vec![34, 2]);
 /// ```
+#[deprecated(note = "This function clobbers leading zeroes from the input")]
 #[wasm_bindgen]
-pub fn zeckendorf_compress_be(data: &[u8]) -> Vec<u8> {
+pub fn zeckendorf_compress_be_broken_do_not_use(data: &[u8]) -> Vec<u8> {
     let compressed_data: Vec<u8>;
     // Turn data into a biguint
     let data_as_biguint = BigUint::from_bytes_be(data);
@@ -1037,17 +1038,18 @@ pub fn zeckendorf_compress_be(data: &[u8]) -> Vec<u8> {
 /// # Examples
 ///
 /// ```
-/// # use zeck::zeckendorf_compress_le;
-/// assert_eq!(zeckendorf_compress_le(&[0]), vec![0]);
-/// assert_eq!(zeckendorf_compress_le(&[1]), vec![1]);
-/// assert_eq!(zeckendorf_compress_le(&[12]), vec![0b111]);
-/// assert_eq!(zeckendorf_compress_le(&[54]), vec![30]);
-/// assert_eq!(zeckendorf_compress_le(&[55]), vec![0, 1]); // 55 is the 10 indexed Fibonacci number, which is the 8 indexed effective Fibonacci number, and therefore is the first number needing two bytes to contain these 8 bits, because there is 1 "use bit" and 7 "skip bits" in the effective zeckendorf bits ascending.
-/// assert_eq!(zeckendorf_compress_le(&[255]), vec![33, 2]);
-/// assert_eq!(zeckendorf_compress_le(&[0, 1]), vec![34, 2]);
+/// # use zeck::zeckendorf_compress_le_broken_do_not_use;
+/// assert_eq!(zeckendorf_compress_le_broken_do_not_use(&[0]), vec![0]);
+/// assert_eq!(zeckendorf_compress_le_broken_do_not_use(&[1]), vec![1]);
+/// assert_eq!(zeckendorf_compress_le_broken_do_not_use(&[12]), vec![0b111]);
+/// assert_eq!(zeckendorf_compress_le_broken_do_not_use(&[54]), vec![30]);
+/// assert_eq!(zeckendorf_compress_le_broken_do_not_use(&[55]), vec![0, 1]); // 55 is the 10 indexed Fibonacci number, which is the 8 indexed effective Fibonacci number, and therefore is the first number needing two bytes to contain these 8 bits, because there is 1 "use bit" and 7 "skip bits" in the effective zeckendorf bits ascending.
+/// assert_eq!(zeckendorf_compress_le_broken_do_not_use(&[255]), vec![33, 2]);
+/// assert_eq!(zeckendorf_compress_le_broken_do_not_use(&[0, 1]), vec![34, 2]);
 /// ```
+#[deprecated(note = "This function clobbers leading zeroes from the input")]
 #[wasm_bindgen]
-pub fn zeckendorf_compress_le(data: &[u8]) -> Vec<u8> {
+pub fn zeckendorf_compress_le_broken_do_not_use(data: &[u8]) -> Vec<u8> {
     let compressed_data: Vec<u8>;
     // Turn data into a biguint
     let data_as_biguint = BigUint::from_bytes_le(data);
@@ -1197,15 +1199,16 @@ pub fn all_ones_zeckendorf_to_biguint(n: usize) -> BigUint {
 /// # Examples
 ///
 /// ```
-/// # use zeck::zeckendorf_decompress_be;
-/// assert_eq!(zeckendorf_decompress_be(&[0]), vec![0]);
-/// assert_eq!(zeckendorf_decompress_be(&[1]), vec![1]);
-/// assert_eq!(zeckendorf_decompress_be(&[0b111]), vec![12]);
-/// assert_eq!(zeckendorf_decompress_be(&[33, 2]), vec![255]);
-/// assert_eq!(zeckendorf_decompress_be(&[34, 2]), vec![1, 0]);
+/// # use zeck::zeckendorf_decompress_be_broken_do_not_use;
+/// assert_eq!(zeckendorf_decompress_be_broken_do_not_use(&[0]), vec![0]);
+/// assert_eq!(zeckendorf_decompress_be_broken_do_not_use(&[1]), vec![1]);
+/// assert_eq!(zeckendorf_decompress_be_broken_do_not_use(&[0b111]), vec![12]);
+/// assert_eq!(zeckendorf_decompress_be_broken_do_not_use(&[33, 2]), vec![255]);
+/// assert_eq!(zeckendorf_decompress_be_broken_do_not_use(&[34, 2]), vec![1, 0]);
 /// ```
+#[deprecated(note = "This function clobbers leading zeroes from the input")]
 #[wasm_bindgen]
-pub fn zeckendorf_decompress_be(compressed_data: &[u8]) -> Vec<u8> {
+pub fn zeckendorf_decompress_be_broken_do_not_use(compressed_data: &[u8]) -> Vec<u8> {
     // Unpack the compressed data into bits
     let compressed_data_as_bits = unpack_bytes_to_ezba_bits(compressed_data);
     // println!("Compressed data as bits: {:?}", compressed_data_as_bits);
@@ -1231,15 +1234,16 @@ pub fn zeckendorf_decompress_be(compressed_data: &[u8]) -> Vec<u8> {
 /// # Examples
 ///
 /// ```
-/// # use zeck::zeckendorf_decompress_le;
-/// assert_eq!(zeckendorf_decompress_le(&[0]), vec![0]);
-/// assert_eq!(zeckendorf_decompress_le(&[1]), vec![1]);
-/// assert_eq!(zeckendorf_decompress_le(&[0b111]), vec![12]);
-/// assert_eq!(zeckendorf_decompress_le(&[33, 2]), vec![255]);
-/// assert_eq!(zeckendorf_decompress_le(&[34, 2]), vec![0, 1]);
+/// # use zeck::zeckendorf_decompress_le_broken_do_not_use;
+/// assert_eq!(zeckendorf_decompress_le_broken_do_not_use(&[0]), vec![0]);
+/// assert_eq!(zeckendorf_decompress_le_broken_do_not_use(&[1]), vec![1]);
+/// assert_eq!(zeckendorf_decompress_le_broken_do_not_use(&[0b111]), vec![12]);
+/// assert_eq!(zeckendorf_decompress_le_broken_do_not_use(&[33, 2]), vec![255]);
+/// assert_eq!(zeckendorf_decompress_le_broken_do_not_use(&[34, 2]), vec![0, 1]);
 /// ```
+#[deprecated(note = "This function clobbers leading zeroes from the input")]
 #[wasm_bindgen]
-pub fn zeckendorf_decompress_le(compressed_data: &[u8]) -> Vec<u8> {
+pub fn zeckendorf_decompress_le_broken_do_not_use(compressed_data: &[u8]) -> Vec<u8> {
     // Unpack the compressed data into bits
     let compressed_data_as_bits = unpack_bytes_to_ezba_bits(compressed_data);
     // println!("Compressed data as bits: {:?}", compressed_data_as_bits);
@@ -1269,10 +1273,10 @@ pub fn zeckendorf_decompress_le(compressed_data: &[u8]) -> Vec<u8> {
 /// # Examples
 ///
 /// ```
-/// # use zeck::zeckendorf_compress_best;
+/// # use zeck::zeckendorf_compress_best_broken_do_not_use;
 /// # use zeck::CompressionResult;
 /// let data = vec![1, 0];
-/// let result = zeckendorf_compress_best(&data);
+/// let result = zeckendorf_compress_best_broken_do_not_use(&data);
 /// match result {
 ///     CompressionResult::BigEndianBest { compressed_data, le_size } => {
 ///         // Use compressed_data for decompression with [`zeckendorf_decompress_be`]
@@ -1285,12 +1289,13 @@ pub fn zeckendorf_decompress_le(compressed_data: &[u8]) -> Vec<u8> {
 ///     }
 /// }
 /// ```
-pub fn zeckendorf_compress_best(data: &[u8]) -> CompressionResult {
+#[deprecated(note = "This function clobbers leading zeroes from the input")]
+pub fn zeckendorf_compress_best_broken_do_not_use(data: &[u8]) -> CompressionResult {
     let input_size = data.len();
 
     // Try both compression methods
-    let be_compressed = zeckendorf_compress_be(data);
-    let le_compressed = zeckendorf_compress_le(data);
+    let be_compressed = zeckendorf_compress_be_broken_do_not_use(data);
+    let le_compressed = zeckendorf_compress_le_broken_do_not_use(data);
 
     let be_size = be_compressed.len();
     let le_size = le_compressed.len();

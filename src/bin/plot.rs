@@ -1104,7 +1104,7 @@ fn plot_compression_ratios(
             // println!("Original bit size: {:?}", original_bit_size);
             let data_bytes = original_number.to_bytes_be();
             // println!("Data bytes as big endian: {:?}", data_bytes);
-            let compressed_as_zeckendorf_data = zeckendorf_compress_be(&data_bytes);
+            let compressed_as_zeckendorf_data = zeckendorf_compress_be_broken_do_not_use(&data_bytes);
             // println!("Compressed: {:?}", compressed_as_zeckendorf_data);
             // Since the last step of the compression outputs the data with the least significant bits and bytes first, we need to interpret the data as little endian.
             let compressed_as_bigint = BigUint::from_bytes_le(&compressed_as_zeckendorf_data);

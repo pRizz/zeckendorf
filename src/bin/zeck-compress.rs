@@ -33,7 +33,8 @@ use clap::Parser;
 use std::fs;
 use std::io::{self, IsTerminal, Read, Write};
 use zeck::{
-    CompressionResult, zeckendorf_compress_be, zeckendorf_compress_best, zeckendorf_compress_le,
+    CompressionResult, zeckendorf_compress_be_broken_do_not_use, zeckendorf_compress_best_broken_do_not_use,
+    zeckendorf_compress_le_broken_do_not_use,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -135,15 +136,15 @@ fn main() {
     let (compressed_data, endian_used, be_size, le_size) = match args.endian.to_lowercase().as_str()
     {
         "big" => {
-            let compressed = zeckendorf_compress_be(&input_data);
+            let compressed = zeckendorf_compress_be_broken_do_not_use(&input_data);
             (compressed, EndianUsed::Big, original_size, original_size)
         }
         "little" => {
-            let compressed = zeckendorf_compress_le(&input_data);
+            let compressed = zeckendorf_compress_le_broken_do_not_use(&input_data);
             (compressed, EndianUsed::Little, original_size, original_size)
         }
         "best" => {
-            let result = zeckendorf_compress_best(&input_data);
+            let result = zeckendorf_compress_best_broken_do_not_use(&input_data);
             match result {
                 CompressionResult::BigEndianBest {
                     compressed_data,

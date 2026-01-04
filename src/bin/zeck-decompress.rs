@@ -32,7 +32,9 @@ include!(concat!(env!("OUT_DIR"), "/version_string.rs"));
 use clap::Parser;
 use std::fs;
 use std::io::{self, IsTerminal, Read, Write};
-use zeck::{zeckendorf_decompress_be, zeckendorf_decompress_le};
+use zeck::{
+    zeckendorf_decompress_be_broken_do_not_use, zeckendorf_decompress_le_broken_do_not_use,
+};
 
 #[derive(Parser, Debug)]
 #[command(
@@ -136,8 +138,8 @@ fn main() {
 
     // Decompress data based on endianness
     let decompressed_data = match endian_to_use.to_lowercase().as_str() {
-        "big" => zeckendorf_decompress_be(&compressed_data),
-        "little" => zeckendorf_decompress_le(&compressed_data),
+        "big" => zeckendorf_decompress_be_broken_do_not_use(&compressed_data),
+        "little" => zeckendorf_decompress_le_broken_do_not_use(&compressed_data),
         _ => {
             eprintln!(
                 "Error: Invalid endianness '{}'. Must be 'big' or 'little'",
