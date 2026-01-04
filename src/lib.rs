@@ -1304,7 +1304,7 @@ pub fn padless_zeckendorf_decompress_le_dangerous(compressed_data: &[u8]) -> Vec
 /// and returns the best result.
 ///
 /// This function tries compressing the input data with both endian interpretations and returns
-/// a [`CompressionResult`] enum indicating which method produced the smallest output, or if neither produced compression.
+/// a [`PadlessCompressionResult`] enum indicating which method produced the smallest output, or if neither produced compression.
 ///
 /// # ⚠️ Important: Original Size Preservation
 ///
