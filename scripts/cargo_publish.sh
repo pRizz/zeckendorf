@@ -14,6 +14,3 @@ cargo publish
 
 echo "Crate published successfully!"
 echo ""
-
-# Call the git tag script
-"$SCRIPT_DIR/git_tag_current_version.sh"
