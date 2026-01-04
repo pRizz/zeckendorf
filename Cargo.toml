@@ -1,6 +1,6 @@
 [package]
 name = "zeck"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2024"
 authors = ["Peter Ryszkiewicz"]
 description = "A Rust library for compressing and decompressing data using the Zeckendorf representation algorithm"
@@ -8,7 +8,7 @@ license = "MIT"
 readme = "README.md"
 keywords = ["compression", "zeckendorf", "fibonacci", "algorithm", "data-compression"]
 categories = ["compression", "algorithms", "mathematics"]
-repository = "https://github.com/pRizz/zeckendorf"
+repository = "git+https://github.com/pRizz/zeckendorf.git"
 exclude = [
     ".vscode/",
     "generated_data/",
