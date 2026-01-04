@@ -23,7 +23,6 @@ use crate::{
 ///
 /// ```
 /// # use zeck::zeck_file_format::{compress::compress_zeck_le, decompress::decompress_zeck_file};
-/// //let original = vec![1, 0]; // FIXME: fails test
 /// let original = vec![0, 1];
 /// let zeck_file = compress_zeck_le(&original).unwrap();
 /// match decompress_zeck_file(&zeck_file) {
@@ -32,6 +31,7 @@ use crate::{
 ///     }
 ///     Err(e) => {
 ///         // Handle error
+///         assert!(false);
 ///     }
 /// }
 /// ```
@@ -85,12 +85,18 @@ fn decompress_zeck_v1(
         });
     }
 
-    // If decompressed size is smaller than original, pad with leading zeros
+    // If decompressed size is smaller than original, pad with zeros, to restore the original size
     if decompressed_len < original_size_usize {
-        let padding_size = original_size_usize - decompressed_len;
         let mut padded = Vec::with_capacity(original_size_usize);
-        padded.resize(padding_size, 0u8);
-        padded.extend_from_slice(&decompressed);
+        // If the data was compressed with big endian, we need to pad with leading zeros, otherwise with trailing zeros.
+        if is_big_endian {
+            let leading_padding_size = original_size_usize - decompressed_len;
+            padded.resize(leading_padding_size, 0u8);
+            padded.extend_from_slice(&decompressed);
+        } else {
+            padded.extend_from_slice(&decompressed);
+            padded.resize(original_size_usize, 0u8);
+        }
         Ok(padded)
     } else {
         // Sizes match exactly

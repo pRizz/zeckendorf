@@ -54,28 +54,45 @@ pub enum BestCompressionResult {
 /// # use zeck::zeck_file_format::compress::compress_zeck_best;
 /// # use zeck::zeck_file_format::compress::BestCompressionResult;
 /// # use zeck::zeck_file_format::decompress::decompress_zeck_file;
-/// let data = vec![0, 1];
-/// // let data = vec![1, 0]; // FIXME: fails test
+/// let data = vec![0, 1]; // Compresses best interpreted as a big endian integer
 /// match compress_zeck_best(&data) {
 ///     Ok(best_compression_result) => {
 ///         match best_compression_result {
 ///             BestCompressionResult::BigEndianBest { zeck_file, le_size } => {
-///                 // Use zeck_file and le_size, and decompress with [`zeck_file_format::decompress::decompress_zeck_file`]
 ///                 let decompressed = decompress_zeck_file(&zeck_file).unwrap();
 ///                 assert_eq!(decompressed, data);
 ///             }
 ///             BestCompressionResult::LittleEndianBest { zeck_file, be_size } => {
-///                 // Use zeck_file and be_size, and decompress with [`zeck_file_format::decompress::decompress_zeck_file`]
-///                 let decompressed = decompress_zeck_file(&zeck_file).unwrap();
-///                 assert_eq!(decompressed, data);
+///                 assert!(false);
 ///             }
 ///             BestCompressionResult::Neither { be_size, le_size } => {
-///                 // Neither method compressed the data and sizes are be_size and le_size
+///                 assert!(false);
 ///             }
 ///         }
 ///     }
 ///     Err(e) => {
-///         // Handle error (e.g., data size too large)
+///         assert!(false);
+///     }
+/// }
+///
+/// let data = vec![1, 0]; // Compresses best interpreted as a little endian integer
+/// match compress_zeck_best(&data) {
+///     Ok(best_compression_result) => {
+///         match best_compression_result {
+///             BestCompressionResult::BigEndianBest { zeck_file, le_size } => {
+///                 assert!(false);
+///             }
+///             BestCompressionResult::LittleEndianBest { zeck_file, be_size } => {
+///                 let decompressed = decompress_zeck_file(&zeck_file).unwrap();
+///                 assert_eq!(decompressed, data);
+///             }
+///             BestCompressionResult::Neither { be_size, le_size } => {
+///                 assert!(false);
+///             }
+///         }
+///     }
+///     Err(e) => {
+///         assert!(false);
 ///     }
 /// }
 /// ```

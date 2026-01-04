@@ -117,6 +117,8 @@ fn main() {
 
     test_random_data_with_lots_of_leading_zeros();
 
+    debug_zeck_file_format();
+
     let end_time = Instant::now();
     println!("Time taken: {:?}", end_time.duration_since(start_time));
 }
@@ -674,4 +676,53 @@ fn test_random_data_with_lots_of_leading_zeros() {
         "Random data with leading zeroes decompressed size: {:?}",
         decompressed_data.len()
     );
+}
+
+fn debug_zeck_file_format() {
+    let data = vec![1, 0];
+    // let data = vec![0, 1];
+    println!("Original data: {:?}", data);
+    let best_compression_result = compress_zeck_best(&data).unwrap();
+    match best_compression_result {
+        zeck_file_format::compress::BestCompressionResult::BigEndianBest { zeck_file, le_size } => {
+            println!("Big endian best compression result: {:?}", zeck_file);
+            println!("Big endian best compression result le size: {:?}", le_size);
+            let decompressed_data = decompress_zeck_file(&zeck_file).unwrap();
+            println!(
+                "Big endian best compression result decompressed data: {:?}",
+                decompressed_data
+            );
+            println!(
+                "Big endian best compression result decompressed data size: {:?}",
+                decompressed_data.len()
+            );
+        }
+        zeck_file_format::compress::BestCompressionResult::LittleEndianBest {
+            zeck_file,
+            be_size,
+        } => {
+            println!("Little endian best compression result: {:?}", zeck_file);
+            println!(
+                "Little endian best compression result be size: {:?}",
+                be_size
+            );
+            let decompressed_data = decompress_zeck_file(&zeck_file).unwrap();
+            println!(
+                "Little endian best compression result decompressed data: {:?}",
+                decompressed_data
+            );
+            println!(
+                "Little endian best compression result decompressed data size: {:?}",
+                decompressed_data.len()
+            );
+        }
+        zeck_file_format::compress::BestCompressionResult::Neither { be_size, le_size } => {
+            println!("Neither compression method produced a smaller output than the original.");
+            println!("Big endian best compression result size: {:?}", be_size);
+            println!(
+                "Little endian best compression result le size: {:?}",
+                le_size
+            );
+        }
+    }
 }

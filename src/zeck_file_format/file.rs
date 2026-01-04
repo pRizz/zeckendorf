@@ -115,7 +115,6 @@ impl std::fmt::Display for ZeckFile {
 ///
 /// ```
 /// # use zeck::zeck_file_format::{compress::compress_zeck_le, file::deserialize_zeck_file, decompress::decompress_zeck_file};
-/// //let original = vec![1, 0]; // FIXME: fails test
 /// let original = vec![0, 1];
 /// let zeck_file = compress_zeck_le(&original).unwrap();
 /// let zeck_file_bytes = zeck_file.to_bytes();
@@ -126,6 +125,7 @@ impl std::fmt::Display for ZeckFile {
 ///     }
 ///     Err(e) => {
 ///         // Handle error
+///         assert!(false);
 ///     }
 /// }
 /// ```
