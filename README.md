@@ -408,6 +408,28 @@ This avoids redundant Fibonacci numbers (F(0)=0 and F(1)=F(2)=1).
 - The library supports both big-endian and little-endian interpretations, but other byte orderings or word boundaries are not currently explored
 - **⚠️ Warning:** Compressing or decompressing files larger than 10KB (10,000 bytes) is unstable due to time and memory pressure. The library may experience performance issues, excessive memory usage, or failures when processing files exceeding this size.
 
+## NPM Versioning Quirk
+
+For some reason, NPM was showing there were versions of zeck published between `1.0.0` and `1.0.6` from 2024, even though I never published them to npm. I don't know how this happened. So I bumped the version to `1.0.7` and was able to successfully publish it to npm. Maybe there was an old package with the same name that was deleted, and NPM is still showing the old versions.
+
+Here is a snippet of the `time` object from the npm registry JSON (https://registry.npmjs.org/zeck):
+
+```json
+  "time": {
+    "created": "2026-01-02T20:19:14.018Z",
+    "modified": "2026-01-03T17:25:15.940Z",
+    "1.0.0": "2024-02-21T14:36:36.292Z",
+    "1.0.1": "2024-02-21T15:26:38.621Z",
+    "1.0.2": "2024-02-21T15:36:30.258Z",
+    "1.0.3": "2024-02-21T15:48:07.853Z",
+    "1.0.4": "2024-02-21T15:48:38.804Z",
+    "1.0.5": "2024-02-21T16:02:36.339Z",
+    "1.0.6": "2024-02-21T16:36:36.643Z",
+    "0.1.0": "2026-01-02T20:19:14.175Z",
+    "0.2.0": "2026-01-03T17:25:15.702Z"
+  },
+```
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE.txt](LICENSE.txt) file for details.
