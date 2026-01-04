@@ -1367,7 +1367,7 @@ dependencies = [
 
 [[package]]
 name = "zeck"
-version = "1.0.7"
+version = "2.0.0"
 dependencies = [
  "clap",
  "criterion",
