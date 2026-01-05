@@ -13,17 +13,20 @@ The Zeckendorf algorithm represents numbers as a sum of non-consecutive Fibonacc
 ## Features
 
 - **Compression & Decompression**: Convert data to/from Zeckendorf representation
+- **File Format with Headers**: `.zeck` file format that automatically preserves original file size and endianness information
 - **Multiple Endian Interpretations**: Support for both big-endian and little-endian input interpretations
 - **Automatic Best Compression**: Try both endian interpretations and automatically select the best result
 - **Multiple Fibonacci Algorithms**: 
   - Slow recursive (memoized, for small numbers)
   - Slow iterative (memoized, for large numbers)
   - Fast Doubling (optimized, ~160x faster for large indices)
+  - Memoized Fast Doubling (with sparse HashMap caching for large, non-contiguous indices)
 - **BigInt Support**: Handle arbitrarily large numbers using `num-bigint`
 - **Memoization**: Thread-safe caching for improved performance
 - **Statistics & Visualization**: Generate compression statistics and plots
 - **Benchmarking**: Comprehensive performance benchmarks
 - **WebAssembly Support**: Available as a WebAssembly module for use in web browsers
+- **Error Handling**: Comprehensive error types for file format operations
 
 ## WebAssembly
 
@@ -44,14 +47,14 @@ Or add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-zeck = "0.1.0"
+zeck = "2.1.0"
 ```
 
 For plotting features:
 
 ```toml
 [dependencies]
-zeck = { version = "0.1.0", features = ["plotting"] }
+zeck = { version = "2.1.0", features = ["plotting"] }
 ```
 
 ### Install from GitHub (development version)
@@ -87,66 +90,126 @@ Or add this to your `package.json`:
 ```json
 {
   "dependencies": {
-    "zeck": "^0.1.0"
+    "zeck": "^2.1.0"
   }
 }
 ```
 
 ## Usage
 
-### Basic Compression/Decompression
+### File Format Compression (Recommended)
 
-#### Big-Endian Interpretation
+The `.zeck` file format automatically handles size preservation and endianness information. This is the recommended approach for most use cases.
+
+#### Big-Endian File Format
 
 ```rust
-use zeck::{zeckendorf_compress_be, zeckendorf_decompress_be};
+use zeck::zeck_file_format::{compress::compress_zeck_be, decompress::decompress_zeck_file};
 
 // Compress data (interpreted as big-endian integer)
 let data = vec![12u8];
-let compressed = zeckendorf_compress_be(&data);
+let zeck_file = compress_zeck_be(&data)?;
 
-// Decompress data
-let decompressed = zeckendorf_decompress_be(&compressed);
+// Serialize to bytes for storage
+let bytes = zeck_file.to_bytes();
+
+// Later, deserialize and decompress
+use zeck::zeck_file_format::file::deserialize_zeck_file;
+let zeck_file = deserialize_zeck_file(&bytes)?;
+let decompressed = decompress_zeck_file(&zeck_file)?;
 assert_eq!(data, decompressed);
 ```
 
-#### Little-Endian Interpretation
+#### Little-Endian File Format
 
 ```rust
-use zeck::{zeckendorf_compress_le, zeckendorf_decompress_le};
+use zeck::zeck_file_format::{compress::compress_zeck_le, decompress::decompress_zeck_file};
 
 // Compress data (interpreted as little-endian integer)
 let data = vec![12u8];
-let compressed = zeckendorf_compress_le(&data);
+let zeck_file = compress_zeck_le(&data)?;
 
 // Decompress data
-let decompressed = zeckendorf_decompress_le(&compressed);
+let decompressed = decompress_zeck_file(&zeck_file)?;
 assert_eq!(data, decompressed);
 ```
 
-#### Automatic Best Compression
+#### Automatic Best Compression (File Format)
 
 ```rust
-use zeck::{zeckendorf_compress_best, zeckendorf_decompress_be, zeckendorf_decompress_le, CompressionResult};
+use zeck::zeck_file_format::{
+    compress::{compress_zeck_best, BestCompressionResult},
+    decompress::decompress_zeck_file,
+};
 
 // Try both endian interpretations and get the best result
 let data = vec![1, 0];
-let result = zeckendorf_compress_best(&data);
-
-match result {
-    CompressionResult::BigEndianBest { compressed_data, le_size } => {
+match compress_zeck_best(&data)? {
+    BestCompressionResult::BigEndianBest { zeck_file, le_size } => {
         // Big-endian produced the best compression
-        let decompressed = zeckendorf_decompress_be(&compressed_data);
+        let decompressed = decompress_zeck_file(&zeck_file)?;
         assert_eq!(data, decompressed);
     }
-    CompressionResult::LittleEndianBest { compressed_data, be_size } => {
+    BestCompressionResult::LittleEndianBest { zeck_file, be_size } => {
         // Little-endian produced the best compression
-        let decompressed = zeckendorf_decompress_le(&compressed_data);
+        let decompressed = decompress_zeck_file(&zeck_file)?;
         assert_eq!(data, decompressed);
     }
-    CompressionResult::Neither { be_size, le_size } => {
+    BestCompressionResult::Neither { be_size, le_size } => {
         // Neither method compressed the data (both were larger than original)
         println!("Neither method compressed: BE size = {}, LE size = {}", be_size, le_size);
+    }
+}
+```
+
+### Padless Compression (Advanced)
+
+The padless compression functions strip leading zero bytes and do not preserve original size information. **You must manually track the original size** if you need to restore leading zeros. These functions are marked as `_dangerous` to indicate they require careful handling.
+
+**⚠️ Important:** The padless functions are lower-level and do not preserve leading zero bytes. Use the file format functions above for most use cases.
+
+#### Big-Endian Padless
+
+```rust
+use zeck::{padless_zeckendorf_compress_be_dangerous, padless_zeckendorf_decompress_be_dangerous};
+
+// Compress data (interpreted as big-endian integer)
+let data = vec![12u8];
+let compressed = padless_zeckendorf_compress_be_dangerous(&data);
+
+// Decompress data (leading zeros may be lost)
+let decompressed = padless_zeckendorf_decompress_be_dangerous(&compressed);
+// Note: decompressed may not equal data if data had leading zeros
+```
+
+#### Little-Endian Padless
+
+```rust
+use zeck::{padless_zeckendorf_compress_le_dangerous, padless_zeckendorf_decompress_le_dangerous};
+
+// Compress data (interpreted as little-endian integer)
+let data = vec![12u8];
+let compressed = padless_zeckendorf_compress_le_dangerous(&data);
+
+// Decompress data (trailing zeros may be lost)
+let decompressed = padless_zeckendorf_decompress_le_dangerous(&compressed);
+```
+
+#### Automatic Best Padless Compression
+
+```rust
+use zeck::{padless_zeckendorf_compress_best_dangerous, PadlessCompressionResult};
+
+let data = vec![1, 0];
+match padless_zeckendorf_compress_best_dangerous(&data) {
+    PadlessCompressionResult::BigEndianBest { compressed_data, le_size } => {
+        // Use padless_zeckendorf_decompress_be_dangerous for decompression
+    }
+    PadlessCompressionResult::LittleEndianBest { compressed_data, be_size } => {
+        // Use padless_zeckendorf_decompress_le_dangerous for decompression
+    }
+    PadlessCompressionResult::Neither { be_size, le_size } => {
+        // Neither method compressed the data
     }
 }
 ```
@@ -160,8 +223,12 @@ use zeck::memoized_slow_fibonacci_recursive;
 let fib_10 = memoized_slow_fibonacci_recursive(10); // Returns 55
 
 // For larger numbers, use BigInt versions
-use zeck::fast_doubling_fibonacci_bigint;
-let fib_100 = fast_doubling_fibonacci_bigint(100);
+use zeck::fast_doubling_fibonacci_biguint;
+let fib_100 = fast_doubling_fibonacci_biguint(100);
+
+// For even better performance with caching, use memoized fast doubling
+use zeck::memoized_fast_doubling_fibonacci_biguint;
+let fib_1000 = memoized_fast_doubling_fibonacci_biguint(1000);
 ```
 
 ### Zeckendorf Representation
@@ -172,7 +239,57 @@ use zeck::memoized_zeckendorf_list_descending_for_integer;
 // Get Zeckendorf representation as a list of Fibonacci indices
 let zld = memoized_zeckendorf_list_descending_for_integer(12);
 // Returns [6, 4, 2] meaning F(6) + F(4) + F(2) = 8 + 3 + 1 = 12
+
+// For BigInt numbers
+use zeck::memoized_zeckendorf_list_descending_for_biguint;
+use num_bigint::BigUint;
+let zld = memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(12u64));
 ```
+
+### Utility Functions
+
+The library provides various utility functions for working with Fibonacci numbers and Zeckendorf representations:
+
+```rust
+use zeck::{
+    bit_count_for_number,           // Count bits needed to represent a number
+    highest_one_bit,                 // Get the highest set bit
+    efi_to_fi, fi_to_efi,            // Convert between Effective Fibonacci Index and Fibonacci Index
+    memoized_effective_fibonacci,     // Get Fibonacci number from Effective Fibonacci Index
+    zl_to_ezl, ezl_to_zl,            // Convert between Zeckendorf List and Effective Zeckendorf List
+    all_ones_zeckendorf_to_biguint,   // Create "all ones" Zeckendorf numbers
+    PHI, PHI_SQUARED,                 // Golden ratio constants
+};
+```
+
+### Error Handling
+
+The file format functions return `Result` types with comprehensive error handling:
+
+```rust
+use zeck::zeck_file_format::{compress::compress_zeck_be, error::ZeckFormatError};
+
+match compress_zeck_be(&data) {
+    Ok(zeck_file) => {
+        // Compression succeeded
+    }
+    Err(ZeckFormatError::DataSizeTooLarge { size }) => {
+        // Data size exceeds u64::MAX
+    }
+    Err(e) => {
+        // Handle other errors
+        eprintln!("Compression error: {}", e);
+    }
+}
+```
+
+Common error types include:
+- `HeaderTooShort`: Input data is too short to contain a valid header
+- `UnsupportedVersion`: File format version is not supported
+- `ReservedFlagsSet`: Reserved flags are set (indicating a newer format)
+- `CompressionFailed`: Compression did not reduce the data size
+- `DecompressedTooLarge`: Decompressed data is larger than expected
+- `DataSizeTooLarge`: Data size exceeds the maximum representable size
 
 ## Binaries
 
@@ -297,7 +414,7 @@ cat input.zbe | zeck-decompress --endian big
 ### Main Playground
 
 ```bash
-cargo run --release --bin zeck
+cargo run --release --bin zeck-playground --features development_tools
 ```
 
 A playground/scratchpad for testing library functions.
@@ -373,6 +490,7 @@ cargo bench --bench zeckendorf_bench -- --baseline <name>
 ## Performance Characteristics
 
 - **Fast Doubling Fibonacci**: ~160x faster than iterative method for the 100,000th Fibonacci number
+- **Memoized Fast Doubling**: Uses sparse HashMap caching for efficient memory usage with large, non-contiguous Fibonacci indices
 - **Memoization**: Thread-safe caching significantly improves repeated calculations. The trade-off is that the cache takes up memory.
 - **Compression Effectiveness**: Varies by input; compression ratios oscillate and become less favorable as input size increases
 
@@ -385,12 +503,23 @@ Every positive integer can be uniquely represented as a sum of non-consecutive F
 
 ### Compression Process
 
-1. Input data is interpreted as either a big-endian or little-endian integer (you can choose, or use `zeckendorf_compress_best` to try both)
+1. Input data is interpreted as either a big-endian or little-endian integer (you can choose, or use `compress_zeck_best` to try both)
 2. The integer is converted to its Zeckendorf representation (list of Fibonacci indices)
 3. The representation is encoded as bits (use/skip bits)
 4. Bits are packed into bytes (little-endian output)
 
-The library provides functions to compress with either interpretation, or you can use `zeckendorf_compress_best` to automatically try both and select the one that produces the smallest output.
+The library provides functions to compress with either interpretation, or you can use `compress_zeck_best` to automatically try both and select the one that produces the smallest output.
+
+### File Format
+
+The `.zeck` file format includes a 10-byte header:
+- **Version** (1 byte): File format version (currently 1)
+- **Original Size** (8 bytes): Original uncompressed file size in bytes (little-endian)
+- **Flags** (1 byte): Endianness and reserved flags
+  - Bit 0: Big endian flag (1 = big endian, 0 = little endian)
+  - Bits 1-7: Reserved for future use
+
+The header is followed by the compressed data. This format automatically preserves the original file size, allowing proper restoration of leading or trailing zero bytes during decompression.
 
 ### Effective Fibonacci Indices
 
@@ -407,6 +536,7 @@ This avoids redundant Fibonacci numbers (F(0)=0 and F(1)=F(2)=1).
 - Compression effectiveness decreases as input size increases
 - The library supports both big-endian and little-endian interpretations, but other byte orderings or word boundaries are not currently explored
 - **⚠️ Warning:** Compressing or decompressing files larger than 10KB (10,000 bytes) is unstable due to time and memory pressure. The library may experience performance issues, excessive memory usage, or failures when processing files exceeding this size.
+- Padless compression functions (`*_dangerous`) do not preserve leading/trailing zero bytes—use the file format functions for automatic size preservation
 
 ## NPM Versioning Quirk
 
