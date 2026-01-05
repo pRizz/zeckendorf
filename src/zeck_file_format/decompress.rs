@@ -7,6 +7,7 @@ use crate::zeck_file_format::{
 use crate::{
     padless_zeckendorf_decompress_be_dangerous, padless_zeckendorf_decompress_le_dangerous,
 };
+use wasm_bindgen::prelude::*;
 
 /// Decompresses data from a [`ZeckFile`] struct.
 ///
@@ -35,6 +36,7 @@ use crate::{
 ///     }
 /// }
 /// ```
+#[wasm_bindgen]
 pub fn decompress_zeck_file(zeck_file: &ZeckFile) -> Result<Vec<u8>, ZeckFormatError> {
     // Check reserved flags
     if zeck_file.flags & ZECK_FLAG_RESERVED_MASK != 0 {

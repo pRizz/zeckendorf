@@ -12,6 +12,10 @@ use wasm_bindgen::prelude::*;
 /// This struct holds all the information needed to reconstruct a .zeck file,
 /// including the format version, original file size, endianness flags, and
 /// the compressed data itself.
+///
+/// Using `derive(Serialize, Deserialize, Tsify)` and `tsify(into_wasm_abi, from_wasm_abi)` on the struct is necessary
+/// to allow the struct to be used in the WebAssembly module, namely because the `compressed_data` field is
+/// a [`Vec<u8>`], which needed [`Copy`], and the [`wasm_bindgen`] attribute was insufficient to achieve this.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 pub struct ZeckFile {
@@ -83,6 +87,24 @@ impl ZeckFile {
     }
 }
 
+/// We need to make public standalone functions on ZeckFile because for some reason, the #[wasm_bindgen] attribute doesn't seem to work on the struct methods. Maybe using Tsify on ZeckFile is causing the issue.
+/// This is a workaround to allow the functions to be used in the WebAssembly module.
+
+#[wasm_bindgen]
+pub fn zeck_file_is_big_endian(zeck_file: &ZeckFile) -> bool {
+    zeck_file.is_big_endian()
+}
+
+#[wasm_bindgen]
+pub fn zeck_file_to_bytes(zeck_file: &ZeckFile) -> Vec<u8> {
+    zeck_file.to_bytes()
+}
+
+#[wasm_bindgen]
+pub fn zeck_file_total_size(zeck_file: &ZeckFile) -> usize {
+    zeck_file.total_size()
+}
+
 impl std::fmt::Display for ZeckFile {
     /// Formats the ZeckFile for display, showing key information.
     ///
@@ -133,6 +155,7 @@ impl std::fmt::Display for ZeckFile {
 ///     }
 /// }
 /// ```
+#[wasm_bindgen]
 pub fn deserialize_zeck_file(zeck_file_data: &[u8]) -> Result<ZeckFile, ZeckFormatError> {
     // Check header size
     if zeck_file_data.len() < ZECK_HEADER_SIZE {
