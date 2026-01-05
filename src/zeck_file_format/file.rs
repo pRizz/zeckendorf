@@ -3,13 +3,17 @@
 use crate::zeck_file_format::{
     ZECK_FLAG_BIG_ENDIAN, ZECK_FORMAT_VERSION, ZECK_HEADER_SIZE, error::ZeckFormatError,
 };
+use serde::{Deserialize, Serialize};
+use tsify::Tsify;
+use wasm_bindgen::prelude::*;
 
 /// Represents a .zeck file with its header information and compressed data.
 ///
 /// This struct holds all the information needed to reconstruct a .zeck file,
 /// including the format version, original file size, endianness flags, and
 /// the compressed data itself.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
 pub struct ZeckFile {
     /// File format version
     pub version: u8,

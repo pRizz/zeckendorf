@@ -6,10 +6,14 @@ use crate::{
     PadlessCompressionResult, padless_zeckendorf_compress_be_dangerous,
     padless_zeckendorf_compress_best_dangerous, padless_zeckendorf_compress_le_dangerous,
 };
+use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
+use tsify::Tsify;
+use wasm_bindgen::prelude::*;
 
 /// Result of best compression attempt, containing the best compressed zeck file and the size for the other endianness attempt, or if neither produced compression (both were larger than the original).
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
 pub enum BestCompressionResult {
     /// Big endian compression produced the smallest output.
     /// Contains the compressed data and the size of the little endian attempt for comparison.
@@ -96,6 +100,7 @@ pub enum BestCompressionResult {
 ///     }
 /// }
 /// ```
+#[wasm_bindgen]
 pub fn compress_zeck_best(data: &[u8]) -> Result<BestCompressionResult, ZeckFormatError> {
     let original_size = u64::try_from(data.len())
         .map_err(|_| ZeckFormatError::DataSizeTooLarge { size: data.len() })?;
@@ -148,6 +153,7 @@ pub fn compress_zeck_best(data: &[u8]) -> Result<BestCompressionResult, ZeckForm
 ///     }
 /// }
 /// ```
+#[wasm_bindgen]
 pub fn compress_zeck_le(data: &[u8]) -> Result<ZeckFile, ZeckFormatError> {
     let original_size = u64::try_from(data.len())
         .map_err(|_| ZeckFormatError::DataSizeTooLarge { size: data.len() })?;
@@ -181,6 +187,7 @@ pub fn compress_zeck_le(data: &[u8]) -> Result<ZeckFile, ZeckFormatError> {
 ///     }
 /// }
 /// ```
+#[wasm_bindgen]
 pub fn compress_zeck_be(data: &[u8]) -> Result<ZeckFile, ZeckFormatError> {
     let original_size = u64::try_from(data.len())
         .map_err(|_| ZeckFormatError::DataSizeTooLarge { size: data.len() })?;

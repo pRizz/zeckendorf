@@ -1,5 +1,9 @@
+use serde::{Deserialize, Serialize};
+use tsify::Tsify;
+
 /// Errors that can occur when parsing or processing .zeck files.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
 pub enum ZeckFormatError {
     /// The input data is too short to contain a valid header.
     HeaderTooShort {

@@ -516,21 +516,21 @@ pub fn highest_one_bit(n: u64) -> u64 {
 /// ```
 /// # use zeck::memoized_zeckendorf_list_descending_for_integer;
 /// // Base cases
-/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(0), vec![]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(1), vec![2]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(2), vec![3]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(0), vec![] as Vec<u64>);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(1), vec![2u64]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(2), vec![3u64]);
 ///
 /// // Small Zeckendorf numbers
-/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(3), vec![4]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(4), vec![4, 2]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(5), vec![5]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(6), vec![5, 2]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(7), vec![5, 3]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(8), vec![6]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(9), vec![6, 2]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(10), vec![6, 3]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(11), vec![6, 4]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(12), vec![6, 4, 2]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(3), vec![4u64]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(4), vec![4u64, 2u64]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(5), vec![5u64]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(6), vec![5u64, 2u64]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(7), vec![5u64, 3u64]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(8), vec![6u64]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(9), vec![6u64, 2u64]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(10), vec![6u64, 3u64]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(11), vec![6u64, 4u64]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_integer(12), vec![6u64, 4u64, 2u64]);
 /// ```
 #[wasm_bindgen]
 pub fn memoized_zeckendorf_list_descending_for_integer(n: u64) -> Vec<u64> {
@@ -616,19 +616,19 @@ pub fn memoized_zeckendorf_list_descending_for_integer(n: u64) -> Vec<u64> {
 /// # use num_bigint::BigUint;
 /// # use num_traits::{One, Zero};
 /// // Base cases
-/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::zero()), vec![]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::one()), vec![2]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(2u64)), vec![3]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::zero()), vec![] as Vec<u64>);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::one()), vec![2u64]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(2u64)), vec![3u64]);
 ///
 /// // Small Zeckendorf numbers
-/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(3u64)), vec![4]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(4u64)), vec![4, 2]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(5u64)), vec![5]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(6u64)), vec![5, 2]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(7u64)), vec![5, 3]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(8u64)), vec![6]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(9u64)), vec![6, 2]);
-/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(10u64)), vec![6, 3]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(3u64)), vec![4u64]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(4u64)), vec![4u64, 2u64]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(5u64)), vec![5u64]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(6u64)), vec![5u64, 2u64]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(7u64)), vec![5u64, 3u64]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(8u64)), vec![6u64]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(9u64)), vec![6u64, 2u64]);
+/// assert_eq!(memoized_zeckendorf_list_descending_for_biguint(&BigUint::from(10u64)), vec![6u64, 3u64]);
 /// ```
 pub fn memoized_zeckendorf_list_descending_for_biguint(n: &BigUint) -> Vec<u64> {
     if n == &BigUint::zero() {
@@ -1124,9 +1124,9 @@ pub fn unpack_bytes_to_ezba_bits(bytes: &[u8]) -> Vec<u8> {
 ///
 /// ```
 /// # use zeck::ezba_to_ezla;
-/// assert_eq!(ezba_to_ezla(&[0, 0, 0, 0, 0, 0, 0, 0]), vec![]);
-/// assert_eq!(ezba_to_ezla(&[1, 0, 0, 0, 0, 0, 0, 0]), vec![0]);
-/// assert_eq!(ezba_to_ezla(&[1, 1, 1, 0, 0, 0, 0, 0]), vec![0, 2, 4]);
+/// assert_eq!(ezba_to_ezla(&[0, 0, 0, 0, 0, 0, 0, 0]), vec![] as Vec<u64>);
+/// assert_eq!(ezba_to_ezla(&[1, 0, 0, 0, 0, 0, 0, 0]), vec![0u64]);
+/// assert_eq!(ezba_to_ezla(&[1, 1, 1, 0, 0, 0, 0, 0]), vec![0u64, 2u64, 4u64]);
 /// ```
 #[wasm_bindgen]
 pub fn ezba_to_ezla(ezba_bits: &[u8]) -> Vec<u64> {
