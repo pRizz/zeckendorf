@@ -183,8 +183,8 @@ fn plot_fibonacci_numbers(
         .configure_series_labels()
         .margin(LEGEND_MARGIN)
         .label_font(("sans-serif", LEGEND_FONT_SIZE).into_font())
-        .background_style(&WHITE.mix(0.8))
-        .border_style(&BLACK)
+        .background_style(WHITE.mix(0.8))
+        .border_style(BLACK)
         .draw()?;
 
     root.present()?;
@@ -242,7 +242,7 @@ fn plot_fibonacci_binary_all_ones(
         .clone()
         .filter_map(|i| {
             let fib = memoized_fast_doubling_fibonacci_biguint(i);
-            let fib_f64 = biguint_to_approximate_f64(&*fib);
+            let fib_f64 = biguint_to_approximate_f64(&fib);
             if fib_f64 > 0.0 && fib_f64.is_finite() {
                 Some((i as f64, fib_f64))
             } else {
@@ -411,8 +411,8 @@ fn plot_fibonacci_binary_all_ones(
         .position(SeriesLabelPosition::LowerRight)
         .margin(LEGEND_MARGIN)
         .label_font(("sans-serif", LEGEND_FONT_SIZE).into_font())
-        .background_style(&WHITE.mix(0.8))
-        .border_style(&BLACK)
+        .background_style(WHITE.mix(0.8))
+        .border_style(BLACK)
         .draw()?;
 
     root.present()?;
@@ -474,7 +474,7 @@ fn plot_fibonacci_binary_all_ones_power3(
         .clone()
         .filter_map(|i| {
             let fib = memoized_fast_doubling_fibonacci_biguint(i);
-            let fib_f64 = biguint_to_approximate_f64(&*fib);
+            let fib_f64 = biguint_to_approximate_f64(&fib);
             if fib_f64 > 0.0 && fib_f64.is_finite() {
                 Some((i as f64, fib_f64))
             } else {
@@ -678,8 +678,8 @@ fn plot_fibonacci_binary_all_ones_power3(
         .position(SeriesLabelPosition::LowerRight)
         .margin(LEGEND_MARGIN)
         .label_font(("sans-serif", LEGEND_FONT_SIZE).into_font())
-        .background_style(&WHITE.mix(0.8))
-        .border_style(&BLACK)
+        .background_style(WHITE.mix(0.8))
+        .border_style(BLACK)
         .draw()?;
 
     root.present()?;
@@ -745,7 +745,7 @@ fn plot_fibonacci_binary_all_ones_power3_phi_phi_squared(
         .clone()
         .filter_map(|i| {
             let fib = memoized_fast_doubling_fibonacci_biguint(i);
-            let fib_f64 = biguint_to_approximate_f64(&*fib);
+            let fib_f64 = biguint_to_approximate_f64(&fib);
             if fib_f64 > 0.0 && fib_f64.is_finite() {
                 Some((i as f64, fib_f64))
             } else {
@@ -1019,8 +1019,8 @@ fn plot_fibonacci_binary_all_ones_power3_phi_phi_squared(
         .position(SeriesLabelPosition::UpperLeft)
         .margin(LEGEND_MARGIN)
         .label_font(("sans-serif", LEGEND_FONT_SIZE).into_font())
-        .background_style(&WHITE.mix(0.8))
-        .border_style(&BLACK)
+        .background_style(WHITE.mix(0.8))
+        .border_style(BLACK)
         .draw()?;
 
     root.present()?;
@@ -1149,8 +1149,8 @@ fn plot_compression_ratios(
         .position(SeriesLabelPosition::LowerRight)
         .margin(LEGEND_MARGIN)
         .label_font(("sans-serif", LEGEND_FONT_SIZE).into_font())
-        .background_style(&WHITE.mix(0.8))
-        .border_style(&BLACK)
+        .background_style(WHITE.mix(0.8))
+        .border_style(BLACK)
         .draw()?;
 
     root.present()?;

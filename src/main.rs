@@ -184,7 +184,6 @@ fn _flamegraph_zeckendorf_decompress_be() {
         let decompressed_data = padless_zeckendorf_decompress_be_dangerous(&compressed_data);
         std::hint::black_box(decompressed_data);
     }
-    return;
 }
 
 fn _test_bit_count_for_all_ones_effective_zeckendorf_bits_ascending() {
@@ -437,7 +436,7 @@ impl PartialEq for AllOnesZeckendorfBitsToBinaryBitsRatio {
 
 impl PartialOrd for AllOnesZeckendorfBitsToBinaryBitsRatio {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.ratio.partial_cmp(&other.ratio)
+        Some(self.cmp(other))
     }
 }
 

@@ -755,7 +755,7 @@ pub enum PadlessCompressionResult {
 /// ```
 #[wasm_bindgen]
 pub fn efi_to_fi(efi: u64) -> u64 {
-    return efi + 2;
+    efi + 2
 }
 
 /// Effective Fibonacci Index to Fibonacci Index: FI(efi) === efi + 2, where efi is the Effective Fibonacci Index
@@ -769,7 +769,7 @@ pub fn efi_to_fi(efi: u64) -> u64 {
 /// assert_eq!(efi_to_fi_ref(&2), 4);
 /// ```
 pub fn efi_to_fi_ref(efi: &u64) -> u64 {
-    return *efi + 2;
+    *efi + 2
 }
 
 /// Effective Fibonacci Index to Fibonacci Index: FI(efi) === efi + 2, where efi is the Effective Fibonacci Index
@@ -785,7 +785,7 @@ pub fn efi_to_fi_ref(efi: &u64) -> u64 {
 /// assert_eq!(efi_to_fi_biguint(BigUint::from(2u64)), BigUint::from(4u64));
 /// ```
 pub fn efi_to_fi_biguint(efi: BigUint) -> BigUint {
-    return efi + BigUint::from(2u64);
+    efi + BigUint::from(2u64)
 }
 
 /// Fibonacci Index to Effective Fibonacci Index: EFI(fi) === fi - 2, where fi is the Fibonacci Index
@@ -802,7 +802,7 @@ pub fn efi_to_fi_biguint(efi: BigUint) -> BigUint {
 /// ```
 #[wasm_bindgen]
 pub fn fi_to_efi(fi: u64) -> u64 {
-    return fi - 2;
+    fi - 2
 }
 
 /// Fibonacci Index to Effective Fibonacci Index: EFI(fi) === fi - 2, where fi is the Fibonacci Index
@@ -816,7 +816,7 @@ pub fn fi_to_efi(fi: u64) -> u64 {
 /// assert_eq!(fi_to_efi_ref(&4), 2);
 /// ```
 pub fn fi_to_efi_ref(fi: &u64) -> u64 {
-    return *fi - 2;
+    *fi - 2
 }
 
 /// Fibonacci Index to Effective Fibonacci Index: EFI(fi) === fi - 2, where fi is the Fibonacci Index
@@ -832,7 +832,7 @@ pub fn fi_to_efi_ref(fi: &u64) -> u64 {
 /// assert_eq!(fi_to_efi_biguint(BigUint::from(4u64)), BigUint::from(2u64));
 /// ```
 pub fn fi_to_efi_biguint(fi: BigUint) -> BigUint {
-    return fi - BigUint::from(2u64);
+    fi - BigUint::from(2u64)
 }
 
 /// The memoized Fibonacci function taking an Effective Fibonacci Index as input.
@@ -857,7 +857,7 @@ pub fn fi_to_efi_biguint(fi: BigUint) -> BigUint {
 /// ```
 #[wasm_bindgen]
 pub fn memoized_effective_fibonacci(efi: u64) -> u64 {
-    return memoized_slow_fibonacci_recursive(efi_to_fi(efi));
+    memoized_slow_fibonacci_recursive(efi_to_fi(efi))
 }
 
 /// An Effective Zeckendorf List (EZL) has a lowest EFI of 0, which is an FI of 2.
@@ -877,7 +877,7 @@ pub fn memoized_effective_fibonacci(efi: u64) -> u64 {
 /// ```
 #[wasm_bindgen]
 pub fn zl_to_ezl(zl: &[u64]) -> Vec<u64> {
-    return zl.into_iter().map(fi_to_efi_ref).collect();
+    zl.iter().map(fi_to_efi_ref).collect()
 }
 
 /// Converts an Effective Zeckendorf List to a Zeckendorf List.
@@ -893,7 +893,7 @@ pub fn zl_to_ezl(zl: &[u64]) -> Vec<u64> {
 /// ```
 #[wasm_bindgen]
 pub fn ezl_to_zl(ezl: &[u64]) -> Vec<u64> {
-    return ezl.into_iter().map(efi_to_fi_ref).collect();
+    ezl.iter().map(efi_to_fi_ref).collect()
 }
 
 /// ezba is Effective Zeckendorf Bits Ascending ; ezld is Effective Zeckendorf List Descending
@@ -924,8 +924,8 @@ pub fn ezba_from_ezld(effective_zeckendorf_list_descending: &[u64]) -> Vec<u8> {
     }
 
     let effective_zeckendorf_list_ascending: Vec<u64> = effective_zeckendorf_list_descending
-        .to_vec()
-        .into_iter()
+        .iter()
+        .copied()
         .rev()
         .collect();
 
@@ -949,7 +949,7 @@ pub fn ezba_from_ezld(effective_zeckendorf_list_descending: &[u64]) -> Vec<u8> {
         }
     }
 
-    return effective_zeckendorf_bits_ascending;
+    effective_zeckendorf_bits_ascending
 }
 
 /// Packs a slice of bits (0s and 1s) from an ezba (Effective Zeckendorf Bits Ascending) into bytes.
@@ -972,7 +972,7 @@ pub fn ezba_from_ezld(effective_zeckendorf_list_descending: &[u64]) -> Vec<u8> {
 /// ```
 #[wasm_bindgen]
 pub fn pack_ezba_bits_to_bytes(ezba: &[u8]) -> Vec<u8> {
-    let mut out = Vec::with_capacity((ezba.len() + 7) / 8);
+    let mut out = Vec::with_capacity(ezba.len().div_ceil(8));
 
     for chunk in ezba.chunks(8) {
         let mut b = 0u8;
@@ -1025,7 +1025,6 @@ pub fn pack_ezba_bits_to_bytes(ezba: &[u8]) -> Vec<u8> {
 /// ```
 #[wasm_bindgen]
 pub fn padless_zeckendorf_compress_be_dangerous(data: &[u8]) -> Vec<u8> {
-    let compressed_data: Vec<u8>;
     // Turn data into a biguint
     let data_as_biguint = BigUint::from_bytes_be(data);
     // println!("Data as biguint: {:?}", data_as_biguint);
@@ -1038,9 +1037,7 @@ pub fn padless_zeckendorf_compress_be_dangerous(data: &[u8]) -> Vec<u8> {
     let data_as_ezba = ezba_from_ezld(&data_as_ezld);
     // println!("Data as ezba: {:?}", data_as_ezba);
     // Compress the data
-    compressed_data = pack_ezba_bits_to_bytes(&data_as_ezba);
-    // println!("Compressed data: {:?}", compressed_data);
-    return compressed_data;
+    pack_ezba_bits_to_bytes(&data_as_ezba)
 }
 
 /// Compresses a slice of bytes using the Padless Zeckendorf Compression algorithm.
@@ -1077,7 +1074,6 @@ pub fn padless_zeckendorf_compress_be_dangerous(data: &[u8]) -> Vec<u8> {
 /// ```
 #[wasm_bindgen]
 pub fn padless_zeckendorf_compress_le_dangerous(data: &[u8]) -> Vec<u8> {
-    let compressed_data: Vec<u8>;
     // Turn data into a biguint
     let data_as_biguint = BigUint::from_bytes_le(data);
     // println!("Data as biguint: {:?}", data_as_biguint);
@@ -1090,9 +1086,7 @@ pub fn padless_zeckendorf_compress_le_dangerous(data: &[u8]) -> Vec<u8> {
     let data_as_ezba = ezba_from_ezld(&data_as_ezld);
     // println!("Data as ezba: {:?}", data_as_ezba);
     // Compress the data
-    compressed_data = pack_ezba_bits_to_bytes(&data_as_ezba);
-    // println!("Compressed data: {:?}", compressed_data);
-    return compressed_data;
+    pack_ezba_bits_to_bytes(&data_as_ezba)
 }
 
 /// Unpacks a vector of bytes into a vector of bits (0s and 1s) from an ezba (Effective Zeckendorf Bits Ascending).
@@ -1114,7 +1108,7 @@ pub fn unpack_bytes_to_ezba_bits(bytes: &[u8]) -> Vec<u8> {
             ezba_bits.push((byte >> i) & 1);
         }
     }
-    return ezba_bits;
+    ezba_bits
 }
 
 /// Converts a vector of bits (0s and 1s) from an ezba (Effective Zeckendorf Bits Ascending) into a vector of effective Fibonacci indices,
@@ -1140,7 +1134,7 @@ pub fn ezba_to_ezla(ezba_bits: &[u8]) -> Vec<u64> {
             current_efi += 1;
         }
     }
-    return ezla;
+    ezla
 }
 
 /// Converts a Zeckendorf List to a [`BigUint`].
@@ -1255,7 +1249,7 @@ pub fn padless_zeckendorf_decompress_be_dangerous(compressed_data: &[u8]) -> Vec
     // Convert the zla to a biguint
     let compressed_data_as_biguint = zl_to_biguint(&compressed_data_as_zla);
     // println!("Compressed data as biguint: {:?}", compressed_data_as_biguint);
-    return compressed_data_as_biguint.to_bytes_be();
+    compressed_data_as_biguint.to_bytes_be()
 }
 
 /// Decompresses a slice of bytes compressed using the Zeckendorf algorithm, assuming the original data was compressed using the little endian bytes interpretation.
@@ -1297,7 +1291,7 @@ pub fn padless_zeckendorf_decompress_le_dangerous(compressed_data: &[u8]) -> Vec
     // Convert the zla to a biguint
     let compressed_data_as_biguint = zl_to_biguint(&compressed_data_as_zla);
     // println!("Compressed data as biguint: {:?}", compressed_data_as_biguint);
-    return compressed_data_as_biguint.to_bytes_le();
+    compressed_data_as_biguint.to_bytes_le()
 }
 
 /// Attempts to compress the input data using both big endian and little endian interpretations,

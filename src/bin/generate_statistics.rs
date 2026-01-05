@@ -115,7 +115,7 @@ fn generate_stats_csv(stats: &[CompressionStats], csv_header: &str) -> String {
         );
         println!("{}", line);
         output.push_str(&line);
-        output.push_str("\n");
+        output.push('\n');
     }
     output
 }
@@ -308,11 +308,7 @@ fn gather_stats_for_limit(limit: u64) -> CompressionStats {
     let average_pct = compression_amounts.iter().sum::<f64>() / total;
 
     let maybe_median = median(&mut compression_amounts);
-    let median_pct = if let Some(value) = maybe_median {
-        value
-    } else {
-        0.0
-    };
+    let median_pct = maybe_median.unwrap_or(0.0);
 
     let mut favorable_amounts: Vec<f64> = compression_amounts
         .iter()
@@ -401,7 +397,7 @@ fn compression_amount_percent_bytes(data: &[u8]) -> Option<f64> {
 /// Generates a random bytes array with roughly the specified number of bits (the number of bits is rounded up to the nearest byte).
 fn generate_random_bytes_of_roughly_bit_size(bit_size: u64, rng: &mut StdRng) -> Vec<u8> {
     // Generate random bytes to cover the bit size
-    let num_bytes = ((bit_size + 7) / 8) as usize;
+    let num_bytes = bit_size.div_ceil(8) as usize;
     let mut bytes = vec![0u8; num_bytes];
     rng.fill(&mut bytes[..]);
 
@@ -459,7 +455,7 @@ fn _debug_2000_bits_case() {
                 sample_stats.push(ratio);
 
                 // Check for anomalies
-                if ratio > 10.0 || ratio < 0.01 {
+                if !(0.01..=10.0).contains(&ratio) {
                     println!("  ⚠️  ANOMALY: Extreme compression ratio detected!");
                 }
                 if bytes_bit_size != bigint_bit_size as usize {
@@ -547,11 +543,7 @@ fn gather_sampled_stats(bit_size_limit: u64, num_samples: u64) -> CompressionSta
     let average_pct = compression_amounts.iter().sum::<f64>() / total;
 
     let maybe_median = median(&mut compression_amounts);
-    let median_pct = if let Some(value) = maybe_median {
-        value
-    } else {
-        0.0
-    };
+    let median_pct = maybe_median.unwrap_or(0.0);
 
     let mut favorable_amounts: Vec<f64> = compression_amounts
         .iter()
@@ -603,21 +595,15 @@ fn median(values: &mut [f64]) -> Option<f64> {
     let len = values.len();
     let mid = len / 2;
 
-    if len % 2 == 0 {
+    if len.is_multiple_of(2) {
         let maybe_lower = values.get(mid.saturating_sub(1));
         let maybe_upper = values.get(mid);
-        let Some(lower) = maybe_lower else {
-            return None;
-        };
-        let Some(upper) = maybe_upper else {
-            return None;
-        };
+        let lower = maybe_lower?;
+        let upper = maybe_upper?;
         Some((lower + upper) / 2.0)
     } else {
         let maybe_value = values.get(mid);
-        let Some(value) = maybe_value else {
-            return None;
-        };
+        let value = maybe_value?;
         Some(*value)
     }
 }
@@ -828,8 +814,8 @@ fn plot_compression_ratios(
         .position(SeriesLabelPosition::LowerRight)
         .margin(LEGEND_MARGIN)
         .label_font(("sans-serif", LEGEND_FONT_SIZE).into_font())
-        .background_style(&WHITE.mix(0.8))
-        .border_style(&BLACK)
+        .background_style(WHITE.mix(0.8))
+        .border_style(BLACK)
         .draw()?;
 
     root.present()?;
@@ -952,8 +938,8 @@ fn plot_favorable_percentages(
         .position(SeriesLabelPosition::UpperRight)
         .margin(LEGEND_MARGIN)
         .label_font(("sans-serif", LEGEND_FONT_SIZE).into_font())
-        .background_style(&WHITE.mix(0.8))
-        .border_style(&BLACK)
+        .background_style(WHITE.mix(0.8))
+        .border_style(BLACK)
         .draw()?;
 
     root.present()?;
@@ -1010,7 +996,7 @@ fn plot_sampled_compression_ratios(
 
     let mut chart = ChartBuilder::on(&root)
         .caption(
-            format!("Zeckendorf Compression Ratios"),
+            "Zeckendorf Compression Ratios",
             ("sans-serif", CAPTION_FONT_SIZE).into_font(),
         )
         .margin(CHART_MARGIN)
@@ -1169,8 +1155,8 @@ fn plot_sampled_compression_ratios(
         .position(SeriesLabelPosition::LowerRight)
         .margin(LEGEND_MARGIN)
         .label_font(("sans-serif", LEGEND_FONT_SIZE).into_font())
-        .background_style(&WHITE.mix(0.8))
-        .border_style(&BLACK)
+        .background_style(WHITE.mix(0.8))
+        .border_style(BLACK)
         .draw()?;
 
     root.present()?;
@@ -1216,7 +1202,7 @@ fn plot_sampled_favorable_percentages(
 
     let mut chart = ChartBuilder::on(&root)
         .caption(
-            format!("Chance of Compression Being Favorable"),
+            "Chance of Compression Being Favorable",
             ("sans-serif", CAPTION_FONT_SIZE).into_font(),
         )
         .margin(CHART_MARGIN)
@@ -1291,8 +1277,8 @@ fn plot_sampled_favorable_percentages(
         .position(SeriesLabelPosition::UpperRight)
         .margin(LEGEND_MARGIN)
         .label_font(("sans-serif", LEGEND_FONT_SIZE).into_font())
-        .background_style(&WHITE.mix(0.8))
-        .border_style(&BLACK)
+        .background_style(WHITE.mix(0.8))
+        .border_style(BLACK)
         .draw()?;
 
     root.present()?;
@@ -1349,7 +1335,7 @@ fn plot_wide_scale_sampled_compression_ratios(
 
     let mut chart = ChartBuilder::on(&root)
         .caption(
-            format!("Zeckendorf Compression Ratios (Wide-Scale Sampling)"),
+            "Zeckendorf Compression Ratios (Wide-Scale Sampling)",
             ("sans-serif", CAPTION_FONT_SIZE).into_font(),
         )
         .margin(CHART_MARGIN)
@@ -1513,8 +1499,8 @@ fn plot_wide_scale_sampled_compression_ratios(
         .position(SeriesLabelPosition::LowerRight)
         .margin(LEGEND_MARGIN)
         .label_font(("sans-serif", LEGEND_FONT_SIZE).into_font())
-        .background_style(&WHITE.mix(0.8))
-        .border_style(&BLACK)
+        .background_style(WHITE.mix(0.8))
+        .border_style(BLACK)
         .draw()?;
 
     root.present()?;
@@ -1564,7 +1550,7 @@ fn plot_wide_scale_sampled_favorable_percentages(
 
     let mut chart = ChartBuilder::on(&root)
         .caption(
-            format!("Chance of Compression Being Favorable (Wide-Scale Sampling)"),
+            "Chance of Compression Being Favorable (Wide-Scale Sampling)",
             ("sans-serif", CAPTION_FONT_SIZE).into_font(),
         )
         .margin(CHART_MARGIN)
@@ -1643,8 +1629,8 @@ fn plot_wide_scale_sampled_favorable_percentages(
         .position(SeriesLabelPosition::UpperRight)
         .margin(LEGEND_MARGIN)
         .label_font(("sans-serif", LEGEND_FONT_SIZE).into_font())
-        .background_style(&WHITE.mix(0.8))
-        .border_style(&BLACK)
+        .background_style(WHITE.mix(0.8))
+        .border_style(BLACK)
         .draw()?;
 
     root.present()?;
