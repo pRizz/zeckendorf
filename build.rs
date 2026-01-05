@@ -4,7 +4,7 @@ use std::process::Command;
 
 fn maybe_get_git_commit_sha() -> Option<String> {
     let output = Command::new("git")
-        .args(&["rev-parse", "HEAD"])
+        .args(["rev-parse", "HEAD"])
         .output()
         .ok()?;
 
@@ -19,7 +19,7 @@ fn maybe_get_git_commit_sha() -> Option<String> {
 
 fn is_workspace_dirty() -> bool {
     let output = Command::new("git")
-        .args(&["status", "--porcelain"])
+        .args(["status", "--porcelain"])
         .output()
         .ok();
 
