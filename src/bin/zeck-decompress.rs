@@ -1,7 +1,7 @@
 //! Zeckendorf decompression CLI tool
 //!
 //! Decompresses data that was compressed using the Zeckendorf representation algorithm.
-//! Automatically detects endianness from file extension (.zbe for big-endian, .zle for little-endian).
+//! Automatically detects endianness from the file header.
 //!
 //! Building and running the tool:
 //! `cargo build --release --bin zeck-decompress`
@@ -9,21 +9,15 @@
 //!
 //! # Examples
 //!
-//! Decompress a file (endianness detected from .zbe or .zle extension):
+//! Decompress a file (endianness detected from file header):
 //! ```bash
-//! zeck-decompress input.zbe -o output.bin
-//! # Automatically uses big-endian decompression
+//! zeck-decompress input.zeck -o output.bin
+//! # Automatically detects endianness from header
 //! ```
 //!
-//! Decompress from stdin to stdout (must specify endianness):
+//! Decompress from stdin to stdout:
 //! ```bash
-//! cat input.zbe | zeck-decompress --endian big
-//! ```
-//!
-//! Override automatic endianness detection:
-//! ```bash
-//! zeck-decompress input.zbe --endian little -o output.bin
-//! # Overrides the .zbe extension and uses little-endian
+//! cat input.zeck | zeck-decompress
 //! ```
 
 // Include the generated version string from the build.rs script
@@ -48,7 +42,7 @@ struct Args {
     #[arg(value_name = "INPUT")]
     maybe_input: Option<String>,
 
-    /// Output file path. If not specified and input is a file, uses the input filename with .zbe or .zle extension removed.
+    /// Output file path. If not specified and input is a file, uses the input filename with `.zeck` extension removed.
     /// If not specified and reading from stdin, writes to stdout.
     #[arg(short = 'o', long = "output", value_name = "FILE")]
     maybe_output: Option<String>,

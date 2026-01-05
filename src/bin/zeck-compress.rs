@@ -1,7 +1,7 @@
 //! Zeckendorf compression CLI tool
 //!
 //! Compresses data using the Zeckendorf representation algorithm.
-//! Automatically uses `.zbe` extension for big-endian compression and `.zle` for little-endian compression.
+//! Automatically uses `.zeck` extension for compressed files.
 //!
 //! Building and running the tool:
 //! `cargo build --release --bin zeck-compress`
@@ -12,7 +12,7 @@
 //! Compress a file (output filename automatically created from input with extension):
 //! ```bash
 //! zeck-compress input.bin
-//! # Creates input.bin.zbe or input.bin.zle depending on which endianness was used
+//! # Creates input.bin.zeck
 //! ```
 //!
 //! Compress from stdin to stdout:
@@ -23,7 +23,7 @@
 //! Compress with specific endianness:
 //! ```bash
 //! zeck-compress input.bin --endian big
-//! # Creates input.bin.zbe
+//! # Creates input.bin.zeck
 //! ```
 
 // Include the generated version string from the build.rs script
@@ -64,10 +64,9 @@ struct Args {
     #[arg(value_name = "INPUT")]
     maybe_input: Option<String>,
 
-    /// Output file path. If not specified and input is a file, uses the input filename with the appropriate extension (.zbe or .zle) appended.
+    /// Output file path. If not specified and input is a file, uses the input filename with the `.zeck` extension appended.
     /// If not specified and reading from stdin, writes to stdout.
-    /// The appropriate extension (.zbe for big-endian, .zle for little-endian) is automatically added
-    /// unless the file already ends with .zbe or .zle.
+    /// The `.zeck` extension is automatically added unless the file already ends with `.zeck`.
     #[arg(short = 'o', long = "output", value_name = "FILE")]
     maybe_output: Option<String>,
 
