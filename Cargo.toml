@@ -10,6 +10,7 @@ keywords = ["compression", "zeckendorf", "fibonacci", "algorithm", "data-compres
 categories = ["compression", "algorithms", "mathematics"]
 repository = "https://github.com/pRizz/zeckendorf.git"
 exclude = [
+    ".github/",
     ".vscode/",
     "generated_data/",
     "plots/",
