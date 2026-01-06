@@ -4,7 +4,10 @@
 //! Run with: `cargo run --release --bin zeck-plot --features plotting,development_tools`
 
 use num_bigint::BigUint;
+use num_format::{Locale, ToFormattedString};
+use plotters::coord::types::RangedCoordf64;
 use plotters::prelude::*;
+use rand::{Rng, SeedableRng, rngs::StdRng};
 use std::sync::Arc;
 use std::time::Instant;
 use zeck::*;
@@ -83,6 +86,16 @@ fn main() {
     //     0..1_000_000_000,
     // )
     // .expect("Failed to plot compression ratios");
+
+    // Example: Plot histogram of compressed bit counts from random 64-bit integers
+    for i in 3..=6 {
+        let samples = 10_u64.pow(i as u32);
+        plot_compressed_bits_histogram(
+            &format!("plots/compressed_bits_histogram_{samples}_random_u64s.png"),
+            samples as usize,
+        )
+        .expect("Failed to plot compressed bits histogram");
+    }
 
     let end_time = Instant::now();
     println!("Time taken: {:?}", end_time.duration_since(start_time));
@@ -1195,4 +1208,385 @@ fn biguint_to_approximate_f64(value: &BigUint) -> f64 {
         let capped_bits = bits.min(1023.0);
         2_f64.powf(capped_bits)
     }
+}
+
+/// Calculates the mean (average) of a slice of u64 values.
+///
+/// # Arguments
+///
+/// * `values` - A slice of u64 values
+///
+/// # Returns
+///
+/// Returns the mean as an f64, or 0.0 if the slice is empty.
+///
+/// # Examples
+///
+/// ```
+/// # fn calculate_mean(values: &[u64]) -> f64 {
+/// #     if values.is_empty() { return 0.0; }
+/// #     values.iter().sum::<u64>() as f64 / values.len() as f64
+/// # }
+/// assert_eq!(calculate_mean(&[1, 2, 3, 4, 5]), 3.0);
+/// assert_eq!(calculate_mean(&[10, 20, 30]), 20.0);
+/// assert_eq!(calculate_mean(&[]), 0.0);
+/// ```
+fn calculate_mean(values: &[u64]) -> f64 {
+    if values.is_empty() {
+        return 0.0;
+    }
+    values.iter().sum::<u64>() as f64 / values.len() as f64
+}
+
+/// Calculates the median of a slice of u64 values.
+///
+/// # Arguments
+///
+/// * `values` - A slice of u64 values
+///
+/// # Returns
+///
+/// Returns the median as an f64, or 0.0 if the slice is empty.
+///
+/// # Examples
+///
+/// ```
+/// # fn calculate_median(values: &[u64]) -> f64 {
+/// #     if values.is_empty() { return 0.0; }
+/// #     let mut sorted_values = values.to_vec();
+/// #     sorted_values.sort();
+/// #     let mid = sorted_values.len() / 2;
+/// #     if sorted_values.len() % 2 == 0 {
+/// #         (sorted_values[mid - 1] + sorted_values[mid]) as f64 / 2.0
+/// #     } else {
+/// #         sorted_values[mid] as f64
+/// #     }
+/// # }
+/// // Odd number of elements
+/// assert_eq!(calculate_median(&[1, 2, 3, 4, 5]), 3.0);
+/// // Even number of elements (average of middle two)
+/// assert_eq!(calculate_median(&[1, 2, 3, 4]), 2.5);
+/// assert_eq!(calculate_median(&[10, 20, 30, 40]), 25.0);
+/// assert_eq!(calculate_median(&[]), 0.0);
+/// ```
+fn calculate_median(values: &[u64]) -> f64 {
+    // println!("Calculating median of {:?}", values);
+    if values.is_empty() {
+        return 0.0;
+    }
+    let mut sorted_values = values.to_vec();
+    sorted_values.sort();
+    let mid = sorted_values.len() / 2;
+    // println!("Mid index: {:?}", mid);
+    if sorted_values.len().is_multiple_of(2) {
+        // println!("Even number of elements, returning average of middle two: {:?}", (sorted_values[mid - 1] + sorted_values[mid]) as f64 / 2.0);
+        (sorted_values[mid - 1] + sorted_values[mid]) as f64 / 2.0
+    } else {
+        // println!("Odd number of elements, returning middle element: {:?}", sorted_values[mid] as f64);
+        sorted_values[mid] as f64
+    }
+}
+
+/// Calculates the standard deviation of a slice of u64 values.
+///
+/// # Arguments
+///
+/// * `values` - A slice of u64 values
+/// * `mean` - The mean of the values (pre-calculated for efficiency)
+///
+/// # Returns
+///
+/// Returns the standard deviation as an f64, or 0.0 if the slice is empty or has only one element.
+///
+/// # Examples
+///
+/// ```
+/// # fn calculate_mean(values: &[u64]) -> f64 {
+/// #     if values.is_empty() { return 0.0; }
+/// #     values.iter().sum::<u64>() as f64 / values.len() as f64
+/// # }
+/// # fn calculate_standard_deviation(values: &[u64], mean: f64) -> f64 {
+/// #     if values.is_empty() || values.len() == 1 { return 0.0; }
+/// #     let variance = values.iter().map(|&v| { let d = v as f64 - mean; d * d }).sum::<f64>() / (values.len() - 1) as f64;
+/// #     variance.sqrt()
+/// # }
+/// let values = &[2, 4, 4, 4, 5, 5, 7, 9];
+/// let mean = calculate_mean(values);
+/// let std_dev = calculate_standard_deviation(values, mean);
+/// // Standard deviation should be approximately 2.0 for this dataset
+/// assert!((std_dev - 2.0).abs() < 0.1);
+/// assert_eq!(calculate_standard_deviation(&[], 0.0), 0.0);
+/// assert_eq!(calculate_standard_deviation(&[5], 5.0), 0.0);
+/// ```
+fn calculate_standard_deviation(values: &[u64], mean: f64) -> f64 {
+    if values.is_empty() || values.len() == 1 {
+        return 0.0;
+    }
+    let variance = values
+        .iter()
+        .map(|&value| {
+            let diff = value as f64 - mean;
+            diff * diff
+        })
+        .sum::<f64>()
+        / (values.len() - 1) as f64;
+    variance.sqrt()
+}
+
+/// Draws a text box with multiple lines of text on a chart. Uses monospace font.
+///
+/// This function draws a styled text box containing multiple lines of text. The box size is
+/// automatically calculated based on the number of lines provided.
+///
+/// # Arguments
+///
+/// * `chart` - The chart context to draw on
+/// * `lines` - A slice of strings to display, one per line
+/// * `box_top_right` - The top-right corner position of the box (x, y) in chart coordinates
+/// * `x_range` - The width of the x-axis range (used for proportional sizing)
+/// * `y_max_val` - The maximum y value (used for proportional sizing)
+/// * `box_width_fraction` - Width of the box as a fraction of x_range (e.g., 0.15 for 15%)
+/// * `margin_right_fraction` - Right margin as a fraction of x_range
+/// * `margin_top_fraction` - Top margin as a fraction of y_max_val
+/// * `padding_x_fraction` - Internal horizontal padding as a fraction of x_range
+/// * `padding_y_fraction` - Internal vertical padding as a fraction of y_max_val
+/// * `line_height_fraction` - Height between lines as a fraction of y_max_val
+/// * `font_size` - Font size for the text
+///
+/// # Returns
+///
+/// Returns `Ok(())` if the text box was successfully drawn, or an error if drawing failed.
+#[allow(clippy::too_many_arguments)]
+fn draw_text_box<'a>(
+    chart: &mut ChartContext<'a, BitMapBackend<'a>, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
+    lines: &[String],
+    box_top_right: (f64, f64),
+    x_range: f64,
+    y_max_val: f64,
+    box_width_fraction: f64,
+    margin_right_fraction: f64,
+    margin_top_fraction: f64,
+    padding_x_fraction: f64,
+    padding_y_fraction: f64,
+    line_height_fraction: f64,
+    font_size: u32,
+) -> Result<(), Box<dyn std::error::Error>> {
+    if lines.is_empty() {
+        return Ok(());
+    }
+
+    let (x_max, _) = box_top_right;
+    let num_lines = lines.len() as f64;
+
+    // Calculate box position and size
+    let box_width = x_range * box_width_fraction;
+    let box_left = x_max - box_width - (x_range * margin_right_fraction);
+    let box_right = x_max - (x_range * margin_right_fraction);
+    let box_top = y_max_val - (y_max_val * margin_top_fraction);
+
+    // Text positioning with padding
+    let text_x = box_left + (x_range * padding_x_fraction);
+    let line_height = y_max_val * line_height_fraction;
+    let text_y_start = box_top - (y_max_val * padding_y_fraction);
+
+    // Calculate box height based on content (number of lines + padding)
+    let box_height = (y_max_val * padding_y_fraction * 2.0) + (line_height * num_lines);
+    let box_bottom = box_top - box_height;
+
+    // Draw background rectangle
+    chart.draw_series(std::iter::once(Rectangle::new(
+        [(box_left, box_bottom), (box_right, box_top)],
+        WHITE.mix(0.95).filled(),
+    )))?;
+
+    // Draw border around the background
+    chart.draw_series(std::iter::once(PathElement::new(
+        vec![
+            (box_left, box_bottom),
+            (box_right, box_bottom),
+            (box_right, box_top),
+            (box_left, box_top),
+            (box_left, box_bottom),
+        ],
+        BLACK.stroke_width(2),
+    )))?;
+
+    // Draw each line of text
+    for (i, line) in lines.iter().enumerate() {
+        let y_pos = text_y_start - (line_height * (i as f64));
+        chart.draw_series(std::iter::once(Text::new(
+            line.clone(),
+            (text_x, y_pos),
+            (FontFamily::Monospace, font_size).into_font(),
+        )))?;
+    }
+
+    Ok(())
+}
+
+/// Plots a histogram of compressed bit counts from seeded random 64-bit unsigned integers.
+///
+/// This function:
+/// 1. Generates a specified number of seeded random 64-bit unsigned integers (for repeatability)
+/// 2. Converts them to BigUint
+/// 3. Compresses them using `padless_zeckendorf_compress_le_dangerous`
+/// 4. Reads the compressed data back into a new BigUint (little endian)
+/// 5. Gets the number of bits using `.bits()`
+/// 6. Plots a histogram with bucket sizes of 1
+///
+/// # Arguments
+///
+/// * `filename` - The path where the plot image will be saved (e.g., "plots/histogram.png")
+/// * `count` - The number of random 64-bit integers to generate and compress
+///
+/// # Returns
+///
+/// Returns `Ok(())` if the plot was successfully created, or an error if plotting failed.
+fn plot_compressed_bits_histogram(
+    filename: &str,
+    count: usize,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let start_time = Instant::now();
+    println!(
+        "Plotting compressed bits histogram from {} random 64-bit integers",
+        count
+    );
+
+    // Create seeded RNG for repeatability
+    let seed = [42u8; 32]; // Fixed seed for repeatability
+    let mut rng = StdRng::from_seed(seed);
+
+    // Generate random 64-bit unsigned integers
+    let random_numbers: Vec<u64> = (0..count).map(|_| rng.random::<u64>()).collect();
+
+    // Convert to BigUint, compress, and collect bit counts
+    let mut bit_counts: Vec<u64> = Vec::with_capacity(count);
+    for number in &random_numbers {
+        let biguint = BigUint::from(*number);
+        let data_bytes = biguint.to_bytes_le();
+        let compressed_data = padless_zeckendorf_compress_le_dangerous(&data_bytes);
+        let compressed_biguint = BigUint::from_bytes_le(&compressed_data);
+        let bits = compressed_biguint.bits();
+        bit_counts.push(bits);
+    }
+
+    // Create histogram buckets (bucket size 1)
+    let min_bits = *bit_counts.iter().min().unwrap_or(&0);
+    let max_bits = *bit_counts.iter().max().unwrap_or(&0);
+    let bucket_count = (max_bits - min_bits + 1) as usize;
+
+    let mut histogram: Vec<u64> = vec![0; bucket_count];
+    for &bits in &bit_counts {
+        let bucket_index = (bits - min_bits) as usize;
+        histogram[bucket_index] += 1;
+    }
+
+    // Find max frequency for y-axis
+    let max_frequency = *histogram.iter().max().unwrap_or(&1) as f64;
+
+    // Calculate statistics
+    let mean = calculate_mean(&bit_counts);
+    let median = calculate_median(&bit_counts);
+    let std_dev = calculate_standard_deviation(&bit_counts, mean);
+
+    let root = BitMapBackend::new(filename, (PLOT_WIDTH, PLOT_HEIGHT)).into_drawing_area();
+    root.fill(&WHITE)?;
+
+    let mut chart = ChartBuilder::on(&root)
+        .caption(
+            format!(
+                "Histogram of Compressed Bit Counts ({count} Random u64's)",
+                count = count.to_formatted_string(&Locale::en)
+            ),
+            ("sans-serif", 110.0).into_font(),
+        )
+        .margin(CHART_MARGIN)
+        .x_label_area_size(260)
+        .y_label_area_size(300)
+        .build_cartesian_2d(
+            (min_bits as f64 - 0.5)..(max_bits as f64 + 0.5),
+            0.0..(max_frequency * 1.1),
+        )?;
+
+    let axis_label_style =
+        TextStyle::from(("sans-serif", AXIS_FONT_SIZE).into_font()).color(&BLACK);
+    let axis_tick_style =
+        TextStyle::from(("sans-serif", AXIS_TICK_FONT_SIZE).into_font()).color(&BLACK);
+
+    // Create formatters for x and y axes with 0 decimal places and comma separators
+    let axis_label_formatter = |value: &f64| {
+        let rounded = value.round() as u64;
+        rounded.to_formatted_string(&Locale::en)
+    };
+    
+    chart
+        .configure_mesh()
+        .x_desc("Compressed Bit Count")
+        .y_desc("Frequency")
+        .x_label_formatter(&axis_label_formatter)
+        .y_label_formatter(&axis_label_formatter)
+        .label_style(axis_tick_style)
+        .axis_desc_style(axis_label_style)
+        .draw()?;
+
+    // Draw histogram bars with gaps between them
+    const BAR_WIDTH: f64 = 0.8; // Width of each bar (less than 1.0 to create gaps)
+    const BAR_GAP: f64 = (1.0 - BAR_WIDTH) / 2.0; // Gap on each side of the bar
+
+    for (bucket_index, &frequency) in histogram.iter().enumerate() {
+        if frequency > 0 {
+            let bits_value = min_bits + bucket_index as u64;
+            let bar_left = bits_value as f64 - 0.5 + BAR_GAP;
+            let bar_right = bits_value as f64 - 0.5 + BAR_GAP + BAR_WIDTH;
+            let bar_height = frequency as f64;
+
+            // Draw filled rectangle using Rectangle
+            // Rectangle takes bottom-left and top-right corners
+            chart.draw_series(std::iter::once(Rectangle::new(
+                [(bar_left, 0.0), (bar_right, bar_height)],
+                BLUE.filled(),
+            )))?;
+        }
+    }
+
+    // Add statistics legend in top right
+    // Calculate position in top right (using chart coordinates)
+    // Vibey numbers 😬
+    let x_max = max_bits as f64 + 0.5;
+    let y_max = max_frequency * 1.1;
+    let x_range = x_max - (min_bits as f64 - 10.0);
+
+    // Prepare statistics lines
+    let stats_lines = vec![
+        format!("Mean:   {:.2}", mean),
+        format!("Median: {:.2}", median),
+        format!("Std:    {:.2}", std_dev),
+        format!("Min:    {:.0}", min_bits),
+        format!("Max:    {:.0}", max_bits),
+    ];
+
+    // Draw text box with statistics
+    draw_text_box(
+        &mut chart,
+        &stats_lines,
+        (x_max, y_max),
+        x_range,
+        y_max,
+        0.15,  // box_width_fraction
+        0.025, // margin_right_fraction
+        0.015, // margin_top_fraction
+        0.015, // padding_x_fraction
+        0.015, // padding_y_fraction
+        0.04,  // line_height_fraction
+        LEGEND_FONT_SIZE,
+    )?;
+
+    root.present()?;
+    println!("Compressed bits histogram saved to {}", filename);
+    let end_time = Instant::now();
+    println!(
+        "Time taken to plot compressed bits histogram: {:?}",
+        end_time.duration_since(start_time)
+    );
+    Ok(())
 }
