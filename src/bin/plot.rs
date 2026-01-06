@@ -1518,7 +1518,7 @@ fn plot_compressed_bits_histogram(
         let rounded = value.round() as u64;
         rounded.to_formatted_string(&Locale::en)
     };
-    
+
     chart
         .configure_mesh()
         .x_desc("Compressed Bit Count")
