@@ -1542,6 +1542,8 @@ fn plot_compressed_bits_histogram(
 
             // Draw filled rectangle using Rectangle
             // Rectangle takes bottom-left and top-right corners
+            // FIXME: refactor this to use the idiomatic Histogram API; example: https://github.com/plotters-rs/plotters/blob/0f195eadaac7d9a2390a3707fbe192f8e2645d34/plotters/examples/histogram.rs
+            // Refactoring will also require refactoring the legend box drawing code, since the Histogram chart can't `.drawSeries(...)`.
             chart.draw_series(std::iter::once(Rectangle::new(
                 [(bar_left, 0.0), (bar_right, bar_height)],
                 BLUE.filled(),
