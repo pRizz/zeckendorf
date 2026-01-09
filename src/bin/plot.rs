@@ -1704,7 +1704,10 @@ fn plot_fibonacci_square_root_error_convergence(
     n_strategy: NValueStrategy,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let start_time = Instant::now();
-    println!("Plotting Fibonacci square root error convergence to {}", filename);
+    println!(
+        "Plotting Fibonacci square root error convergence to {}",
+        filename
+    );
 
     // Generate n values based on the strategy
     let n_values: Vec<u64> = match n_strategy {
