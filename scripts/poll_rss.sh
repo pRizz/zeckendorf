@@ -29,7 +29,7 @@ set -euo pipefail
 # Time taken to test all ones decompressions with 20,000 bytes of all ones data: 124s
 # Time taken to test all ones decompressions with 40,000 bytes of all ones data: 754s or 12.5 minutes
 # So, the fast doubling Fibonacci algorithm is not a silver bullet.
-# TODO: investigate ways we can get the lower memory usage of the cached fast doubling Fibonacci algorithm but the speed of the cached slow Fibonacci algorithm. As of now, the cached fast doubling Fibonacci algorithm is slower at decompression than the cached slow Fibonacci algorithm at large data inputs, on the order of > 10kB.
+# TODO: investigate ways we can get the lower memory usage of the cached fast doubling Fibonacci algorithm but have the speed of the cached slow Fibonacci algorithm. Maybe we could utilize a "skip list" like data structure to only store Fibonacci numbers at certain spaced out indices. As of now, the cached fast doubling Fibonacci algorithm is slower at decompression than the cached slow Fibonacci algorithm at large data inputs, on the order of > 10kB.
 
 cargo run --release --bin zeckendorf --features plotting -- --deterministic &
 pid=$!
