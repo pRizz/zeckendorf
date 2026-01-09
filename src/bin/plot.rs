@@ -54,51 +54,105 @@ fn main() {
     )
     .expect("Failed to plot Fibonacci, binary, all-ones Zeckendorf, 3^n, φⁿ, and φ²ⁿ numbers");
 
-    // Example: Plot compression ratios
-    plot_compression_ratios("plots/compression_ratios_0_to_100.png", 0..100)
+    // _plot_all_compression_ratios();
+
+    // _plot_all_histograms();
+
+    _plot_all_square_root_error_convergences();
+
+    let end_time = Instant::now();
+    println!("Time taken: {:?}", end_time.duration_since(start_time));
+}
+
+fn _plot_all_square_root_error_convergences() {
+    // Plot with different n-value strategies
+    plot_fibonacci_square_root_error_convergence(
+        "plots/fibonacci_square_root_error_convergence_start2_step2_log_y.png",
+        true,
+        NValueStrategy::Start2Step2,
+    )
+    .expect("Failed to plot Fibonacci square root error convergence");
+    plot_fibonacci_square_root_error_convergence(
+        "plots/fibonacci_square_root_error_convergence_start2_step2_linear_y.png",
+        false,
+        NValueStrategy::Start2Step2,
+    )
+    .expect("Failed to plot Fibonacci square root error convergence");
+    // We cannot print a log graph for start1_step2 because the numbers are negative,
+    // and log(negative number) is undefined.
+    // plot_fibonacci_square_root_ratio_error(
+    //     "plots/fibonacci_square_root_error_convergence_start1_step2_log_y.png",
+    //     true,
+    //     NValueStrategy::Start1Step2,
+    // )
+    // .expect("Failed to plot Fibonacci square root error convergence");
+    plot_fibonacci_square_root_error_convergence(
+        "plots/fibonacci_square_root_error_convergence_start1_step2_linear_y.png",
+        false,
+        NValueStrategy::Start1Step2,
+    )
+    .expect("Failed to plot Fibonacci square root error convergence");
+    // We cannot print a log graph for start1_step1 because the numbers oscillate between positive and negative values,
+    // and log(0) and log(negative number) are undefined.
+    // plot_fibonacci_square_root_ratio_error(
+    //     "plots/fibonacci_square_root_error_convergence_start1_step1_log_y.png",
+    //     true,
+    //     NValueStrategy::Start1Step1,
+    // )
+    // .expect("Failed to plot Fibonacci square root error convergence");
+    plot_fibonacci_square_root_error_convergence(
+        "plots/fibonacci_square_root_error_convergence_start1_step1_linear_y.png",
+        false,
+        NValueStrategy::Start1Step1,
+    )
+    .expect("Failed to plot Fibonacci square root error convergence");
+}
+
+fn _plot_all_compression_ratios() {
+    _plot_compression_ratios("plots/compression_ratios_0_to_100.png", 0..100)
         .expect("Failed to plot compression ratios");
-    // plot_compression_ratios("plots/compression_ratios_0_to_257.png", 0..257)
-    //     .expect("Failed to plot compression ratios");
-    // plot_compression_ratios("plots/compression_ratios_0_to_1_000.png", 0..1_000)
-    //     .expect("Failed to plot compression ratios");
-    // plot_compression_ratios("plots/compression_ratios_0_to_10_000.png", 0..10_000)
-    //     .expect("Failed to plot compression ratios");
-    // plot_compression_ratios("plots/compression_ratios_0_to_100_000.png", 0..100_000)
-    //     .expect("Failed to plot compression ratios");
-    // // Takes about 1 second to generate
-    // plot_compression_ratios("plots/compression_ratios_0_to_1_000_000.png", 0..1_000_000)
-    //     .expect("Failed to plot compression ratios");
-    // // Takes about 9 seconds to generate
-    // plot_compression_ratios(
-    //     "plots/compression_ratios_0_to_10_000_000.png",
-    //     0..10_000_000,
-    // )
-    // .expect("Failed to plot compression ratios");
-    // // Takes about 100 seconds and 22 GB of memory to generate
-    // plot_compression_ratios(
-    //     "plots/compression_ratios_0_to_100_000_000.png",
-    //     0..100_000_000,
-    // )
-    // .expect("Failed to plot compression ratios");
+    _plot_compression_ratios("plots/compression_ratios_0_to_257.png", 0..257)
+        .expect("Failed to plot compression ratios");
+    _plot_compression_ratios("plots/compression_ratios_0_to_1_000.png", 0..1_000)
+        .expect("Failed to plot compression ratios");
+    _plot_compression_ratios("plots/compression_ratios_0_to_10_000.png", 0..10_000)
+        .expect("Failed to plot compression ratios");
+    _plot_compression_ratios("plots/compression_ratios_0_to_100_000.png", 0..100_000)
+        .expect("Failed to plot compression ratios");
+    // Takes about 1 second to generate
+    _plot_compression_ratios("plots/compression_ratios_0_to_1_000_000.png", 0..1_000_000)
+        .expect("Failed to plot compression ratios");
+    // Takes about 9 seconds to generate
+    _plot_compression_ratios(
+        "plots/compression_ratios_0_to_10_000_000.png",
+        0..10_000_000,
+    )
+    .expect("Failed to plot compression ratios");
+    // Takes about 100 seconds and 22 GB of memory to generate
+    _plot_compression_ratios(
+        "plots/compression_ratios_0_to_100_000_000.png",
+        0..100_000_000,
+    )
+    .expect("Failed to plot compression ratios");
     // // ⚠️ Unable to plot 1 billion inputs because it takes too long and uses too much memory. The process was killed by the OS (exit code 137) after about an hour and using 190 GB of memory + swap space.
-    // plot_compression_ratios(
+    // _plot_compression_ratios(
     //     "plots/compression_ratios_0_to_1_000_000_000.png",
     //     0..1_000_000_000,
     // )
     // .expect("Failed to plot compression ratios");
+}
 
-    // Example: Plot histogram of compressed bit counts from random 64-bit integers
+// Plot histogram of compressed bit counts from random 64-bit integers
+fn _plot_all_histograms() {
+    // Takes a few seconds to generate
     for i in 3..=6 {
         let samples = 10_u64.pow(i as u32);
-        plot_compressed_bits_histogram(
+        _plot_compressed_bits_histogram(
             &format!("plots/compressed_bits_histogram_{samples}_random_u64s.png"),
             samples as usize,
         )
         .expect("Failed to plot compressed bits histogram");
     }
-
-    let end_time = Instant::now();
-    println!("Time taken: {:?}", end_time.duration_since(start_time));
 }
 
 fn plot_fibonacci_numbers(
@@ -1050,7 +1104,7 @@ fn plot_fibonacci_binary_all_ones_power3_phi_phi_squared(
     Ok(())
 }
 
-fn plot_compression_ratios(
+fn _plot_compression_ratios(
     filename: &str,
     range: std::ops::Range<u64>,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -1231,7 +1285,7 @@ fn biguint_to_approximate_f64(value: &BigUint) -> f64 {
 /// assert_eq!(calculate_mean(&[10, 20, 30]), 20.0);
 /// assert_eq!(calculate_mean(&[]), 0.0);
 /// ```
-fn calculate_mean(values: &[u64]) -> f64 {
+fn _calculate_mean(values: &[u64]) -> f64 {
     if values.is_empty() {
         return 0.0;
     }
@@ -1269,7 +1323,7 @@ fn calculate_mean(values: &[u64]) -> f64 {
 /// assert_eq!(calculate_median(&[10, 20, 30, 40]), 25.0);
 /// assert_eq!(calculate_median(&[]), 0.0);
 /// ```
-fn calculate_median(values: &[u64]) -> f64 {
+fn _calculate_median(values: &[u64]) -> f64 {
     // println!("Calculating median of {:?}", values);
     if values.is_empty() {
         return 0.0;
@@ -1318,7 +1372,7 @@ fn calculate_median(values: &[u64]) -> f64 {
 /// assert_eq!(calculate_standard_deviation(&[], 0.0), 0.0);
 /// assert_eq!(calculate_standard_deviation(&[5], 5.0), 0.0);
 /// ```
-fn calculate_standard_deviation(values: &[u64], mean: f64) -> f64 {
+fn _calculate_standard_deviation(values: &[u64], mean: f64) -> f64 {
     if values.is_empty() || values.len() == 1 {
         return 0.0;
     }
@@ -1357,7 +1411,7 @@ fn calculate_standard_deviation(values: &[u64], mean: f64) -> f64 {
 ///
 /// Returns `Ok(())` if the text box was successfully drawn, or an error if drawing failed.
 #[allow(clippy::too_many_arguments)]
-fn draw_text_box<'a>(
+fn _draw_text_box<'a>(
     chart: &mut ChartContext<'a, BitMapBackend<'a>, Cartesian2d<RangedCoordf64, RangedCoordf64>>,
     lines: &[String],
     box_top_right: (f64, f64),
@@ -1442,7 +1496,7 @@ fn draw_text_box<'a>(
 /// # Returns
 ///
 /// Returns `Ok(())` if the plot was successfully created, or an error if plotting failed.
-fn plot_compressed_bits_histogram(
+fn _plot_compressed_bits_histogram(
     filename: &str,
     count: usize,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -1485,9 +1539,9 @@ fn plot_compressed_bits_histogram(
     let max_frequency = *histogram.iter().max().unwrap_or(&1) as f64;
 
     // Calculate statistics
-    let mean = calculate_mean(&bit_counts);
-    let median = calculate_median(&bit_counts);
-    let std_dev = calculate_standard_deviation(&bit_counts, mean);
+    let mean = _calculate_mean(&bit_counts);
+    let median = _calculate_median(&bit_counts);
+    let std_dev = _calculate_standard_deviation(&bit_counts, mean);
 
     let root = BitMapBackend::new(filename, (PLOT_WIDTH, PLOT_HEIGHT)).into_drawing_area();
     root.fill(&WHITE)?;
@@ -1568,7 +1622,7 @@ fn plot_compressed_bits_histogram(
     ];
 
     // Draw text box with statistics
-    draw_text_box(
+    _draw_text_box(
         &mut chart,
         &stats_lines,
         (x_max, y_max),
@@ -1588,6 +1642,271 @@ fn plot_compressed_bits_histogram(
     let end_time = Instant::now();
     println!(
         "Time taken to plot compressed bits histogram: {:?}",
+        end_time.duration_since(start_time)
+    );
+    Ok(())
+}
+
+/// I discovered a new relation between certain square roots of Fibonacci numbers by looking and inspecting
+/// the Zeckendorf Spiral at the website I made below:
+/// Website: https://zeckendorf.lovable.app/
+/// Source code: https://github.com/pRizz/zeckendorf-spiral
+/// Namely:
+/// Sqrt(Fibonacci(n)) ≈ Sqrt(Fibonacci(n + 4)) - Sqrt(Fibonacci(n + 2))
+/// Alternatively, when we divide both sides by Sqrt(Fibonacci(n)):
+/// 1 ≈ (Sqrt(Fibonacci(n + 4)) - Sqrt(Fibonacci(n + 2))) / Sqrt(Fibonacci(n))
+/// In the graph for this function, we subtract 1.0 from both sides so that the numbers are more readable on the log graph
+/// as they approach 0:
+/// 0 ≈ (Sqrt(Fibonacci(n + 4)) - Sqrt(Fibonacci(n + 2))) / Sqrt(Fibonacci(n)) - 1.0
+/// Alternatively, when we subtract Sqrt(Fibonacci(n)) from both sides, from the first equation:
+/// 0 ≈ Sqrt(Fibonacci(n + 4)) - Sqrt(Fibonacci(n + 2)) - Sqrt(Fibonacci(n))
+/// This ratio was found by noticing that the gaps in the middle of the Zeckendorf Spiral
+/// shrink as the square roots of the zeckendorf squares get larger.
+/// And I was thinking that there is probably a relationship between the sides of certain squares in the Zeckendorf Spiral,
+/// which, when measured, gives the relation above.
+/// The purpose of this plot is to visualize the error converging to 0 in the formula
+/// above as we input larger and larger n values.
+/// It is kinda fascinating that this produces a closed form equation for producing arbitrarily
+/// small irrational numbers. It is irrational because the formula equates to only square roots of Fibonacci numbers.
+/// Technically, there are perfect squares when the fibonacci is 1, 4, or 144, but those seem to be the only
+/// ones and they only appear at the start of the spiral.
+/// Also starting and stepping at different values produces different graphs.
+#[derive(Clone, Copy, Debug)]
+enum NValueStrategy {
+    /// Start at 2, step by 2 (e.g., 2, 4, 6, 8, ...)
+    /// This produces a graph with positive values, and it converges to 0.
+    /// This is the default spiral pattern that is used at https://github.com/pRizz/zeckendorf-spiral
+    Start2Step2,
+    /// Start at 1, step by 2 (e.g., 1, 3, 5, 7, ...)
+    /// This produces a graph with negative values, and it converges to 0.
+    Start1Step2,
+    /// Start at 1, step by 1 (e.g., 1, 2, 3, 4, ...)
+    /// Fascinatingly, this produces a graph that oscillates between positive and negative values, and it converges to 0.
+    /// It would be fun to generate a graph that oscillates between exactly 1 and -1 by dividing the formula
+    /// by the square root of the square of the formula (produces the absolute value of the formula).
+    /// I need to write an article about this lol.
+    Start1Step1,
+}
+
+impl NValueStrategy {
+    fn generate_n_values(&self, count: u64) -> Vec<u64> {
+        match self {
+            NValueStrategy::Start2Step2 => (1..=count).map(|i| i * 2).collect(),
+            NValueStrategy::Start1Step2 => (0..count).map(|i| i * 2 + 1).collect(),
+            NValueStrategy::Start1Step1 => (1..=count).collect(),
+        }
+    }
+}
+
+fn plot_fibonacci_square_root_error_convergence(
+    filename: &str,
+    log_y: bool,
+    n_strategy: NValueStrategy,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let start_time = Instant::now();
+    println!("Plotting Fibonacci square root error convergence to {}", filename);
+
+    // Generate n values based on the strategy
+    let n_values: Vec<u64> = match n_strategy {
+        NValueStrategy::Start2Step2 => n_strategy.generate_n_values(15),
+        NValueStrategy::Start1Step2 => n_strategy.generate_n_values(15),
+        NValueStrategy::Start1Step1 => n_strategy.generate_n_values(30),
+    };
+
+    // Calculate the ratio for each n
+    let data: Vec<(f64, f64)> = n_values
+        .iter()
+        .filter_map(|&n| {
+            // Calculate Fibonacci(n), Fibonacci(n+2), Fibonacci(n+4)
+            let fib_n = memoized_fast_doubling_fibonacci_biguint(n);
+            let fib_n_plus_2 = memoized_fast_doubling_fibonacci_biguint(n + 2);
+            let fib_n_plus_4 = memoized_fast_doubling_fibonacci_biguint(n + 4);
+
+            // Convert to f64
+            let fib_n_f64 = biguint_to_approximate_f64(&fib_n);
+            let fib_n_plus_2_f64 = biguint_to_approximate_f64(&fib_n_plus_2);
+            let fib_n_plus_4_f64 = biguint_to_approximate_f64(&fib_n_plus_4);
+
+            // Check for valid values after conversion to f64 (positive and finite)
+            if fib_n_f64 <= 0.0
+                || fib_n_plus_2_f64 <= 0.0
+                || fib_n_plus_4_f64 <= 0.0
+                || !fib_n_f64.is_finite()
+                || !fib_n_plus_2_f64.is_finite()
+                || !fib_n_plus_4_f64.is_finite()
+            {
+                return None;
+            }
+
+            // Calculate square roots
+            let sqrt_fib_n = fib_n_f64.sqrt();
+            let sqrt_fib_n_plus_2 = fib_n_plus_2_f64.sqrt();
+            let sqrt_fib_n_plus_4 = fib_n_plus_4_f64.sqrt();
+
+            if sqrt_fib_n == 0.0 {
+                return None;
+            }
+
+            // First equation; but this seems to produce floating point errors when the numbers are large.
+            // let ratio = (sqrt_fib_n_plus_4 - sqrt_fib_n_plus_2) / sqrt_fib_n - 1.0;
+            // Second equation; this produces better results when the numbers are large.
+            let ratio = sqrt_fib_n_plus_4 - sqrt_fib_n_plus_2 - sqrt_fib_n;
+
+            if ratio.is_finite() {
+                Some((n as f64, ratio))
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    if data.is_empty() {
+        return Err("No valid data points calculated".into());
+    }
+
+    // Find the min and max values for y-axis range
+    let min_y = data
+        .iter()
+        .map(|(_, y)| *y)
+        .fold(f64::INFINITY, |acc, y| acc.min(y));
+    println!("Min y: {}", min_y);
+    let max_y = data
+        .iter()
+        .map(|(_, y)| *y)
+        .fold(f64::NEG_INFINITY, |acc, y| acc.max(y));
+    println!("Max y: {}", max_y);
+
+    // Determine y-axis range with some padding
+    let y_padding = (max_y - min_y) * 0.1;
+    let y_min = min_y - y_padding;
+    println!("Calculated y min: {}", y_min);
+    let y_max = max_y + y_padding;
+    println!("Calculated y max: {}", y_max);
+
+    let root = BitMapBackend::new(filename, (PLOT_WIDTH, PLOT_HEIGHT)).into_drawing_area();
+    root.fill(&WHITE)?;
+
+    let axis_label_style =
+        TextStyle::from(("sans-serif", AXIS_FONT_SIZE).into_font()).color(&BLACK);
+    let axis_tick_style =
+        TextStyle::from(("sans-serif", AXIS_TICK_FONT_SIZE).into_font()).color(&BLACK);
+
+    let y_label_formatter = |y: &f64| {
+        if *y == 0.0 {
+            return "0".to_string();
+        }
+
+        let abs_y = y.abs();
+        if abs_y < 1e-12 {
+            return "0".to_string();
+        }
+
+        if abs_y < 1e-3 {
+            // Use scientific notation for small values
+            let sign = if *y < 0.0 { "-" } else { "" };
+            let exponent = abs_y.log10().floor() as i32;
+            let mantissa = abs_y / 10_f64.powi(exponent);
+            // Round mantissa to 1 decimal place if needed, otherwise show as integer
+            let rounded_mantissa = mantissa.round();
+            if (mantissa - rounded_mantissa).abs() < 1e-10 {
+                return format!("{}{}e{}", sign, rounded_mantissa as i64, exponent);
+            }
+            return format!("{}{:.1}e{}", sign, mantissa, exponent);
+        }
+
+        // Use regular decimal notation for larger values, removing trailing zeros
+        let formatted = format!("{:.3}", y);
+        formatted
+            .trim_end_matches('0')
+            .trim_end_matches('.')
+            .to_string()
+    };
+
+    // Macro to draw the series (works with any chart type, log or linear y-axis; otherwise we get type errors when supplying
+    // the y-axis range to the chart builder; linear y-axis and log y-axis ranges produce different types,
+    // so we need to use a macro to avoid type errors and not duplicate code.
+    macro_rules! draw_series_content {
+        ($chart:ident) => {
+            $chart
+                .configure_mesh()
+                .x_desc("n")
+                .y_desc("Sqrt(F(n+4)) - Sqrt(F(n+2)) - Sqrt(F(n))")
+                .y_label_formatter(&y_label_formatter)
+                .label_style(axis_tick_style)
+                .axis_desc_style(axis_label_style)
+                .draw()?;
+
+            // Draw the line
+            $chart
+                .draw_series(LineSeries::new(
+                    data.iter().copied(),
+                    BLUE.stroke_width(SERIES_LINE_STROKE_WIDTH),
+                ))?
+                .label("Ratio")
+                .legend(|(x, y)| {
+                    PathElement::new(
+                        vec![
+                            (x - LEGEND_PATH_LEFT_OFFSET, y),
+                            (x + LEGEND_PATH_RIGHT_OFFSET, y),
+                        ],
+                        BLUE.stroke_width(SERIES_LINE_STROKE_WIDTH),
+                    )
+                });
+
+            // Draw dots at each point
+            $chart.draw_series(
+                data.iter()
+                    .map(|point| Circle::new(*point, SERIES_LINE_DOT_SIZE, BLUE.filled())),
+            )?;
+
+            $chart
+                .configure_series_labels()
+                .position(SeriesLabelPosition::UpperRight)
+                .margin(LEGEND_MARGIN)
+                .label_font(("sans-serif", LEGEND_FONT_SIZE).into_font())
+                .background_style(WHITE.mix(0.8))
+                .border_style(BLACK)
+                .draw()?;
+        };
+    }
+
+    let n_strategy_str = match n_strategy {
+        NValueStrategy::Start2Step2 => "Start at 2, Step by 2",
+        NValueStrategy::Start1Step2 => "Start at 1, Step by 2",
+        NValueStrategy::Start1Step1 => "Start at 1, Step by 1",
+    };
+    // Build chart with conditional y-axis scaling
+    if log_y {
+        // Manually set the y-axis range to start at 1e-10 to have a nicer plot.
+        let log_y_range = (y_min.max(1e-10)..y_max).log_scale();
+        let mut chart = ChartBuilder::on(&root)
+            .caption(
+                format!("Fibonacci Square Root Error Convergence ({n_strategy_str}) (Log Y-Axis)"),
+                ("sans-serif", 100).into_font(),
+            )
+            .margin(CHART_MARGIN)
+            .x_label_area_size(260)
+            .y_label_area_size(300)
+            .build_cartesian_2d(0.0f64..32.0f64, log_y_range)?;
+        draw_series_content!(chart);
+    } else {
+        let mut chart = ChartBuilder::on(&root)
+            .caption(
+                format!("Fibonacci Square Root Error Convergence ({n_strategy_str})"),
+                ("sans-serif", 100).into_font(),
+            )
+            .margin(CHART_MARGIN)
+            .x_label_area_size(260)
+            .y_label_area_size(260)
+            .build_cartesian_2d(0.0f64..32.0f64, y_min..y_max)?;
+        draw_series_content!(chart);
+    }
+
+    root.present()?;
+    let end_time = Instant::now();
+    println!(
+        "Time taken to plot Fibonacci square root error convergence to {}: {:?}",
+        filename,
         end_time.duration_since(start_time)
     );
     Ok(())
