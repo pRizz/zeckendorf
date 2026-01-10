@@ -30,7 +30,13 @@ The Zeckendorf algorithm represents numbers as a sum of non-consecutive Fibonacc
 
 ## WebAssembly
 
-This library is also available as a WebAssembly module for use in web browsers. Available functions are marked with the `#[wasm_bindgen]` attribute. The WebAssembly module can be built using the convenience script at `scripts/build_wasm_bundle.sh` that builds the WebAssembly module with the `wasm-pack` tool.
+This library is also available as a WebAssembly module for use in web browsers and JavaScript/TypeScript projects. The WebAssembly module can be installed via npm:
+
+```bash
+npm install zeck
+```
+
+Available functions are marked with the `#[wasm_bindgen]` attribute. The WebAssembly module can also be built manually using the convenience script at `scripts/build_wasm_bundle.sh` that builds the WebAssembly module with the `wasm-pack` tool.
 
 You can see a live demo of the WebAssembly module in action at <https://prizz.github.io/zeckendorf-webapp/>. The source code for the demo is available at <https://github.com/pRizz/zeckendorf-webapp>.
 
