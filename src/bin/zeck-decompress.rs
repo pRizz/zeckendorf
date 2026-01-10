@@ -4,8 +4,8 @@
 //! Automatically detects endianness from the file header.
 //!
 //! Building and running the tool:
-//! `cargo build --release --bin zeck-decompress`
-//! `cargo run --release --bin zeck-decompress`
+//! `cargo build --release --bin zeck-decompress --features cli_tools`
+//! `cargo run --release --bin zeck-decompress --features cli_tools`
 //!
 //! # Examples
 //!

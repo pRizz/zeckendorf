@@ -20,8 +20,8 @@
 //!
 //! This library includes two command-line tools for compressing and decompressing data.
 //! They can be installed globally via:
-//! - `cargo install zeck` (from crates.io)
-//! - `cargo install --git https://github.com/pRizz/zeckendorf zeck` (from GitHub)
+//! - `cargo install zeck --features cli_tools` (from crates.io)
+//! - `cargo install --git https://github.com/pRizz/zeckendorf --features cli_tools zeck` (from GitHub)
 //!
 //! After installation, `zeck-compress` and `zeck-decompress` will be available in your PATH.
 //!

@@ -1,14 +1,14 @@
-//! Binary for generating statistics about the compression ratio of the Zeckendorf representation
+//! Example for generating statistics about the compression ratio of the Zeckendorf representation
 //!
 //! The statistics are saved in the statistics_history directory in a file named statistics_up_to_<limit>_inputs.csv and sampled_statistics_up_to_<limit>_bits.csv
 //!
-//! The purpose of this binary is to determine the average compression ratio, median compression ratio, best compression ratio, and chance of compression being favorable for a given limit. As we compress to higher limits, the statistics should become more stable.
+//! The purpose of this example is to determine the average compression ratio, median compression ratio, best compression ratio, and chance of compression being favorable for a given limit. As we compress to higher limits, the statistics should become more stable.
 //!
-//! The Zeckendorf compression oscillates between being favorable and unfavorable, as the data changes, and the statistics are used to determine the average and median compression ratios, and the chance of compression being favorable. See this crate's `plot` binary for more details about the oscillation and to visualize the compression ratios.
+//! The Zeckendorf compression oscillates between being favorable and unfavorable, as the data changes, and the statistics are used to determine the average and median compression ratios, and the chance of compression being favorable. See this crate's `plot` example for more details about the oscillation and to visualize the compression ratios.
 //!
 //! The meaning of "compression up to input" in the csv header is such that the statistics are gathered for all inputs up to and including the given limit. For example, "compression up to 100" means that the corresponding statistics in that row in the csv are gathered for all inputs from 1 to 100.
 //!
-//! Run with: `cargo run --release --bin zeck-generate-statistics --features plotting,development_tools`
+//! Run with: `cargo run --release --example generate-statistics`
 
 use num_format::{Locale, ToFormattedString};
 use plotters::prelude::*;

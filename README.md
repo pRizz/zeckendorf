@@ -50,11 +50,14 @@ Or add this to your `Cargo.toml`:
 zeck = "2.1.0"
 ```
 
-For plotting features:
+**Features:**
+- `cli_tools`: Enables the `zeck-compress` and `zeck-decompress` command-line binaries. This feature includes the `clap` dependency. Not enabled by default - use `--features cli_tools` when installing binaries.
+
+For CLI tools (when installing binaries):
 
 ```toml
 [dependencies]
-zeck = { version = "2.1.0", features = ["plotting"] }
+zeck = { version = "2.1.0", features = ["cli_tools"] }
 ```
 
 ### Install from GitHub (development version)
@@ -71,11 +74,11 @@ Or add this to your `Cargo.toml`:
 zeck = { git = "https://github.com/pRizz/zeckendorf" }
 ```
 
-For plotting features:
+For CLI tools:
 
 ```toml
 [dependencies]
-zeck = { git = "https://github.com/pRizz/zeckendorf", features = ["plotting"] }
+zeck = { git = "https://github.com/pRizz/zeckendorf", features = ["cli_tools"] }
 ```
 
 ### Install from npm
@@ -298,13 +301,13 @@ The project includes several utility binaries. The command-line compression tool
 ### Install from crates.io
 
 ```bash
-cargo install zeck
+cargo install zeck --features cli_tools
 ```
 
 ### Install from GitHub (development version)
 
 ```bash
-cargo install --git https://github.com/pRizz/zeckendorf zeck
+cargo install --git https://github.com/pRizz/zeckendorf --features cli_tools zeck
 ```
 
 After installation, you can use `zeck-compress` and `zeck-decompress` directly from your command line.
@@ -401,7 +404,7 @@ cat input.zeck | zeck-decompress
 ### Main Playground
 
 ```bash
-cargo run --release --bin zeck-playground --features development_tools
+cargo run --release --example playground
 ```
 
 A playground/scratchpad for testing library functions.
@@ -422,7 +425,7 @@ cargo run --release --bin zeck-generate-data --features development_tools -- 102
 ### Generate Statistics
 
 ```bash
-cargo run --release --bin zeck-generate-statistics --features plotting,development_tools
+cargo run --release --example generate-statistics
 ```
 
 Generates comprehensive compression statistics and plots:
@@ -435,7 +438,7 @@ Generates comprehensive compression statistics and plots:
 ### Plot Compression Ratios
 
 ```bash
-cargo run --release --bin zeck-plot --features plotting,development_tools
+cargo run --release --example plot
 ```
 
 Generates visualization plots of:

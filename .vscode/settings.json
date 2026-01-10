@@ -1,3 +1,3 @@
 {
-    "rust-analyzer.cargo.features": ["plotting", "development_tools"],
+    "rust-analyzer.cargo.features": ["cli_tools", "development_tools"],
 }

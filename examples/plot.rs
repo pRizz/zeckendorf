@@ -1,7 +1,6 @@
-//! Binary for generating plots using plotters
+//! Example for generating plots using plotters
 //!
-//! This binary requires the `plotting` and `development_tools` features to be enabled.
-//! Run with: `cargo run --release --bin zeck-plot --features plotting,development_tools`
+//! Run with: `cargo run --release --example plot`
 
 use num_bigint::BigUint;
 use num_format::{Locale, ToFormattedString};

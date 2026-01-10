@@ -29,49 +29,46 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 default = []
-plotting = ["dep:plotters"]
-development_tools = ["dep:rand", "dep:num-format"]
+cli_tools = ["dep:clap"]
+development_tools = ["dep:rand"]
 
 [dependencies]
-clap = { version = "4.5.54", features = ["derive"] }
+clap = { version = "4.5.54", features = ["derive"], optional = true }
 getrandom = { version = "0.3.4", features = ["wasm_js"] }
 num-bigint = "0.4.6"
-num-format = { version = "0.4.4", features = ["num-bigint"], optional = true }
 num-traits = "0.2.19"
-plotters = { version = "0.3.7", optional = true }
 rand = { version = "0.9.2", optional = true }
 serde = { version = "1.0.228", features = ["derive"] }
 serde-wasm-bindgen = "0.6.5"
 tsify = "0.5.6"
 wasm-bindgen = "0.2.106"
 
-[[bin]]
-name = "zeck-playground"
-path = "src/main.rs"
-required-features = ["development_tools"]
+[[example]]
+name = "playground"
+path = "examples/playground.rs"
 
 [[bin]]
 name = "zeck-generate-data"
 path = "src/bin/generate_data.rs"
 required-features = ["development_tools"]
 
-[[bin]]
-name = "zeck-plot"
-path = "src/bin/plot.rs"
-required-features = ["plotting", "development_tools"]
+[[example]]
+name = "plot"
+path = "examples/plot.rs"
 
-[[bin]]
-name = "zeck-generate-statistics"
-path = "src/bin/generate_statistics.rs"
-required-features = ["plotting", "development_tools"]
+[[example]]
+name = "generate-statistics"
+path = "examples/generate_statistics.rs"
 
 [[bin]]
 name = "zeck-compress"
 path = "src/bin/zeck-compress.rs"
+required-features = ["cli_tools"]
 
 [[bin]]
 name = "zeck-decompress"
 path = "src/bin/zeck-decompress.rs"
+required-features = ["cli_tools"]
 
 [[bench]]
 name = "zeckendorf_bench"
@@ -83,3 +80,6 @@ harness = false
 
 [dev-dependencies]
 criterion = { version = "0.8.1", features = ["csv_output", "html_reports"] }
+num-format = { version = "0.4.4", features = ["num-bigint"] }
+plotters = { version = "0.3.7" }
+rand = "0.9.2"

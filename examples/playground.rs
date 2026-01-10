@@ -1,7 +1,7 @@
-//! This binary is basically a playground/scratchpad used to test the library and its functions.
+//! This example is basically a playground/scratchpad used to test the library and its functions.
 //!
 //! Example usages:
-//! `cargo run --release --bin zeck-playground --features development_tools`
+//! `cargo run --release --example playground`
 
 use num_bigint::BigUint;
 use num_format::ToFormattedString;

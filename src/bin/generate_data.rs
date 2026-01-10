@@ -1,14 +1,28 @@
+//! Generate random test data files
+//!
+//! This tool generates random test data files in the `generated_data/` directory.
+//!
+//! Building and running the tool:
+//! `cargo build --release --bin zeck-generate-data --features development_tools`
+//! `cargo run --release --bin zeck-generate-data --features development_tools -- <size_in_bytes> [filename]`
+//!
+//! # Examples
+//!
+//! Generate a file with default name:
+//! ```bash
+//! cargo run --release --bin zeck-generate-data --features development_tools -- 1024
+//! ```
+//!
+//! Generate a file with custom name:
+//! ```bash
+//! cargo run --release --bin zeck-generate-data --features development_tools -- 1024 my_file.bin
+//! ```
+
 use rand::RngCore;
 use std::env;
 use std::fs;
 use std::io::Write;
 use std::path::Path;
-
-// Example usages:
-// Generate a file with default name:
-// `cargo run --release --bin zeck-generate-data --features development_tools -- 1024`
-// Generate a file with custom name:
-// `cargo run --release --bin zeck-generate-data --features development_tools -- 1024 my_file.bin`
 
 fn main() {
     let args: Vec<String> = env::args().collect();

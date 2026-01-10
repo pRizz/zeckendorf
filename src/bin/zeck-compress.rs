@@ -4,8 +4,8 @@
 //! Automatically uses `.zeck` extension for compressed files.
 //!
 //! Building and running the tool:
-//! `cargo build --release --bin zeck-compress`
-//! `cargo run --release --bin zeck-compress`
+//! `cargo build --release --bin zeck-compress --features cli_tools`
+//! `cargo run --release --bin zeck-compress --features cli_tools`
 //!
 //! # Examples
 //!
