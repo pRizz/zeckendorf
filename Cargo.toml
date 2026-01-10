@@ -1,6 +1,6 @@
 [package]
 name = "zeck"
-version = "3.0.0"
+version = "3.0.1"
 edition = "2024"
 authors = ["Peter Ryszkiewicz"]
 description = "A Rust library for compressing and decompressing data using the Zeckendorf representation algorithm"
