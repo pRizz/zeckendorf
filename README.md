@@ -1,5 +1,11 @@
 # Zeckendorf Compression
 
+[![Crates.io](https://img.shields.io/crates/v/zeck.svg)](https://crates.io/crates/zeck)
+[![docs.rs](https://docs.rs/zeck/badge.svg)](https://docs.rs/zeck)
+[![CI](https://github.com/pRizz/zeckendorf/actions/workflows/ci.yml/badge.svg)](https://github.com/pRizz/zeckendorf/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Rust](https://img.shields.io/badge/rust-stable-blue.svg)](https://www.rust-lang.org/)
+
 A Rust library for compressing and decompressing data using the Zeckendorf representation algorithm.
 
 ## Overview
