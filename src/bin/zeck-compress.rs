@@ -15,7 +15,7 @@
 //! # Creates input.bin.zeck
 //! ```
 //!
-//! Compress from stdin to stdout:
+//! Compress from stdin to stdout (pipe-only; interactive stdin is rejected):
 //! ```bash
 //! cat input.bin | zeck-compress
 //! ```
@@ -60,7 +60,9 @@ impl EndianUsed {
     long_about = None
 )]
 struct Args {
-    /// Input file path. If not specified, reads from stdin.
+    /// Input file path.
+    ///
+    /// If not specified, reads from stdin **only when data is piped in** (non-interactive).
     #[arg(value_name = "INPUT")]
     maybe_input: Option<String>,
 
@@ -91,31 +93,7 @@ fn main() {
     let args = Args::parse();
 
     // Read input data
-    let input_data = if let Some(input_path) = &args.maybe_input {
-        match fs::read(input_path) {
-            Ok(data) => data,
-            Err(err) => {
-                eprintln!("Error: Failed to read input file '{}': {}", input_path, err);
-                std::process::exit(1);
-            }
-        }
-    } else {
-        // Check if stdin is a TTY (terminal) - if so, no data was piped in
-        if io::stdin().is_terminal() {
-            eprintln!(
-                "Warning: Reading from stdin, but no data was piped in. Waiting for input..."
-            );
-            eprintln!("Hint: Pipe data using: cat file.bin | zeck-compress");
-        }
-        let mut data = Vec::new();
-        match io::stdin().read_to_end(&mut data) {
-            Ok(_) => data,
-            Err(err) => {
-                eprintln!("Error: Failed to read from stdin: {}", err);
-                std::process::exit(1);
-            }
-        }
-    };
+    let input_data = read_input_data(&args);
 
     if input_data.is_empty() {
         eprintln!("Error: Input data is empty");
@@ -258,6 +236,53 @@ fn main() {
             eprintln!(
                 "File content was expanded by {compression_percentage:.2}% (original content size: {original_size} bytes -> expanded content size: {compressed_data_size} bytes)\nTotal file size with header: {total_size} bytes",
             );
+        }
+    }
+}
+
+fn read_input_data(args: &Args) -> Vec<u8> {
+    let Some(input_path) = &args.maybe_input else {
+        return read_stdin_piped_only();
+    };
+
+    // POSIX convention: many CLI tools treat "-" as a magic path meaning "read from stdin".
+    // We intentionally do not support that in this tool, but we detect it to provide a clear error
+    // message and a correct piping hint instead of a confusing filesystem error.
+    if input_path == "-" {
+        eprintln!("Error: '-' is not supported as an input path.");
+        eprintln!("Hint: Omit INPUT and pipe data via stdin instead:");
+        eprintln!("  cat input.bin | zeck-compress");
+        std::process::exit(2);
+    }
+
+    match fs::read(input_path) {
+        Ok(data) => data,
+        Err(err) => {
+            eprintln!("Error: Failed to read input file '{input_path}': {err}");
+            std::process::exit(1);
+        }
+    }
+}
+
+fn read_stdin_piped_only() -> Vec<u8> {
+    // If stdin is a TTY, then the user is trying to type interactively. We don't allow that, because:
+    // - stdin is binary
+    // - it’s too easy to accidentally “hang” the process
+    // - piping is the intended use-case
+    if io::stdin().is_terminal() {
+        eprintln!("Error: No input provided.");
+        eprintln!("Hint: Provide an input file path, or pipe data via stdin:");
+        eprintln!("  cat input.bin | zeck-compress");
+        eprintln!("  zeck-compress - < input.bin");
+        std::process::exit(2);
+    }
+
+    let mut data = Vec::new();
+    match io::stdin().read_to_end(&mut data) {
+        Ok(_) => data,
+        Err(err) => {
+            eprintln!("Error: Failed to read from stdin: {err}");
+            std::process::exit(1);
         }
     }
 }

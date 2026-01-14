@@ -337,8 +337,8 @@ zeck-compress [INPUT] [-o OUTPUT] [--endian ENDIAN] [-v]
 ```
 
 **Options:**
-- `INPUT`: Input file path (optional, reads from stdin if not specified)
-  - Shows a warning if reading from stdin and no data was piped in
+- `INPUT`: Input file path (optional)
+  - If not specified, reads from stdin **only when data is piped in** (non-interactive)
 - `-o, --output FILE`: Output file path (optional)
   - If not specified and input is a file, uses the input filename with the `.zeck` extension appended
   - If not specified and reading from stdin, writes to stdout
@@ -370,7 +370,7 @@ zeck-compress input.bin -o output
 cat input.bin | zeck-compress
 ```
 
-**Note:** When writing to a file, the output filename is printed to stdout (e.g., "Compressed to: input.bin.zeck"). Verbose statistics are shown by default and include descriptive messages about compression ratios (e.g., "File was compressed by X.XX% (Y bytes -> Z bytes)"). A warning is shown when reading from stdin if no data was piped in.
+**Note:** When writing to a file, the output filename is printed to stdout (e.g., "Compressed to: input.bin.zeck"). Verbose statistics are shown by default and include descriptive messages about compression ratios (e.g., "File was compressed by X.XX% (Y bytes -> Z bytes)"). If `INPUT` is omitted and stdin is a TTY (interactive terminal), the tool exits with an error and prints a piping hint.
 
 #### zeck-decompress
 
@@ -381,10 +381,10 @@ zeck-decompress [INPUT] [-o OUTPUT] [-v]
 ```
 
 **Options:**
-- `INPUT`: Input file path (optional, reads from stdin if not specified)
+- `INPUT`: Input file path (optional)
+  - If not specified, reads from stdin **only when data is piped in** (non-interactive)
   - When reading from a file, endianness is automatically detected from the file header
   - When reading from stdin, endianness is automatically detected from the file header
-  - Shows a warning if reading from stdin and no data was piped in
 - `-o, --output FILE`: Output file path (optional)
   - If not specified and input is a file, uses the input filename with `.zeck` extension removed
   - If not specified and reading from stdin, writes to stdout
@@ -411,7 +411,7 @@ cat input.zeck | zeck-decompress
 - When writing to a file, the output filename is printed to stdout (e.g., "Compressed to: input.bin.zeck" or "Decompressed to: output.bin")
 - Verbose statistics are shown by default (use `--no-verbose` to disable) and include descriptive messages about compression/decompression ratios
 - Compression will exit with an error if the data cannot be compressed (when using `--endian best` and neither method produces compression)
-- A warning is shown when reading from stdin if no data was piped in
+- If `INPUT` is omitted and stdin is a TTY (interactive terminal), the tools exit with an error and print a piping hint
 
 ### Main Playground
 

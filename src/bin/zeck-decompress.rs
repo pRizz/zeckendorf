@@ -15,7 +15,7 @@
 //! # Automatically detects endianness from header
 //! ```
 //!
-//! Decompress from stdin to stdout:
+//! Decompress from stdin to stdout (pipe-only; interactive stdin is rejected):
 //! ```bash
 //! cat input.zeck | zeck-decompress
 //! ```
@@ -37,7 +37,9 @@ use zeck::zeck_file_format::file::deserialize_zeck_file;
     long_about = None
 )]
 struct Args {
-    /// Input file path. If not specified, reads from stdin.
+    /// Input file path.
+    ///
+    /// If not specified, reads from stdin **only when data is piped in** (non-interactive).
     /// The .zeck file format includes header information, so endianness is automatically detected.
     #[arg(value_name = "INPUT")]
     maybe_input: Option<String>,
@@ -56,31 +58,7 @@ fn main() {
     let args = Args::parse();
 
     // Read input data
-    let zeck_file_data = if let Some(input_path) = &args.maybe_input {
-        match fs::read(input_path) {
-            Ok(zeck_file_data) => zeck_file_data,
-            Err(err) => {
-                eprintln!("Error: Failed to read input file '{}': {}", input_path, err);
-                std::process::exit(1);
-            }
-        }
-    } else {
-        // Check if stdin is a TTY (terminal) - if so, no data was piped in
-        if io::stdin().is_terminal() {
-            eprintln!(
-                "Warning: Reading from stdin, but no data was piped in. Waiting for input..."
-            );
-            eprintln!("Hint: Pipe data using: cat file.zeck | zeck-decompress");
-        }
-        let mut zeck_file_data = Vec::new();
-        match io::stdin().read_to_end(&mut zeck_file_data) {
-            Ok(_) => zeck_file_data,
-            Err(err) => {
-                eprintln!("Error: Failed to read from stdin: {}", err);
-                std::process::exit(1);
-            }
-        }
-    };
+    let zeck_file_data = read_input_data(&args);
 
     if zeck_file_data.is_empty() {
         eprintln!("Error: Input data is empty");
@@ -171,6 +149,49 @@ fn main() {
             eprintln!(
                 "File was decompressed (original content size: {compressed_size} bytes -> decompressed content size: {decompressed_size} bytes, expanded by {expansion_percentage:.2}%)\nTotal file size with header: {total_size} bytes",
             );
+        }
+    }
+}
+
+fn read_input_data(args: &Args) -> Vec<u8> {
+    let Some(input_path) = &args.maybe_input else {
+        return read_stdin_piped_only();
+    };
+
+    // POSIX convention: many CLI tools treat "-" as a magic path meaning "read from stdin".
+    // We intentionally do not support that in this tool, but we detect it to provide a clear error
+    // message and a correct piping hint instead of a confusing filesystem error.
+    if input_path == "-" {
+        eprintln!("Error: '-' is not supported as an input path.");
+        eprintln!("Hint: Omit INPUT and pipe data via stdin instead:");
+        eprintln!("  cat input.zeck | zeck-decompress");
+        std::process::exit(2);
+    }
+
+    match fs::read(input_path) {
+        Ok(zeck_file_data) => zeck_file_data,
+        Err(err) => {
+            eprintln!("Error: Failed to read input file '{input_path}': {err}");
+            std::process::exit(1);
+        }
+    }
+}
+
+fn read_stdin_piped_only() -> Vec<u8> {
+    if io::stdin().is_terminal() {
+        eprintln!("Error: No input provided.");
+        eprintln!("Hint: Provide an input file path, or pipe data via stdin:");
+        eprintln!("  cat input.zeck | zeck-decompress");
+        eprintln!("  zeck-decompress - < input.zeck");
+        std::process::exit(2);
+    }
+
+    let mut zeck_file_data = Vec::new();
+    match io::stdin().read_to_end(&mut zeck_file_data) {
+        Ok(_) => zeck_file_data,
+        Err(err) => {
+            eprintln!("Error: Failed to read from stdin: {err}");
+            std::process::exit(1);
         }
     }
 }
