@@ -1,0 +1,10 @@
+{
+  "name": "zeckendorf-rs-research",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prepare-corpus": "bun run research/prepare.ts",
+    "log-result": "bun run research/scripts/log_result.ts",
+    "summarize": "bun run research/scripts/summarize.ts"
+  }
+}

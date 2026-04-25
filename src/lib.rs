@@ -81,6 +81,9 @@ use wasm_bindgen::prelude::*;
 
 pub mod zeck_file_format;
 
+#[cfg(feature = "research")]
+pub mod research;
+
 pub use zeck_file_format::{
     ZeckFile, ZeckFormatError, compress::compress_zeck_be, compress::compress_zeck_best,
     compress::compress_zeck_le, decompress::decompress_zeck_file, file::deserialize_zeck_file,

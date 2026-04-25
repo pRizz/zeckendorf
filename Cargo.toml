@@ -31,6 +31,7 @@ crate-type = ["cdylib", "rlib"]
 default = []
 cli_tools = ["dep:clap"]
 development_tools = ["dep:rand"]
+research = ["dep:clap", "dep:toml", "dep:thiserror"]
 
 [dependencies]
 clap = { version = "4.5.54", features = ["derive"], optional = true }
@@ -40,6 +41,8 @@ num-traits = "0.2.19"
 rand = { version = "0.9.2", optional = true }
 serde = { version = "1.0.228", features = ["derive"] }
 serde-wasm-bindgen = "0.6.5"
+thiserror = { version = "2", optional = true }
+toml = { version = "0.8", optional = true }
 tsify = "0.5.6"
 wasm-bindgen = "0.2.106"
 
@@ -73,6 +76,11 @@ required-features = ["cli_tools"]
 name = "zeck-decompress"
 path = "src/bin/zeck-decompress.rs"
 required-features = ["cli_tools"]
+
+[[bin]]
+name = "zeck-research"
+path = "src/bin/zeck-research.rs"
+required-features = ["research"]
 
 [[bench]]
 name = "zeckendorf_bench"
