@@ -60,6 +60,10 @@ path = "examples/plot.rs"
 name = "generate-statistics"
 path = "examples/generate_statistics.rs"
 
+[[example]]
+name = "spiral"
+path = "examples/spiral.rs"
+
 [[bin]]
 name = "zeck-compress"
 path = "src/bin/zeck-compress.rs"
