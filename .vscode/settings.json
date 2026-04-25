@@ -1,3 +1,6 @@
 {
     "rust-analyzer.cargo.features": ["cli_tools", "development_tools"],
+    "rust-analyzer.linkedProjects": ["./Cargo.toml"],
+    "rust-analyzer.cargo.allTargets": true,
+    "rust-analyzer.cargo.cfgs": ["test"]
 }
