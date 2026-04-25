@@ -7,9 +7,11 @@ use num_format::{Locale, ToFormattedString};
 use plotters::coord::types::RangedCoordf64;
 use plotters::prelude::*;
 use rand::{Rng, SeedableRng, rngs::StdRng};
-use std::sync::Arc;
 use std::time::Instant;
 use zeck::*;
+
+mod shared;
+use shared::*;
 
 const AXIS_FONT_SIZE: u32 = 100;
 const AXIS_TICK_FONT_SIZE: u32 = 64;
@@ -168,7 +170,7 @@ fn plot_fibonacci_numbers(
         .clone()
         .map(|i| {
             let fib = memoized_fast_doubling_fibonacci_biguint(i);
-            biguint_to_u64(&fib)
+            biguint_to_approximate_u64(&fib)
         })
         .max()
         .unwrap_or(1) as f64;
@@ -204,7 +206,7 @@ fn plot_fibonacci_numbers(
         .clone()
         .map(|i| {
             let fib = memoized_fast_doubling_fibonacci_biguint(i);
-            let fib_u64 = biguint_to_u64(&fib);
+            let fib_u64 = biguint_to_approximate_u64(&fib);
             (i as f64, fib_u64 as f64)
         })
         .filter(|(_, y)| *y > 0.0)
@@ -1228,39 +1230,6 @@ fn _plot_compression_ratios(
         end_time.duration_since(start_time)
     );
     Ok(())
-}
-
-/// Helper function to convert Arc<BigUint> to u64 for plotting.
-/// Panics if the value doesn't fit in u64.
-fn biguint_to_u64(value: &Arc<BigUint>) -> u64 {
-    let digits = value.to_u64_digits();
-    if digits.len() == 1 {
-        digits[0]
-    } else if digits.is_empty() {
-        0
-    } else {
-        panic!("Fibonacci value too large to fit in u64");
-    }
-}
-
-/// Helper function to convert BigUint to f64 for plotting.
-/// For values that don't fit in f64, uses an approximation based on bits, but capped at 1023 bits to avoid overflow.
-fn biguint_to_approximate_f64(value: &BigUint) -> f64 {
-    // Try to convert to u64 first
-    let digits = value.to_u64_digits();
-    if digits.len() == 1 {
-        digits[0] as f64
-    } else if digits.is_empty() {
-        0.0
-    } else {
-        // For very large numbers, approximate using bits
-        // We'll use: value ≈ 2^bits, but cap to avoid overflow
-        let bits = value.bits() as f64;
-        // f64::MAX is around 1.8e308, which corresponds to 2^1024 - 1
-        // So we cap bits at 1023 to avoid overflow
-        let capped_bits = bits.min(1023.0);
-        2_f64.powf(capped_bits)
-    }
 }
 
 /// Calculates the mean (average) of a slice of u64 values.
