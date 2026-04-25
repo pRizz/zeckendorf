@@ -1,5 +1,6 @@
 # Zeckendorf Compression
 
+[![GitHub Stars](https://img.shields.io/github/stars/pRizz/zeckendorf-rs)](https://github.com/pRizz/zeckendorf-rs)
 [![Crates.io](https://img.shields.io/crates/v/zeck.svg)](https://crates.io/crates/zeck)
 [![docs.rs](https://docs.rs/zeck/badge.svg)](https://docs.rs/zeck)
 [![CI](https://github.com/pRizz/zeckendorf/actions/workflows/ci.yml/badge.svg)](https://github.com/pRizz/zeckendorf/actions/workflows/ci.yml)
