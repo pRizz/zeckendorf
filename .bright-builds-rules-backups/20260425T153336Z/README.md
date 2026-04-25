@@ -1,22 +1,13 @@
 # Zeckendorf Compression
 
-<!-- bright-builds-rules-readme-badges:begin -->
-
-<!-- Managed upstream by bright-builds-rules. If this badge block needs a fix, open an upstream PR or issue instead of editing the downstream managed block. Keep repo-local README content outside this managed badge block. -->
-
 [![GitHub Stars](https://img.shields.io/github/stars/pRizz/zeckendorf-rs)](https://github.com/pRizz/zeckendorf-rs)
-[![CI](https://img.shields.io/github/actions/workflow/status/pRizz/zeckendorf-rs/ci.yml?style=flat-square&logo=github&label=CI)](https://github.com/pRizz/zeckendorf-rs/actions/workflows/ci.yml)
-[![License](https://img.shields.io/github/license/pRizz/zeckendorf-rs?style=flat-square)](./LICENSE.txt)
-[![Bright Builds: Rules](https://raw.githubusercontent.com/bright-builds-llc/bright-builds-rules/main/public/badges/bright-builds-rules-flat.svg)](https://github.com/bright-builds-llc/bright-builds-rules)
-[![OpenLinks profile](https://img.shields.io/badge/OpenLinks-profile-0F172A)](https://openlinks.us/)
-
-<!-- bright-builds-rules-readme-badges:end -->
-
-A Rust library for compressing and decompressing data using the Zeckendorf representation algorithm.
-
 [![Crates.io](https://img.shields.io/crates/v/zeck.svg)](https://crates.io/crates/zeck)
 [![docs.rs](https://docs.rs/zeck/badge.svg)](https://docs.rs/zeck)
+[![CI](https://github.com/pRizz/zeckendorf/actions/workflows/ci.yml/badge.svg)](https://github.com/pRizz/zeckendorf/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust](https://img.shields.io/badge/rust-stable-blue.svg)](https://www.rust-lang.org/)
+
+A Rust library for compressing and decompressing data using the Zeckendorf representation algorithm.
 
 ## Overview
 
