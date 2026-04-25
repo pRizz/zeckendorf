@@ -1,0 +1,3 @@
+endianness = "best"
+corpus_set = "all"
+preprocessors = []

@@ -1,0 +1,16 @@
+timestamp,level,component,code,count,notes
+2026-04-25T10:00:00Z,INFO,compressor,Z001,12,baseline block completed
+2026-04-25T10:01:00Z,INFO,compressor,Z001,13,baseline block completed
+2026-04-25T10:02:00Z,WARN,compressor,Z014,2,compression ratio exceeded threshold
+2026-04-25T10:03:00Z,INFO,evaluator,Z020,24,synthetic corpus files loaded
+2026-04-25T10:04:00Z,INFO,evaluator,Z021,3,real corpus files loaded
+2026-04-25T10:05:00Z,INFO,pipeline,Z030,64,identity preprocessor selected
+2026-04-25T10:06:00Z,INFO,pipeline,Z031,16,rle preprocessor selected
+2026-04-25T10:07:00Z,WARN,pipeline,Z032,4,round trip retry recorded
+2026-04-25T10:08:00Z,INFO,logger,Z040,1,result row appended
+2026-04-25T10:09:00Z,INFO,logger,Z041,1,summary generated
+2026-04-25T10:10:00Z,INFO,agent,Z050,1,experiment kept
+2026-04-25T10:11:00Z,INFO,agent,Z051,1,experiment discarded
+2026-04-25T10:12:00Z,WARN,agent,Z052,1,metric block missing
+2026-04-25T10:13:00Z,INFO,compressor,Z001,14,baseline block completed
+2026-04-25T10:14:00Z,INFO,compressor,Z001,15,baseline block completed

@@ -9,3 +9,6 @@ profile.json.gz
 *.zle
 *.bin
 *.zeck
+
+research/results.tsv
+research/runs/

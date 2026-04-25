@@ -9,5 +9,6 @@
 //! build excludes this module entirely.
 
 pub mod config;
+pub mod eval;
 pub mod pipeline;
 pub mod preprocessors;

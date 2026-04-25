@@ -1,0 +1,62 @@
+{
+  "source": "zeckendorf research fixture",
+  "description": "Small hand-authored JSON corpus item for compression experiments.",
+  "records": [
+    {
+      "id": "alpha-001",
+      "kind": "measurement",
+      "status": "ok",
+      "values": [13, 13, 14, 13, 15, 14, 14, 13],
+      "tags": ["low-cardinality", "structured", "json"]
+    },
+    {
+      "id": "alpha-002",
+      "kind": "measurement",
+      "status": "ok",
+      "values": [21, 21, 21, 22, 21, 23, 21, 21],
+      "tags": ["low-cardinality", "structured", "json"]
+    },
+    {
+      "id": "alpha-003",
+      "kind": "event",
+      "status": "retry",
+      "values": [3, 5, 8, 13, 21, 34, 55, 89],
+      "tags": ["fibonacci", "structured", "json"]
+    },
+    {
+      "id": "beta-001",
+      "kind": "event",
+      "status": "ok",
+      "values": [1, 0, 1, 0, 1, 0, 1, 0],
+      "tags": ["alternating", "structured", "json"]
+    },
+    {
+      "id": "beta-002",
+      "kind": "snapshot",
+      "status": "ok",
+      "values": [144, 89, 55, 34, 21, 13, 8, 5],
+      "tags": ["descending", "structured", "json"]
+    },
+    {
+      "id": "gamma-001",
+      "kind": "snapshot",
+      "status": "stale",
+      "values": [255, 255, 0, 0, 255, 255, 0, 0],
+      "tags": ["byte-pattern", "structured", "json"]
+    },
+    {
+      "id": "gamma-002",
+      "kind": "measurement",
+      "status": "ok",
+      "values": [42, 42, 42, 42, 42, 42, 42, 42],
+      "tags": ["constant", "structured", "json"]
+    },
+    {
+      "id": "delta-001",
+      "kind": "event",
+      "status": "ok",
+      "values": [7, 11, 13, 17, 19, 23, 29, 31],
+      "tags": ["prime", "structured", "json"]
+    }
+  ]
+}
