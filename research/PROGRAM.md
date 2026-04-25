@@ -4,6 +4,14 @@ This program runs autonomous compression experiments against `zeckendorf-rs`.
 The fixed evaluator prints one primary metric: total compression ratio across the
 fixed corpus. Lower is better.
 
+## Invocation
+
+A real run starts by creating a dedicated `zeck-research/<tag>` branch and
+launching an autonomous coding agent in this repository. Tell the agent to read
+and follow this file exactly. The agent should edit TOML configs only, run the
+fixed evaluator, log each result, keep commits only when the ratio improves and
+round-trip succeeds, and otherwise reset the experiment commit.
+
 ## Setup
 
 To set up a new run:

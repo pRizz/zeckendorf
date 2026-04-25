@@ -469,6 +469,32 @@ Generates comprehensive compression statistics and plots:
 - Statistics saved to `statistics_history/` directory
 - Plots saved to `plots/` directory
 
+### Research Harness
+
+The experimental autoresearch-style harness sweeps compression configs against a
+fixed corpus and reports one primary metric: total compression ratio. It is
+feature-gated behind `research` and is not part of the default library, WebAssembly,
+or command-line compression path.
+
+Start a real run from a clean `main` branch:
+
+```bash
+git checkout main
+git pull --rebase
+git checkout -b zeck-research/<tag>
+bun run research/prepare.ts
+mkdir -p research/runs
+cargo run --release --features research --bin zeck-research -- --config research/configs/baseline.toml > research/runs/baseline.log 2>&1
+grep "^ratio:\|^roundtrip_ok:" research/runs/baseline.log
+bun run research/scripts/log_result.ts --run-log research/runs/baseline.log --description "baseline" --prev-ratio Infinity
+```
+
+Then launch an autonomous coding agent on the `zeck-research/<tag>` branch and
+instruct it to follow [`research/PROGRAM.md`](research/PROGRAM.md). During a run,
+the agent edits TOML configs under `research/configs/`; the Rust evaluator,
+scripts, and corpus stay fixed. Local outputs go to ignored files:
+`research/results.tsv` and `research/runs/`.
+
 ### Plot Compression Ratios
 
 ```bash
