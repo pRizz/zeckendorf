@@ -4,9 +4,9 @@
 
 <!-- Managed upstream by bright-builds-rules. If this badge block needs a fix, open an upstream PR or issue instead of editing the downstream managed block. Keep repo-local README content outside this managed badge block. -->
 
-[![GitHub Stars](https://img.shields.io/github/stars/pRizz/zeckendorf-rs)](https://github.com/pRizz/zeckendorf-rs)
-[![CI](https://img.shields.io/github/actions/workflow/status/pRizz/zeckendorf-rs/ci.yml?style=flat-square&logo=github&label=CI)](https://github.com/pRizz/zeckendorf-rs/actions/workflows/ci.yml)
-[![License](https://img.shields.io/github/license/pRizz/zeckendorf-rs?style=flat-square)](./LICENSE.txt)
+[![GitHub Stars](https://img.shields.io/github/stars/pRizz/zeckendorf)](https://github.com/pRizz/zeckendorf)
+[![CI](https://img.shields.io/github/actions/workflow/status/pRizz/zeckendorf/ci.yml?style=flat-square&logo=github&label=CI)](https://github.com/pRizz/zeckendorf/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/pRizz/zeckendorf?style=flat-square)](./LICENSE.txt)
 [![Bright Builds: Rules](https://raw.githubusercontent.com/bright-builds-llc/bright-builds-rules/main/public/badges/bright-builds-rules-flat.svg)](https://github.com/bright-builds-llc/bright-builds-rules)
 [![OpenLinks profile](https://img.shields.io/badge/OpenLinks-profile-0F172A)](https://openlinks.us/)
 
