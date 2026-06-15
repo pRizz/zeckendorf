@@ -7,9 +7,9 @@ This managed block is owned upstream by `bright-builds-rules`. If this block nee
 ## Default contribution expectations
 
 - Treat `AGENTS.md` as the entrypoint for repo-local instructions, not the complete Bright Builds Rules spec.
-- Before plan, review, implementation, or audit work, read local `AGENTS.md`, `AGENTS.bright-builds.md`, `standards-overrides.md` when present, and the pinned canonical standards pages relevant to the task; if that has not happened yet, stop and load them before continuing.
+- Before plan, review, implementation, or audit work, read local `AGENTS.md`, `AGENTS.bright-builds.md`, `standards-overrides.md` when present, and the local managed standards pages relevant to the task; if that has not happened yet, stop and load them before continuing.
 - Follow the local `AGENTS.md`.
-- Use the pinned version of the central standards repository as the canonical reference.
+- Use the local managed standards pages as the canonical reference, with source provenance recorded in `AGENTS.bright-builds.md` and `bright-builds-rules.audit.md`.
 - Prefer simple, root-cause fixes over broad rewrites.
 - Document repo-specific exceptions in `standards-overrides.md`.
 
@@ -21,7 +21,7 @@ This managed block is owned upstream by `bright-builds-rules`. If this block nee
 - Split oversized functions and files into sensible units.
 - Do not hide substantial foreign-language logic inside strings; keep workflow and automation config thin, move scripts, queries, and similar artifacts into repo-owned or language-aware files, make checked-in scripts rerunnable when sensible, and have them leave breadcrumb-heavy logs and summaries in a repo-defined gitignored location.
 - Parse boundary input into domain types when that removes repeated validation.
-- Apply any relevant language-specific guidance from the pinned canonical standards.
+- Apply any relevant language-specific guidance from the local managed standards.
 
 ## Verification expectations
 
@@ -41,7 +41,7 @@ This managed block is owned upstream by `bright-builds-rules`. If this block nee
 
 - Explain the behavior change, not just the code movement.
 - Call out any new exceptions to the standards.
-- When plan, review, or audit work relied on these standards, briefly name the local guidance, sidecar, overrides, or canonical standards pages that materially informed the work.
+- When plan, review, or audit work relied on these standards, briefly name the local guidance, sidecar, overrides, or standards pages that materially informed the work.
 - Include verification evidence for the changed paths.
 - Note any residual risks or follow-up work.
 

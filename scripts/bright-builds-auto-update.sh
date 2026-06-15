@@ -67,6 +67,37 @@ managed_path_has_changes() {
 	[[ -n "$(git status --short --untracked-files=all -- "$relative_path")" ]]
 }
 
+print_audit_manifest_paths() {
+	local in_managed_files=0
+	local line=""
+	local relative_path=""
+
+	[[ -f "$audit_path" ]] || return
+
+	while IFS= read -r line || [[ -n "$line" ]]; do
+		if [[ "$line" == "## Managed files" ]]; then
+			in_managed_files=1
+			continue
+		fi
+
+		if [[ "$in_managed_files" -eq 1 && "$line" == "## "* ]]; then
+			break
+		fi
+
+		[[ "$in_managed_files" -eq 1 ]] || continue
+
+		case "$line" in
+		'- `'*)
+			relative_path="${line#- \`}"
+			relative_path="${relative_path%%\`*}"
+			relative_path="${relative_path%% (*}"
+			[[ -n "$relative_path" ]] || continue
+			printf '%s\n' "$relative_path"
+			;;
+		esac
+	done <"$audit_path"
+}
+
 resolve_default_branch() {
 	local maybe_branch=""
 
@@ -96,6 +127,12 @@ resolve_default_branch() {
 stage_managed_paths() {
 	local relative_path=""
 
+	while IFS= read -r relative_path; do
+		if [[ -e "$relative_path" ]] || git ls-files --error-unmatch "$relative_path" >/dev/null 2>&1; then
+			git add -A -- "$relative_path"
+		fi
+	done < <(print_audit_manifest_paths)
+
 	for relative_path in \
 		AGENTS.md \
 		AGENTS.bright-builds.md \
@@ -104,6 +141,15 @@ stage_managed_paths() {
 		bright-builds-rules.audit.md \
 		coding-and-architecture-requirements.audit.md \
 		.github/pull_request_template.md \
+		standards/index.md \
+		standards/core/architecture.md \
+		standards/core/code-shape.md \
+		standards/core/local-guidance.md \
+		standards/core/operability.md \
+		standards/core/testing.md \
+		standards/core/verification.md \
+		standards/languages/rust.md \
+		standards/languages/typescript-javascript.md \
 		.github/workflows/bright-builds-auto-update.yml \
 		scripts/bright-builds-auto-update.sh; do
 		if [[ -e "$relative_path" ]] || git ls-files --error-unmatch "$relative_path" >/dev/null 2>&1; then
@@ -134,12 +180,33 @@ restore_audit_if_only_runtime_changed() {
 		CONTRIBUTING.md \
 		README.md \
 		.github/pull_request_template.md \
+		standards/index.md \
+		standards/core/architecture.md \
+		standards/core/code-shape.md \
+		standards/core/local-guidance.md \
+		standards/core/operability.md \
+		standards/core/testing.md \
+		standards/core/verification.md \
+		standards/languages/rust.md \
+		standards/languages/typescript-javascript.md \
 		.github/workflows/bright-builds-auto-update.yml \
 		scripts/bright-builds-auto-update.sh; do
 		if managed_path_has_changes "$relative_path"; then
 			return
 		fi
 	done
+
+	while IFS= read -r relative_path; do
+		case "$relative_path" in
+		"$audit_path" | "$legacy_audit_path")
+			continue
+			;;
+		esac
+
+		if managed_path_has_changes "$relative_path"; then
+			return
+		fi
+	done < <(print_audit_manifest_paths)
 
 	cp "$audit_before_path" "$audit_path"
 	note "Ignored audit-only runtime metadata changes."
@@ -202,7 +269,7 @@ curl -fsSL "https://raw.githubusercontent.com/${repo_slug}/${ref}/scripts/manage
 chmod +x "$installer_path"
 
 set +e
-status_output="$(bash "$installer_path" status --repo-root "$repo_root" 2>&1)"
+status_output="$(bash "$installer_path" status --repo "$repo_slug" --ref "$ref" --repo-root "$repo_root" 2>&1)"
 status_code=$?
 set -e
 
@@ -221,7 +288,7 @@ if [[ -f "$audit_path" ]]; then
 fi
 
 set +e
-update_output="$(bash "$installer_path" update --repo-root "$repo_root" 2>&1)"
+update_output="$(bash "$installer_path" update --repo "$repo_slug" --ref "$ref" --repo-root "$repo_root" 2>&1)"
 update_code=$?
 set -e
 

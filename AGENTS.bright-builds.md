@@ -14,7 +14,7 @@ Record recurring repo-specific workflow facts in `AGENTS.md` under `## Repo-Loca
 
 - Standards repository: `https://github.com/bright-builds-llc/bright-builds-rules`
 - Version pin: `main`
-- Exact commit: `05f8d7a6c9c2e157ec4f922a05273e72dab97676`
+- Exact commit: `ea50efc297bc8f973030ea13fc2ca7dd8b729d30`
 - Canonical entrypoint: `https://github.com/bright-builds-llc/bright-builds-rules/blob/main/standards/index.md`
 - Audit manifest path: `bright-builds-rules.audit.md`
 
@@ -25,21 +25,21 @@ Record recurring repo-specific workflow facts in `AGENTS.md` under `## Repo-Loca
 1. Read `AGENTS.md`, especially any `## Repo-Local Guidance` section and any repo-specific instructions outside the managed Bright Builds Rules block.
 1. Read `AGENTS.bright-builds.md`.
 1. Read `standards-overrides.md` when it exists.
-1. Read the pinned canonical standards entrypoint and any canonical pages relevant to the task before plan, review, implementation, or audit work.
+1. Read the local managed standards entrypoint and any standards pages relevant to the task before plan, review, implementation, or audit work.
 1. If that reading has not happened yet, stop and load those sources before continuing.
-1. In plan, review, and audit outputs, briefly acknowledge which local guidance, sidecar, overrides, or canonical standards pages materially informed the answer.
+1. In plan, review, and audit outputs, briefly acknowledge which local guidance, sidecar, overrides, or standards pages materially informed the answer.
 
 ## Routing hints
 
 - Use the local `AGENTS.md`, especially `## Repo-Local Guidance`, for repo-specific commands, prerequisites, generated-file ownership, CI-only suites, and recurring workflow facts.
 - Use this file, `AGENTS.bright-builds.md`, for the Bright Builds Rules default workflow and high-signal cross-cutting rules that apply in most tasks.
 - Use `standards-overrides.md` for deliberate repo-specific exceptions to the Bright Builds Rules defaults.
-- Start with the pinned canonical entrypoint `standards/index.md` when you need to choose the right Bright Builds Rules standards page.
-- Use the canonical page `standards/core/architecture.md` for business-logic structure, domain modeling, and functional-core versus imperative-shell decisions.
-- Use the canonical page `standards/core/code-shape.md` for control flow, naming, function/file size, and readability rules.
-- Use the canonical page `standards/core/verification.md` for sync, bootstrap, and pre-commit verification rules.
-- Use the canonical page `standards/core/testing.md` for unit-test expectations.
-- Use the matching canonical page under `standards/languages/` for Rust or TypeScript/JavaScript-specific rules.
+- Start with the local managed entrypoint `standards/index.md` when you need to choose the right Bright Builds Rules standards page.
+- Use the managed standards page `standards/core/architecture.md` for business-logic structure, domain modeling, and functional-core versus imperative-shell decisions.
+- Use the managed standards page `standards/core/code-shape.md` for control flow, naming, function/file size, and readability rules.
+- Use the managed standards page `standards/core/verification.md` for sync, bootstrap, and pre-commit verification rules.
+- Use the managed standards page `standards/core/testing.md` for unit-test expectations.
+- Use the matching managed standards page under `standards/languages/` for Rust or TypeScript/JavaScript-specific rules.
 
 ## Highest-signal rules
 
