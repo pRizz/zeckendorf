@@ -14,7 +14,7 @@ Record recurring repo-specific workflow facts in `AGENTS.md` under `## Repo-Loca
 
 - Standards repository: `https://github.com/bright-builds-llc/bright-builds-rules`
 - Version pin: `main`
-- Exact commit: `ea50efc297bc8f973030ea13fc2ca7dd8b729d30`
+- Exact commit: `7dbfb5cfe6f197f035ebc6d253505b7f865e3c86`
 - Canonical entrypoint: `https://github.com/bright-builds-llc/bright-builds-rules/blob/main/standards/index.md`
 - Audit manifest path: `bright-builds-rules.audit.md`
 
@@ -37,6 +37,7 @@ Record recurring repo-specific workflow facts in `AGENTS.md` under `## Repo-Loca
 - Start with the local managed entrypoint `standards/index.md` when you need to choose the right Bright Builds Rules standards page.
 - Use the managed standards page `standards/core/architecture.md` for business-logic structure, domain modeling, and functional-core versus imperative-shell decisions.
 - Use the managed standards page `standards/core/code-shape.md` for control flow, naming, function/file size, and readability rules.
+- Use the managed standards page `standards/core/frontend-ui.md` for frontend visual defaults, theme defaults, dark-mode decisions, and public open-source source/FOSS/maintainer disclosure.
 - Use the managed standards page `standards/core/verification.md` for sync, bootstrap, and pre-commit verification rules.
 - Use the managed standards page `standards/core/testing.md` for unit-test expectations.
 - Use the matching managed standards page under `standards/languages/` for Rust or TypeScript/JavaScript-specific rules.
@@ -46,7 +47,10 @@ Record recurring repo-specific workflow facts in `AGENTS.md` under `## Repo-Loca
 - Prefer functional core / imperative shell for business logic.
 - Prefer early returns over nesting.
 - Prefix internal nullable or optional names with `maybe`, including functions, bindings, and internal fields, and use `MaybeX` aliases only when they materially clarify a repeated nullable surface.
-- In user-facing, app-like websites and apps, expose version, commit, and build provenance in a normal visible product surface, show `Unavailable` for missing fields, and provide a copyable summary with the exact commit when available.
+- Frontend experiences should default to dark mode unless a documented brand, accessibility, embedding, or product constraint requires a different default.
+- New TypeScript/JavaScript web frontends should default to SolidJS unless a documented constraint makes another framework the better fit.
+- Public open-source web apps and sites must expose source repository access in stable product chrome, use truthful free/open-source copy only when the license supports it, and for Peter-owned repos mention Peter Ryszkiewicz with an OpenLinks link and logo when layout permits.
+- In user-facing, app-like websites and apps, expose version, short commit, and build provenance in normal visible product chrome, show `Unavailable` for missing fields, link public GitHub commits and CI run-backed build times when URLs are available, open external provenance links in new tabs safely, and treat copyable summaries as optional support affordances.
 - Treat functions over roughly 161 lines as refactor triggers; use `floor(100 * phi)` as the mnemonic, not a hard cap.
 - Do not hide substantial foreign-language logic inside strings; keep orchestration thin, move scripts, queries, and similar artifacts into repo-owned or language-aware files, and make checked-in scripts rerunnable when sensible with breadcrumb-heavy logs and summaries in a repo-defined gitignored location.
 - Treat files over roughly 628 lines as refactor triggers; use `floor(100 * tau)` as the mnemonic, not a hard cap.

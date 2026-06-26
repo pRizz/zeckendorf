@@ -22,9 +22,11 @@ Use this routing map when deciding what to load next:
 - To choose the right managed standards page, start with the local Bright Builds entrypoint `standards/index.md`.
 - For business-logic structure, domain modeling, and functional-core versus imperative-shell decisions, use the managed standards page `standards/core/architecture.md`.
 - For control flow, naming, function/file size, and readability rules, use the managed standards page `standards/core/code-shape.md`.
+- For frontend visual defaults, theme defaults, and dark-mode decisions, use the managed standards page `standards/core/frontend-ui.md`.
 - For sync, bootstrap, and pre-commit verification rules, use the managed standards page `standards/core/verification.md`.
 - For unit-test expectations, use the managed standards page `standards/core/testing.md`.
 - For Rust or TypeScript/JavaScript-specific rules, use the matching managed standards page under `standards/languages/`.
+- For TypeScript/JavaScript frontend framework and UI-library defaults, use `standards/languages/typescript-javascript.md`.
 - Keep recurring repo-specific workflow facts, commands, and links in a `## Repo-Local Guidance` section elsewhere in this file.
 - Record deliberate repo-specific exceptions and override decisions in `standards-overrides.md`.
 - If instructions elsewhere in `AGENTS.md` conflict with `AGENTS.bright-builds.md`, follow the repo-local instructions and treat them as an explicit local exception.

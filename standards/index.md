@@ -20,6 +20,7 @@ This repository uses a tiered rules model so preferences and hard requirements d
 
 - [Architecture](core/architecture.md)
 - [Code Shape](core/code-shape.md)
+- [Frontend UI](core/frontend-ui.md)
 - [Operability](core/operability.md)
 - [Local Guidance](core/local-guidance.md)
 - [Verification](core/verification.md)

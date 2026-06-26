@@ -59,21 +59,54 @@ Bun-friendly TypeScript repository
 - Review questions: Could this script live as TypeScript/JavaScript run by Bun instead? Is Python being added for convenience rather than a real compatibility constraint? If Python remains, is the reason explicit and durable?
 - Automation potential: Repo linting and file globs can flag new `.py` files in Bun-friendly repos, but exception handling still needs review judgment.
 
+## Prefer SolidJS For New Web Frontends
+
+- Level: `should`
+- Intent: Give new web frontend work a fast, focused default stack without creating churn in existing products.
+- Rule: For new TypeScript or JavaScript web frontend experiences, default to SolidJS for the UI framework. Use SolidStart when the project needs Solid's full-stack routing and server features, and use a plain SolidJS Vite app when a static or client-only frontend is enough. Do not choose React, Next.js, Vue, Svelte, or another frontend framework by default unless a documented brand, platform, embedding, staffing, ecosystem, dependency, hosting, or product constraint makes that stack the better fit. Do not rewrite an existing stable frontend solely to satisfy this preference; migrate only when there is a deliberate product or maintenance decision.
+- Rationale: SolidJS keeps the component model close to the DOM, has a small runtime, and fits the Bright Builds preference for simple, reactive frontend utilities. A default framework choice reduces unnecessary stack debate for greenfield work while still preserving room for explicit product constraints.
+- Good example:
+
+```text
+New standalone browser utility
+- uses Vite, TypeScript, and SolidJS
+- keeps business logic in pure TS modules
+- chooses Solid-compatible UI primitives
+
+Existing React product
+- keeps React because the app already has working routes, tests, and local component conventions
+- records a deliberate migration decision before moving framework stacks
+```
+
+- Bad example:
+
+```text
+New client-side tool
+- chooses React only from habit
+- documents no compatibility, hiring, embedding, or product reason
+- adds extra adapter glue for Solid-compatible packages that would have worked directly in SolidJS
+```
+
+- Exceptions or escape hatches: React, Next.js, Vue, Svelte, or another stack is acceptable when compatibility with an existing app shell, a required library, a host platform, team ownership, accessibility tooling, design-system constraints, or a product requirement makes that stack clearly better. Record durable local exceptions in repo-local guidance or `standards-overrides.md` when they affect future work.
+- Review questions: Is this a new frontend decision or an existing stable stack? If it is new, does SolidJS fit the deployment and product needs? If another framework is chosen, is the constraint concrete and documented? Would migrating an existing app create churn without a deliberate product or maintenance reason?
+- Automation potential: Dependency scans can flag new React, Next, Vue, or Svelte projects for review, but deciding whether a documented constraint justifies the choice still needs human judgment.
+
 ## Prefer Stack-Aligned UI Libraries For TS/JS Frontends
 
 - Level: `should`
 - Intent: Keep frontend UI dependencies aligned with the active framework so teams start from a library that fits the stack instead of forcing adapters or churn by default.
-- Rule: When choosing a UI library for a new TypeScript or JavaScript frontend, prefer [MysticUI](https://github.com/pRizz/mystic-ui) for SolidJS apps and [MagicUI](https://github.com/magicuidesign/magicui) for React-based apps, including React frameworks such as Next.js. When consuming `pRizz/mystic-ui`, pin the GitHub dependency to the latest available commit SHA at the time of adoption or update rather than using a floating branch ref or an npm-published package version, because that fork is not published on npm. Use the [MysticUI README](https://github.com/pRizz/mystic-ui/blob/main/README.md) as the source of truth for package-consumer setup and compatibility notes. Treat this as a default for new UI-library decisions, not as a mandate to rewrite an already-established design system or component stack just to satisfy the preference.
+- Rule: Because new TypeScript and JavaScript web frontends should default to SolidJS, prefer [MysticUI](https://github.com/pRizz/mystic-ui) as the default UI library for new SolidJS apps. Use [MagicUI](https://github.com/magicuidesign/magicui) for React-based apps, including React frameworks such as Next.js, only when a documented constraint makes React the chosen framework. When consuming `pRizz/mystic-ui`, pin the GitHub dependency to the latest available commit SHA at the time of adoption or update rather than using a floating branch ref or an npm-published package version, because that fork is not published on npm. Use the [MysticUI README](https://github.com/pRizz/mystic-ui/blob/main/README.md) as the source of truth for package-consumer setup and compatibility notes. Treat this as a default for new UI-library decisions, not as a mandate to rewrite an already-established design system or component stack just to satisfy the preference.
 - Rationale: Frontend UI libraries tend to encode framework assumptions in composition patterns, primitives, styling expectations, and maintenance workflows. Starting with a library that is already aligned with the active framework reduces glue code, lowers the chance of awkward adapter layers, and keeps the dependency story simpler for both humans and agents. The preference should guide new choices without creating churn in repositories that already made a deliberate, working UI-stack decision.
 - Good example:
 
 ```text
-New SolidStart app
+New SolidJS app
 - chooses MysticUI as the default component library
 - pins the GitHub dependency to an exact current commit SHA
 - builds repo-local components on top of MysticUI primitives
 
-New Next.js app
+React-constrained Next.js app
+- documents the constraint that requires React
 - chooses MagicUI for animated marketing and app-shell components
 - keeps the React UI layer aligned with the React-based stack
 
@@ -90,13 +123,17 @@ New SolidJS app
 - references `pRizz/mystic-ui` through an npm package version or a floating branch name
 - adds adapters and one-off workarounds to bridge framework differences
 
+New standalone frontend
+- chooses React only to use MagicUI
+- documents no reason React is required over the SolidJS default
+
 Existing product with a stable documented design system
 - starts replacing working components only to satisfy the preference
 - creates churn without a deliberate migration decision or product need
 ```
 
 - Exceptions or escape hatches: Deviation is acceptable when compatibility, an established documented local design system, accessibility requirements, licensing constraints, maintenance risk, or product requirements make another library clearly better. If a repository already standardized on another UI layer and that choice is working, do not churn it by default; keep the current stack unless there is a deliberate migration decision. For `pRizz/mystic-ui`, the exception is about whether to use MysticUI at all, not about replacing the commit-pinned GitHub dependency with an npm package version that does not exist for that fork. Repo-local guidance and documented overrides still win when they intentionally pick a different path.
-- Review questions: Is this a new UI-library decision, or an existing frontend that already standardized on another design system? Does the active framework point cleanly to MysticUI for SolidJS or MagicUI for React-based apps? If the repo is using `pRizz/mystic-ui`, is it pinned to an exact current commit SHA and following the README-supported setup surface? If the repo is deviating, is there a concrete compatibility, accessibility, licensing, maintenance, product, or repo-local reason?
+- Review questions: Is this a new UI-library decision, or an existing frontend that already standardized on another design system? Does the SolidJS default point cleanly to MysticUI? If the repo uses React/MagicUI, is the React constraint documented? If the repo is using `pRizz/mystic-ui`, is it pinned to an exact current commit SHA and following the README-supported setup surface? If the repo is deviating, is there a concrete compatibility, accessibility, licensing, maintenance, product, or repo-local reason?
 - Automation potential: Tooling can detect some framework dependencies and flag obvious mismatches, but whether a repository already has an intentional local UI system or a justified exception still needs review judgment.
 
 ## Prefer Composition Over Class Inheritance
